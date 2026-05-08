@@ -1,9 +1,9 @@
 # 🌍 CarbonGlobe Dataset
 
 > **Accepted to NeurIPS 2025 (Datasets & Benchmarks Track)** 
-> - Paper is available on OpenReview: https://openreview.net/pdf?id=M07aAJKH8B
-> - Project page is available on NeurIPS: https://neurips.cc/virtual/2025/loc/san-diego/poster/121701.
-> - Datasets are available on Kaggle: https://www.kaggle.com/datasets/zhihaow/carbonglobe.
+> - **Paper** is available on OpenReview: https://openreview.net/pdf?id=M07aAJKH8B
+> - **Project page** is available on NeurIPS: https://neurips.cc/virtual/2025/loc/san-diego/poster/121701.
+> - **Datasets** are available on [Hugging Face](https://huggingface.co/datasets/zhwang1/CarbonGlobe) and [Kaggle](https://www.kaggle.com/datasets/zhihaow/carbonglobe).
 
 
 
