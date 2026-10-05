@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.pyc
+
+# Large or regenerable artifacts: kept on disk, not in git
+*.weights.h5
+*.zip
+result/*.csv
+result/globel-train/*.txt

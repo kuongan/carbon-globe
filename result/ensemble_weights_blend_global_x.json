@@ -1,0 +1,38 @@
+{
+  "blend_on": "lb",
+  "weights": {
+    "v2_scheduled_sampling": 0.18013192905777475,
+    "lstm_xl": 0.13568291119472067,
+    "lstm_xl_co2_hist": 0.0,
+    "ecoformer_ed": 0.07446851968979572,
+    "global": -1.0598188415443692,
+    "global_co2_hist": 1.669535481602078
+  },
+  "estimated_lb_mse": 0.09770537948347494,
+  "inputs": {
+    "v2_scheduled_sampling": [
+      0.186,
+      0.03253
+    ],
+    "lstm_xl": [
+      0.168,
+      0.03793
+    ],
+    "lstm_xl_co2_hist": [
+      0.166,
+      null
+    ],
+    "ecoformer_ed": [
+      0.169,
+      0.06093
+    ],
+    "global": [
+      0.134,
+      null
+    ],
+    "global_co2_hist": [
+      0.122,
+      null
+    ]
+  }
+}
