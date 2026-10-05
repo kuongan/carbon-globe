@@ -3,6 +3,11 @@
 Mọi điều đã biết về dữ liệu, model và LB. **[KC]** = đã kiểm chứng (đo trực tiếp hoặc LB thật), **[GT]** = giả
 thuyết. Kế hoạch thí nghiệm tiếp theo: `PLAN.md`. Cập nhật: 2026-10-06.
 
+File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`, `lstm_xl_valshift.py`,
+`notebook2dbddcbdc5.ipynb`, …) vẫn lấy lại được: `git show b8585dd:<đường dẫn>`. Tái tạo file submission:
+`python ensemble.py` → `submission_blend_global.csv`; `$env:ENSEMBLE_FREE='global'; python ensemble.py` →
+`submission_blend_global_x.csv`; `probe_bias.py make4 / solve4` → probe và `bg_scn.csv`.
+
 ## 0. Hiện trạng
 
 - **LB tốt nhất đã nộp: 0.100** (`result/submission_blend_global.csv`).
