@@ -4,17 +4,18 @@ Mọi điều đã biết về dữ liệu, model và LB. **[KC]** = đã kiểm
 thuyết. Kế hoạch thí nghiệm tiếp theo: `PLAN.md`. Cập nhật: 2026-10-06.
 
 File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`, `lstm_xl_valshift.py`,
-`notebook2dbddcbdc5.ipynb`, …) vẫn lấy lại được: `git show b8585dd:<đường dẫn>`. Tái tạo file submission:
-`python ensemble.py` → `submission_blend_global.csv`; `$env:ENSEMBLE_FREE='global'; python ensemble.py` →
-`submission_blend_global_x.csv`; `probe_bias.py make4 / solve4` → probe và `bg_scn.csv`.
+`notebook2dbddcbdc5.ipynb`, …) vẫn lấy lại được: `git show b8585dd:<đường dẫn>`. Tái tạo file submission: xem đầu
+`ensemble.py` (biến `ENSEMBLE_RUNS` / `ENSEMBLE_FREE` / `ENSEMBLE_TAG`); `probe_bias.py make4 / solve4` → probe và
+`bg_scn.csv`.
 
 ## 0. Hiện trạng
 
-- **LB tốt nhất đã nộp: 0.100** (`result/submission_blend_global.csv`).
-- Chờ nộp: `result/bg_scn.csv` (ước tính **0.0938**), `result/submission_blend_global_x.csv` (ước tính **0.0977**,
-  trước hiệu chỉnh bias).
+- **LB tốt nhất đã nộp: 0.094** (`result/bg_scn.csv`).
+- Chờ nộp: `result/submission_blend_latest_x.csv` (ước tính **0.0912**, 0.0905–0.0919; ±0.002 vì có trọng số âm
+  và các model khác nhau nhiều). `submission_blend_latest.csv` (0.0937) và `submission_blend_global_x.csv` (0.0977)
+  không đáng một slot.
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
-  blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (~−0.006 đến −0.011).
+  blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
 ## 1. Sổ LB (mọi điểm đã nộp)
 
@@ -47,11 +48,13 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 23 | Probe `bg_probe2_height110.csv` | 0.114 | | |
 | 24 | Probe `bg_probe3_agb110_ssp126.csv` | 0.108 | | |
 | 25 | Probe `bg_probe4_height110_ssp126.csv` | 0.109 | | |
+| 26 | `bg_scn.csv` (#21 × hệ số theo kịch bản) | **0.094** | 0.0938 | tốt nhất |
+| 27 | Grid run 2 `submission_co2_hist.csv` (`result/globel-train/second run`) | 0.130 | | EMA epoch 8, K=1; tệ hơn #20 |
 
-Chưa nộp: `bg_scn.csv` (0.0938), `submission_blend_global_x.csv` (0.0977), `submission_final.csv` (0.1374, bị #21
-vượt qua, không cần nộp). Run 1 của notebook global (`notebook2dbddcbdc5.ipynb`, phân kỳ NaN) không có điểm LB.
+Chưa nộp: `submission_blend_latest_x.csv` (0.0912), `submission_blend_latest.csv` (0.0937),
+`submission_blend_global_x.csv` (0.0977). Run 1 của notebook global (`notebook2dbddcbdc5.ipynb`) không có điểm LB.
 
-Độ chính xác của ước tính: 7 lần đúng trong sai số làm tròn (±0.0005); 1 lần lệch 0.002 (#21, theo hướng có lợi).
+Độ chính xác của ước tính: 8 lần đúng trong sai số làm tròn (±0.0005); 1 lần lệch 0.002 (#21, theo hướng có lợi).
 
 ## 2. Bài toán và metric
 
@@ -143,14 +146,39 @@ vượt qua, không cần nộp). Run 1 của notebook global (`notebook2dbddcbd
 | Probe theo tuổi | bias không phụ thuộc tuổi | chỉ probe theo kịch bản |
 | Ghép site test vào lưới | 0.5% khớp | không lấy được lịch sử đúng vị trí |
 
+### 4.6 Grid run 2: train thêm làm holdout tốt hơn nhưng LB tệ hơn [KC]
+
+- Resume từ epoch 4 với LR 2.5e-4, K=1 tới epoch 8: holdout shift 0.0389 → 0.0365, random 0.128 → 0.061. Nhưng
+  co2_hist của nó **0.130** (#27) so với **0.122** của epoch 4 (#20). Holdout của lưới không dự báo LB, giống VAL cũ.
+- Hai bản grid (epoch 4 vs epoch 8) khác nhau rất nhiều: msd 0.071 (cỡ khoảng cách giữa hai kiến trúc khác nhau),
+  tương quan lỗi 0.72. Nhưng khi đã có `bg_scn`, run 2 chỉ nhận trọng số ~0.02 trong blend.
+- Dự đoán AGB = 0 (câu hỏi của bạn): 21% hàng của file #27, 23% ở #20. Trên holdout có nhãn: truth = 0 ở 16% ô;
+  model dự đoán 0 ở 28% (run 2) / 47% (run 1), nhưng ở những ô model nói 0 mà truth > 0, AGB thật trung bình chỉ
+  0.009–0.018 (đơn vị đã scale, tức ~1–2% mức trung bình). Lỗi ở đó ~0.0001–0.0003 mỗi ô: **vô hại**. Đây là ô gần như
+  không có rừng (height vẫn > 0, ví dụ `ssp126_0_*`); clamp ≥ 0 chỉ cắt giá trị âm rất nhỏ thành 0.
+- K=4 bùng nổ lần thứ hai (epoch 9: train 0.086, holdout 0.25 → 46), không NaN nên guard cũ không bắt; rollback lại
+  về `last.npz` của epoch đã hỏng nên 3 lần thử đều thất bại. Đã sửa (mục 6).
+
+### 4.7 Blend tận dụng file đã hiệu chỉnh [KC, đại số]
+
+- `bg_scn.csv` đã có LB nên chính nó là một thành phần blend (`result/bg_scn_preds/`). Blend 8 thành phần:
+  simplex → 0.0937 (bg_scn 0.93, v2 0.05, global2 0.02: gần như không hơn 0.094); cho phép trọng số âm trên `global`
+  → **0.0912** (bg_scn 0.965, global_co2_hist +0.71, global −0.75, v2 0.08). Phần lợi đến từ ngoại suy hiệu chỉnh CO2
+  (mục 4.2, t ≈ 1.9), không phải từ run 2.
+
 ## 6. Ghi chú train trên lưới
 
 - Run 1 (`notebook2dbddcbdc5.ipynb`, HARMONIZE=True, LR 5e-4): train loss tăng trong K=1, NaN từ epoch 5 (K=4).
 - Run 2 (`result/globel-train/`, HARMONIZE=False, LR 5e-4): K=1 epoch 1–4 ổn, bùng nổ ở K=4, NaN từ epoch 11.
   Submission lấy từ EMA epoch 4.
-- Đã sửa trong `carbonglobe-global.ipynb`: LR 3e-4; bỏ qua bước có gradient không hữu hạn; epoch hỏng được rollback
-  với LR × 0.5 (tối đa 3 lần); resume từ `last.npz` NaN tự lấy `best.npz`; input chuẩn hóa clip ±10; trạng thái
-  rollout ≤ 2× max của lưới; K=1 tới epoch 8. Đã smoke test; chưa chạy ở quy mô thật.
+- Run 3 = "second run" (`result/globel-train/second run/`, có bảo vệ NaN, LR 2.5e-4): K=1 epoch 5–8 ổn; K=4 bùng
+  nổ ở epoch 9 dù LR thấp hơn. Submission từ EMA epoch 8 (#27).
+- **K ≥ 4 trên lưới bùng nổ ở cả hai lần**, còn trên 3373 site (fusion-lite, v2) thì ổn. Chưa rõ vì sao [GT: ô cực
+  đoan của lưới + dự đoán đưa ngược]. Curriculum mặc định giờ là **chỉ K=1**.
+- Đã sửa trong `carbonglobe-global.ipynb`: LR 3e-4; bỏ qua bước có gradient không hữu hạn; input chuẩn hóa clip ±10;
+  trạng thái rollout ≤ 2× max của lưới; guard phân kỳ phát hiện cả NaN lẫn holdout > 3× tốt nhất (`DIVERGE_FACTOR`),
+  khôi phục **`best.npz`** (không phải `last.npz`) với optimizer mới và LR × 0.5, làm lại cùng epoch (tối đa 3 lần);
+  resume từ `last.npz` NaN tự lấy `best.npz`. Đã smoke test guard mới.
 - Nạp dữ liệu mất 5.5–57 phút tùy đĩa Kaggle.
 - Fusion-lite / phân tán: không có bug; EMA 0.999 với ~195 step/epoch trễ ~5 epoch (global dùng 0.998).
 
@@ -161,6 +189,7 @@ vượt qua, không cần nộp). Run 1 của notebook global (`notebook2dbddcbd
 - "Định dạng input test (climatology, không có mùa) gây lỗi" → vô hại.
 - "Dữ liệu lưới chỉ giúp vừa phải" → giúp nhiều nhất.
 - "Blend model hiện có đã chạm trần 0.149" → đúng với model cũ; model lưới phá trần nhờ lỗi khác kiểu.
+- "Train model lưới lâu hơn sẽ tốt hơn" → holdout tốt hơn nhưng LB tệ hơn (0.122 → 0.130).
 
 ## 8. Câu hỏi mở
 

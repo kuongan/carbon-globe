@@ -23,10 +23,15 @@ N_ROWS = 185130
 LB_ROUND = 0.0005                             # half of the last LB digit shown
 # Runs allowed a NEGATIVE weight (env ENSEMBLE_FREE, comma-separated). Only use it for a run that has a scored variant
 # of the same model in RUNS (e.g. 'global' next to 'global_co2_hist'): the blend then extrapolates along that pair.
-#   default            -> simplex blend, jitter-averaged weights  -> result/submission_blend_global.csv   (LB 0.100)
-#   ENSEMBLE_FREE=global -> point-estimate weights                 -> result/submission_blend_global_x.csv (est 0.0977)
+# Reproduce the files in the LB ledger (INSIGHTS.md):
+#   OLD6=v2_scheduled_sampling,lstm_xl,lstm_xl_co2_hist,ecoformer_ed,global,global_co2_hist
+#   ENSEMBLE_RUNS=$OLD6 ENSEMBLE_TAG=blend_global                       -> submission_blend_global.csv   (LB 0.100)
+#   ENSEMBLE_RUNS=$OLD6 ENSEMBLE_FREE=global ENSEMBLE_TAG=blend_global_x -> submission_blend_global_x.csv (est 0.0977)
+#   (no env)                                                             -> submission_blend_latest.csv (all RUNS)
 FREE_RUNS = tuple(r for r in os.environ.get('ENSEMBLE_FREE', '').split(',') if r)
-TAG = 'blend_global' + ('_x' if FREE_RUNS else '')   # -> result/submission_<TAG>.csv, result/ensemble_weights_<TAG>.json
+# env ENSEMBLE_RUNS (comma-separated keys of RUNS) restricts the blend; env ENSEMBLE_TAG names the output.
+#   the scored 0.100 file = ENSEMBLE_RUNS of the 6 runs before global2_co2_hist / bg_scn, TAG blend_global
+TAG = os.environ.get('ENSEMBLE_TAG', 'blend_latest')   # -> result/submission_<TAG>.csv, ensemble_weights_<TAG>.json
 
 # run -> (public LB score, VAL 40-year metric or None)
 RUNS = {
@@ -36,6 +41,8 @@ RUNS = {
     'ecoformer_ed':          (0.169, 0.06093),
     'global':                (0.134, None),    # LSTM-XL trained on the 51.6k-site grid (EMA epoch 4, K=1)
     'global_co2_hist':       (0.122, None),    # same weights, test CO2 -> grid-mean 1980-2020 series
+    'global2_co2_hist':      (0.130, None),    # grid run 2 (EMA epoch 8, K=1 only), co2_hist
+    'bg_scn':                (0.094, None),    # submission_blend_global.csv x per-scenario bias factors (a scored file)
 }
 BLEND_ON = 'lb'   # 'lb' (tuned for the test distribution) or 'val'
 
@@ -88,7 +95,9 @@ def best_simplex_weights(C, free=()):
 
 
 def main():
-    runs = list(RUNS)
+    sel = [r for r in os.environ.get('ENSEMBLE_RUNS', '').split(',') if r]
+    assert all(r in RUNS for r in sel), f'unknown run in ENSEMBLE_RUNS: {sel}'
+    runs = sel or list(RUNS)
     lb = np.array([RUNS[r][0] for r in runs])
     test = {r: np.concatenate([load(r, s) for s in SCENARIOS], axis=1) for r in runs}   # (15, 2N, 7)
     D_test = msd_matrix([test[r] for r in runs])

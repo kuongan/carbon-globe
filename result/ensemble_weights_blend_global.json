@@ -33,6 +33,14 @@
     "global_co2_hist": [
       0.122,
       null
+    ],
+    "global2_co2_hist": [
+      0.13,
+      null
+    ],
+    "bg_scn": [
+      0.094,
+      null
     ]
   }
 }

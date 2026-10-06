@@ -1,6 +1,10 @@
 # Plan: experiments to find more "co2_hist"-type insights
 
-Best LB so far: `result/bg_scn.csv` (expected ~0.094, not yet submitted) and `submission_blend_global.csv` (0.100).
+Best LB so far: `result/bg_scn.csv` (0.094). Next to submit: `result/submission_blend_latest_x.csv` (est 0.0912).
+
+Update 2026-10-06: Q5 answered (grid run 2: longer K=1 training gave a better holdout but a worse LB, 0.130 vs
+0.122), so prefer **diversity over longer training** for the grid side: a different seed, or the EcoFormer backbone
+(Q6), each trained ~4–5 K=1 epochs, then its co2_hist submitted once.
 Details and evidence for every number below are in `INSIGHTS.md`.
 
 ## What we have learned to trust
