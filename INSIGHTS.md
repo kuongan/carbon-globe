@@ -10,10 +10,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 
 ## 0. Hiện trạng
 
-- **LB tốt nhất đã nộp: 0.094** (`result/bg_scn.csv`).
-- Chờ nộp: `result/submission_blend_latest_x.csv` (ước tính **0.0912**, 0.0905–0.0919; ±0.002 vì có trọng số âm
-  và các model khác nhau nhiều). `submission_blend_latest.csv` (0.0937) và `submission_blend_global_x.csv` (0.0977)
-  không đáng một slot.
+- **LB tốt nhất đã nộp: 0.091** (`result/submission_blend_latest_x.csv`). Bản an toàn hơn (không trọng số âm):
+  `result/bg_scn.csv` (0.094).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -50,11 +48,13 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 25 | Probe `bg_probe4_height110_ssp126.csv` | 0.109 | | |
 | 26 | `bg_scn.csv` (#21 × hệ số theo kịch bản) | **0.094** | 0.0938 | tốt nhất |
 | 27 | Grid run 2 `submission_co2_hist.csv` (`result/globel-train/second run`) | 0.130 | | EMA epoch 8, K=1; tệ hơn #20 |
+| 28 | `submission_blend_latest_x.csv` (bg_scn 0.965, global_co2_hist 0.71, global −0.75, v2 0.08) | **0.091** | 0.0912 | tốt nhất |
 
-Chưa nộp: `submission_blend_latest_x.csv` (0.0912), `submission_blend_latest.csv` (0.0937),
-`submission_blend_global_x.csv` (0.0977). Run 1 của notebook global (`notebook2dbddcbdc5.ipynb`) không có điểm LB.
+Chưa nộp: `submission_blend_latest.csv` (0.0937), `submission_blend_global_x.csv` (0.0977): đều kém #28.
+Run 1 của notebook global (`notebook2dbddcbdc5.ipynb`) không có điểm LB.
 
-Độ chính xác của ước tính: 8 lần đúng trong sai số làm tròn (±0.0005); 1 lần lệch 0.002 (#21, theo hướng có lợi).
+Độ chính xác của ước tính: 9 lần đúng trong sai số làm tròn (±0.0005); 1 lần lệch 0.002 (#21, theo hướng có lợi).
+Ngoại suy với trọng số âm (#28) cũng khớp, nên hướng "CO2 chưa đủ mạnh" (mục 4.2) là thật.
 
 ## 2. Bài toán và metric
 
