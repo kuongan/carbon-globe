@@ -19,8 +19,9 @@ Variant grammar: parts joined by '+', applied in order to the raw test forcing o
   co2_end    CO2 block -> grid-mean 2020 (year 40) values, every year
   co2_start  CO2 block -> grid-mean 1980 (year 1) values, every year
   co2_cont   CO2 block -> grid-mean 2020 values + the test's own increase since its year 1
-  co2_up     CO2 block -> co2_hist + (co2_hist - test CO2), i.e. twice as far from the test values (input-space
-             version of the extrapolated blend; see PLAN.md)
+  co2_up     CO2 block -> co2_hist + (co2_hist - test CO2), i.e. twice as far from the test values (= co2x2)
+  co2x<f>    CO2 block -> test + f * (history - test); co2x1 = co2_hist. The LB optimum along global -> global_co2_hist
+             was f ~ 1.9 in output space, and the blend with a negative weight on `global` (LB 0.091) relies on it
   f7_fix     feature 7: seasonal anomaly shrunk to the grid's amplitude (test amplitude is ~20x the grid's)
   dsh_<g>    feature group g shifted by -(test mean - grid mean), per month (see GROUPS)
 """
@@ -39,7 +40,9 @@ OUT = '/kaggle/working'
 
 SCREEN, SCREEN_SITES = True, 1500
 Y0_TEST, Y0_SITES = True, 1000
-FULL_VARIANTS = ['co2_up', 'co2_cont', 'co2_end', 'f7_fix', 'co2_hist']   # 'co2_hist' = reproduction check
+FULL_VARIANTS = ['co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_hist+f7_fix', 'co2_hist']  # co2_hist = reproduction
+WEIGHTS_FILE = ''                  # optional explicit path; default: the first global_lstmxl.weights.h5 under /kaggle/input
+                                   # (attach ONLY grid run 1's weights: its co2_hist scored 0.122, run 2's 0.130)
 GRID_STRIDE = 20                   # grid reference statistics from every 20th site (~2.7k sites, ~0.7 GB read)
 BS = 8192
 SEED = 0
@@ -52,8 +55,10 @@ GROUPS = {**{f'f{i}': [i] for i in range(8)},
           'static': list(range(129, 136))}
 TARGET = {'ssp126': dict(h=-4.7, agb=-0.4), 'ssp585': dict(h=-0.3, agb=+8.5)}   # % change wanted by the LB probes
 
-_w = glob.glob(f'{ROOT_IN}/**/global_lstmxl.weights.h5', recursive=True)
+_w = [WEIGHTS_FILE] if WEIGHTS_FILE else sorted(glob.glob(f'{ROOT_IN}/**/global_lstmxl.weights.h5', recursive=True))
 assert _w, 'attach a dataset that contains global_lstmxl.weights.h5'
+if len(_w) > 1:
+    print('WARNING: several weight files found, using the first; set WEIGHTS_FILE to choose:', _w)
 WEIGHTS = _w[0]
 
 # ------------------------------------------------------------------ constants (same as the notebooks)
@@ -205,6 +210,9 @@ def env_fn(scn, variant, sites=None):
                 e[..., CO2] = CO2_HIST[-1] + (tx[:, t][..., CO2] - tx[:, 0][..., CO2])
             elif p == 'co2_up':
                 e[..., CO2] = 2 * CO2_HIST[t] - tx[:, t][..., CO2]
+            elif p.startswith('co2x'):                       # test + f * (history - test); co2x1 = co2_hist
+                f = float(p[4:])
+                e[..., CO2] = tx[:, t][..., CO2] + f * (CO2_HIST[t] - tx[:, t][..., CO2])
             elif p == 'f7_fix':
                 m = e[..., 7].mean(axis=1, keepdims=True)
                 e[..., 7] = m + (e[..., 7] - m) / T['f7_ratio']
@@ -231,7 +239,8 @@ if SCREEN:
         sites = np.sort(rng.choice(TEST[scn]['x'].shape[0], SCREEN_SITES, replace=False))
         y0 = TEST[scn]['y0'][:, sites]
         ref = rollout(env_fn(scn, 'none', sites), len(sites), y0, desc=f'{scn} none')
-        names = ['co2_hist', 'co2_up', 'co2_cont', 'co2_end', 'co2_start', 'f7_fix'] + [f'dsh_{g}' for g in GROUPS]
+        names = (['co2x0.5', 'co2_hist', 'co2x1.5', 'co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_start', 'f7_fix']
+                 + [f'dsh_{g}' for g in GROUPS])
         for v in tqdm(names, desc=f'screen {scn}'):
             rows.append(change_row(v, scn, rollout(env_fn(scn, v, sites), len(sites), y0), ref))
     scr = pd.DataFrame(rows)
