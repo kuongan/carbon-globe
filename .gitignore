@@ -6,4 +6,4 @@ __pycache__/
 *.weights.h5
 *.zip
 result/*.csv
-result/globel-train/*.txt
+result/globel-train/**/submission*.txt
