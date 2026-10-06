@@ -50,7 +50,15 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 27 | Grid run 2 `submission_co2_hist.csv` (`result/globel-train/second run`) | 0.130 | | EMA epoch 8, K=1; tệ hơn #20 |
 | 28 | `submission_blend_latest_x.csv` (bg_scn 0.965, global_co2_hist 0.71, global −0.75, v2 0.08) | **0.091** | 0.0912 | tốt nhất |
 
-Chưa nộp: `submission_blend_latest.csv` (0.0937), `submission_blend_global_x.csv` (0.0977): đều kém #28.
+| 29 | Hybrid `hyb_global2_co2_hist.csv` (run trên ssp126 + bg_scn trên ssp585) | 0.109 | | probe |
+| 30 | Hybrid `hyb_lstm_xl.csv` | 0.123 | | probe |
+| 31 | Hybrid `hyb_v2_scheduled_sampling.csv` | 0.127 | | probe |
+| 32 | Hybrid `hyb_global_co2_hist.csv` | 0.109 | | probe |
+| 33 | Hybrid `hyb_global.csv` | 0.116 | | probe |
+| 34 | Hybrid `hyb_ecoformer_ed.csv` | 0.125 | | probe |
+
+Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
+(0.0937), `submission_blend_global_x.csv` (0.0977).
 Run 1 của notebook global (`notebook2dbddcbdc5.ipynb`) không có điểm LB.
 
 Độ chính xác của ước tính: 9 lần đúng trong sai số làm tròn (±0.0005); 1 lần lệch 0.002 (#21, theo hướng có lợi).
@@ -165,6 +173,31 @@ Ngoại suy với trọng số âm (#28) cũng khớp, nên hướng "CO2 chưa 
   simplex → 0.0937 (bg_scn 0.93, v2 0.05, global2 0.02: gần như không hơn 0.094); cho phép trọng số âm trên `global`
   → **0.0912** (bg_scn 0.965, global_co2_hist +0.71, global −0.75, v2 0.08). Phần lợi đến từ ngoại suy hiệu chỉnh CO2
   (mục 4.2, t ≈ 1.9), không phải từ run 2.
+
+### 4.8 Lỗi theo từng kịch bản (hybrid probes #29–34, `ensemble_scn.py`) [KC, đại số]
+
+Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính xác; chỉ mức tuyệt đối giữa hai kịch bản là ẩn):
+
+| Model | ssp126 | ssp585 |
+|---|---|---|
+| global_co2_hist (run 1) | +0.030 | **+0.026** |
+| global2_co2_hist (run 2) | +0.030 | +0.042 |
+| global (run 1, CO2 gốc) | +0.044 | +0.036 |
+| lstm_xl | +0.058 | +0.090 |
+| ecoformer_ed | +0.062 | +0.088 |
+| v2_scheduled_sampling | +0.066 | +0.118 |
+
+- **Run 2 chỉ tệ hơn run 1 ở ssp585** (ssp126 bằng nhau). Train lâu hơn làm hỏng đúng kịch bản cần ngoại suy nhiều
+  nhất. Holdout lịch sử không thấy được điều này.
+- **Model cũ (3373 site) tệ hơn hẳn ở ssp585** (+0.09–0.12 so với +0.06 ở ssp126); model lưới đều hơn giữa hai kịch
+  bản. Dữ liệu lưới giúp chủ yếu ở ssp585.
+- `co2_hist` giúp cả hai kịch bản (ssp126 −0.014, ssp585 −0.010).
+- Blend theo kịch bản cho phép trọng số âm trên `global`: ssp126 dùng global −0.56 / global_co2_hist +0.53, ssp585
+  dùng **−1.74 / +1.84**. ssp585 muốn ngoại suy CO2 mạnh hơn nhiều. [GT] CO2 test của ssp585 chỉ thấp hơn lịch sử
+  0.38 sd (ssp126: 0.75 sd), nên `co2_hist` dịch ssp585 ít mà ED lại cần phản ứng CO2 lớn nhất ở đó: CO2 "thật" mà
+  model cần thấy ở ssp585 cao hơn cả lịch sử. Session A (`co2x3`, `co2_cont`) kiểm tra trực tiếp.
+- Ước tính: `submission_blend_scn.csv` 0.0935 (không đáng nộp), `submission_blend_scn_x.csv` **0.0902** (chỉ hơn
+  0.091 khoảng 0.001, nhỏ hơn sai số ±0.002 của blend có trọng số âm lớn; rủi ro private LB cao hơn).
 
 ## 6. Ghi chú train trên lưới
 

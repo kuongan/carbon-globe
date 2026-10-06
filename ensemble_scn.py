@@ -22,12 +22,12 @@ import ensemble as E
 BASE_RUN = 'bg_scn'
 # LB of result/hyb_<run>.csv (fill in after submitting); the base itself and runs with no file yet are skipped
 HYB_LB = {
-    'v2_scheduled_sampling': None,
-    'lstm_xl':               None,
-    'ecoformer_ed':          None,
-    'global':                None,
-    'global_co2_hist':       None,
-    'global2_co2_hist':      None,
+    'v2_scheduled_sampling': 0.127,
+    'lstm_xl':               0.123,
+    'ecoformer_ed':          0.125,
+    'global':                0.116,
+    'global_co2_hist':       0.109,
+    'global2_co2_hist':      0.109,
 }
 
 
