@@ -236,6 +236,13 @@ Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính x
   ích kể cả khi L = 0.12 (blend 0.0818–0.0821) vì chúng khác các thành phần chính; s7_ep5 chỉ có ích nếu L < 0.11.
   ⇒ nên chấm noco2_ep5, s7_ep4, s7_ep2 trước khi probe bias blend cuối.
 
+- [KC, đại số] Trung bình đều (0 tham số) so với blend có fit: 4 snapshot không CO2 → 0.0932 (các thành phần
+  0.091–0.118, trung bình 0.109); noco2_ep4 + bg_scn 50/50 → 0.0837 so với blend fit 0.0828. Trọng số fit chỉ thêm
+  0.001: rủi ro overfit nằm ở việc **chọn** ep4, không phải ở trọng số. Trung bình nhiều snapshot là cách giảm phương
+  sai giữa epoch hiệu quả nhất.
+- Công cụ kiểm tra overfit: `cv_parity.py` (chia site chẵn/lẻ trên chính LB public; đã tự kiểm tra với tập public
+  giả lập 45% site: hệ số bias khớp ±0.001, LB dự báo khớp ±0.0002, đánh giá chéo blend lệch ~0.0006).
+
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
 - `global_probe_preds.npz` khớp `global2_co2_hist` (msd 1e-6), không khớp run 1 (0.071): file trọng số được gắn là

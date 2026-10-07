@@ -1,5 +1,20 @@
 # Plan and runbook
 
+## Current focus (2026-10-07): generalization
+
+1. **Overfit check on the public LB** (`cv_parity.py`, site parity). Submit `result/par_<run>.csv` for noco2_ep4,
+   noco2_ep3, noco2_ep6, s7_ep3, v2_scheduled_sampling, lstm_xl (6 slots); fill `PAR_LB`; `python cv_parity.py solve`.
+   Answers: is noco2_ep4's lead real in both halves, how much does picking the best snapshot cost (winner's curse),
+   how much do fitted blend weights overfit.
+2. **Snapshot + seed averaging** (`carbonglobe-global.ipynb`, defaults: no CO2, SEED 11, `global_noco2_s11`,
+   snapshots 2–6). Submit `submission_snapmean_none.csv` first (no selection), then single snapshots only if slots
+   are free. Cross-seed averages: `python cv_parity.py average <runs> <tag>`.
+3. **Final bias correction with CV**: on the final blend, `make_bias` (8 probes: column × scenario × half), then
+   `solve_bias` gives the pooled per-scenario factors plus an in-sample vs cross-fitted gain.
+4. **Final picks**: best fitted blend + bias (no negative weights), and the zero-parameter average + bias.
+
+Older runbook below.
+
 Best LB: **0.091** (`result/submission_blend_latest_x.csv`); safe fallback 0.094 (`result/bg_scn.csv`). Evidence for every
 number: `INSIGHTS.md`. Division of work: you run Kaggle sessions and submit; I code, analyse and blend.
 
