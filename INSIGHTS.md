@@ -230,6 +230,12 @@ Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính x
 - Vị trí ep4 trong lịch LR giống nhau ở hai seed (LR giảm sau ep4). Nộp ep4 của seed 7 trả lời "ep4 tốt vì lịch
   train hay vì may".
 
+- [KC, đại số] Run 4 (s7_ep3) thêm vào blend: trọng số 0.03, ước tính vẫn 0.0828. Các snapshot của seed 7 (ep2/3/4)
+  gần nhau (msd 0.02–0.03) nhưng xa noco2_ep4 (0.055–0.073): seed khác cho model khác hẳn.
+- [KC, đại số] Giá trị của snapshot chưa chấm (ước tính blend nếu LB của nó là L): s7_ep2, s7_ep4, noco2_ep5 vẫn có
+  ích kể cả khi L = 0.12 (blend 0.0818–0.0821) vì chúng khác các thành phần chính; s7_ep5 chỉ có ích nếu L < 0.11.
+  ⇒ nên chấm noco2_ep5, s7_ep4, s7_ep2 trước khi probe bias blend cuối.
+
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
 - `global_probe_preds.npz` khớp `global2_co2_hist` (msd 1e-6), không khớp run 1 (0.071): file trọng số được gắn là

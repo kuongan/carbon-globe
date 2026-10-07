@@ -54,6 +54,7 @@ RUNS = {
     'noco2_ep4':             (0.091, None),    # best single model so far
     'g2_co2x2':              (0.126, None),    # grid run 2 weights, CO2 moved 2x toward history
     'g2_co2x3':              (0.128, None),
+    's7_ep3':                (0.118, None),    # run 4: no CO2, SEED 7, best-holdout epoch 3
 }
 BLEND_ON = 'lb'   # 'lb' (tuned for the test distribution) or 'val'
 
