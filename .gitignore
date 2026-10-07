@@ -13,3 +13,7 @@ result/globel-train/**/submission*.txt
 result/**/*.csv
 !result/globel-train/globel_probe/global_probe_screen.csv
 
+
+# repo clones copied from Kaggle outputs
+result/**/carbon-globe/
+
