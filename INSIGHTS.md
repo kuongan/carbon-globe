@@ -63,6 +63,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 37 | Session B `submission_ep4_none.csv` | **0.091** | | **model đơn tốt nhất** |
 | 38 | Session A `submission_global_co2x2.csv` (trọng số **run 2**, không phải run 1) | 0.126 | | run 2 co2_hist = 0.130 |
 | 39 | Session A `submission_global_co2x3.csv` (run 2) | 0.128 | | |
+| 40 | Run 4 (`result/fourth-run`), no CO2, SEED 7, `submission.csv` = EMA epoch 3 (best holdout) | 0.118 | | holdout shift 0.032 = tốt nhất từ trước tới nay |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -222,6 +223,12 @@ Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính x
 - Blend với mọi file đã chấm (`submission_blend_noco2.csv`, simplex): noco2_ep4 0.55, bg_scn 0.33, v2 0.06, lstm_xl
   0.04, noco2_ep6 0.02 → ước tính **0.0828** (0.0825–0.0831). Cho phép trọng số âm trên `global`/`global2_co2_hist`
   (`submission_blend_noco2_x.csv`): **0.0790**.
+
+- [KC] Seed 7 (run 4): epoch 3 có holdout shift **0.032** (tốt nhất mọi run) nhưng LB **0.118**. Đã có 5 điểm LB của
+  model không CO2 (0.091–0.118), và holdout không xếp hạng đúng lần nào. 0.091 của seed 42 ep4 nhiều khả năng là
+  một lần "trúng" trong một phân phối rộng (~0.09–0.12), không phải mức điển hình của công thức này.
+- Vị trí ep4 trong lịch LR giống nhau ở hai seed (LR giảm sau ep4). Nộp ep4 của seed 7 trả lời "ep4 tốt vì lịch
+  train hay vì may".
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
