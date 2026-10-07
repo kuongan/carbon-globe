@@ -21,6 +21,7 @@ Notation: SE_h(p) = contribution of the public rows of half h to LB(p), so LB(p)
 usage:
   python cv_parity.py make                       -> result/par_<run>.csv for RUNS_CV
   python cv_parity.py solve                      -> per-half table, winner's curse, cross-fitted blend
+  ENSEMBLE_FREE=global,global2_co2_hist python cv_parity.py solve   -> same, for the negative-weight (0.079) blend
   PROBE_SUB=<file> PROBE_TAG=<tag> python cv_parity.py make_bias      -> 8 probes result/<tag>_bcv<k>_*.csv
   PROBE_SUB=<file> PROBE_TAG=<tag> python cv_parity.py solve_bias BASE_LB LB_1 ... LB_8
                                                  -> in-sample vs cross-fitted bias gain, result/<tag>_scn_cv.csv
@@ -36,7 +37,10 @@ from ensemble_scn import write
 
 S = E.SCENARIOS
 BASE_RUN = 'bg_scn'                                       # scored file used on the odd half of every hybrid
-RUNS_CV = ['noco2_ep4', 'noco2_ep3', 'noco2_ep6', 's7_ep3', 'v2_scheduled_sampling', 'lstm_xl']
+RUNS_CV = ['noco2_ep4', 'noco2_ep3', 'noco2_ep6', 's7_ep3', 'v2_scheduled_sampling', 'lstm_xl',
+           'global', 'global2_co2_hist']          # the last two carry the negative weights of the LB-0.079 blend
+# runs allowed a negative weight in the cross-fitted blend (env ENSEMBLE_FREE, as in ensemble.py)
+FREE_RUNS = tuple(r for r in os.environ.get('ENSEMBLE_FREE', '').split(',') if r)
 PAR_LB = {r: None for r in RUNS_CV}                       # LB of result/par_<run>.csv (fill in after submitting)
 SNAPSHOT_PREFIX = ('noco2', 's7')                         # candidates for the winner's-curse check
 ALPHA_B = 1.2
@@ -99,10 +103,13 @@ def solve(par_lb=None, verbose=True):
             print(f'winner\'s curse: best snapshot on even = {runs[pick["even"]]}, on odd = {runs[pick["odd"]]}; '
                   f'picking on one half and scoring on the other loses {regret:+.4f} LB vs picking on the scored half')
 
-    w = {h: E.best_simplex_weights(C[h])[0] for h in HALVES}
+    free = tuple(runs.index(r) for r in FREE_RUNS if r in runs)
+    w = {h: E.best_simplex_weights(C[h], free)[0] for h in HALVES}
     cv = w['even'] @ C['odd'] @ w['even'] + w['odd'] @ C['even'] @ w['odd']
     ins = w['even'] @ C['even'] @ w['even'] + w['odd'] @ C['odd'] @ w['odd']
-    wf, mf = E.best_simplex_weights(C['even'] + C['odd'])
+    wf, mf = E.best_simplex_weights(C['even'] + C['odd'], free)
+    if verbose and free:
+        print(f'negative weights allowed for {[runs[i] for i in free]}')
     eq = np.ones(len(runs)) / len(runs)
     me = eq @ (C['even'] + C['odd']) @ eq
     if verbose:

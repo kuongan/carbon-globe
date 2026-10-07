@@ -1,4 +1,4 @@
-# CarbonGlobe Challenge — insight log
+﻿# CarbonGlobe Challenge — insight log
 
 Mọi điều đã biết về dữ liệu, model và LB. **[KC]** = đã kiểm chứng (đo trực tiếp hoặc LB thật), **[GT]** = giả
 thuyết. Kế hoạch thí nghiệm tiếp theo: `PLAN.md`. Cập nhật: 2026-10-06.
@@ -10,9 +10,10 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 
 ## 0. Hiện trạng
 
-- **LB tốt nhất đã nộp: 0.091**, hai file: `result/submission_blend_latest_x.csv` (blend) và
-  `result/globel-train/third-run/submission_ep4_none.csv` (model đơn không CO2, không trọng số âm).
-- Chờ nộp: `result/submission_blend_noco2.csv` (ước tính **0.0828**), sau đó probe bias `result/bn_probe1..4_*.csv`.
+- **LB tốt nhất đã nộp: 0.079** (`result/submission_blend_noco2_x.csv`, có trọng số âm −0.53 tổng trên hai model
+  CO2). Bản không trọng số âm tốt nhất đã chấm: 0.091 (`third-run/submission_ep4_none.csv`).
+- Chờ nộp: `result/submission_blend_noco2.csv` (ước tính 0.0828, không trọng số âm: ứng viên chọn cuối "an toàn");
+  probe kiểm tra overfit `result/par_*.csv` (8 file, `cv_parity.py`).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -64,12 +65,13 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 38 | Session A `submission_global_co2x2.csv` (trọng số **run 2**, không phải run 1) | 0.126 | | run 2 co2_hist = 0.130 |
 | 39 | Session A `submission_global_co2x3.csv` (run 2) | 0.128 | | |
 | 40 | Run 4 (`result/fourth-run`), no CO2, SEED 7, `submission.csv` = EMA epoch 3 (best holdout) | 0.118 | | holdout shift 0.032 = tốt nhất từ trước tới nay |
+| 41 | `submission_blend_noco2_x.csv` (bg_scn 0.767, noco2_ep4 0.601, noco2_ep6 0.114, v2 0.048, global −0.41, global2_co2_hist −0.119) | **0.079** | 0.0790 | **tốt nhất**; trọng số âm |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
 Run 1 của notebook global (`notebook2dbddcbdc5.ipynb`) không có điểm LB.
 
-Độ chính xác của ước tính: 9 lần đúng trong sai số làm tròn (±0.0005); 1 lần lệch 0.002 (#21, theo hướng có lợi).
+Độ chính xác của ước tính: 10 lần đúng trong sai số làm tròn (±0.0005); 1 lần lệch 0.002 (#21, theo hướng có lợi).
 Ngoại suy với trọng số âm (#28) cũng khớp, nên hướng "CO2 chưa đủ mạnh" (mục 4.2) là thật.
 
 ## 2. Bài toán và metric
@@ -285,3 +287,4 @@ Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính x
 
 Xem `PLAN.md` (Q1–Q7): CO2 test có bị scale sai không; nhóm feature nào khác hoạt động như CO2; feature 7; mức độ
 model nhớ `test_y0`; train lại model lưới lâu hơn; model lưới thứ hai (EcoFormer); sửa CO2 ngay khi train.
+

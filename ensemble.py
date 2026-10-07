@@ -29,13 +29,14 @@ LB_ROUND = 0.0005                             # half of the last LB digit shown
 #   ENSEMBLE_RUNS=$OLD6 ENSEMBLE_FREE=global ENSEMBLE_TAG=blend_global_x -> submission_blend_global_x.csv (est 0.0977)
 #   ENSEMBLE_RUNS=$OLD6,global2_co2_hist,bg_scn ENSEMBLE_FREE=global ENSEMBLE_TAG=blend_latest_x -> LB 0.091
 #   ENSEMBLE_RUNS=<all runs up to g2_co2x3> ENSEMBLE_TAG=blend_noco2     -> submission_blend_noco2.csv (est 0.0828)
+#   same ENSEMBLE_RUNS, ENSEMBLE_FREE=global,global2_co2_hist ENSEMBLE_TAG=blend_noco2_x -> LB 0.079 (best)
 #   (no env)                                                             -> submission_blend_new.csv (all RUNS)
 FREE_RUNS = tuple(r for r in os.environ.get('ENSEMBLE_FREE', '').split(',') if r)
 # env ENSEMBLE_RUNS (comma-separated keys of RUNS) restricts the blend; env ENSEMBLE_TAG names the output.
 #   the scored 0.100 file = ENSEMBLE_RUNS of the 6 runs before global2_co2_hist / bg_scn, TAG blend_global
 TAG = os.environ.get('ENSEMBLE_TAG', 'blend_new')      # -> result/submission_<TAG>.csv, ensemble_weights_<TAG>.json
 # scored files must never be overwritten by a run with a different run list
-SCORED_TAGS = {'blend_global', 'blend_latest_x'}
+SCORED_TAGS = {'blend_global', 'blend_latest_x', 'blend_noco2_x'}
 if TAG in SCORED_TAGS and not os.environ.get('ENSEMBLE_RUNS'):
     raise SystemExit(f'TAG {TAG!r} is a scored file: set ENSEMBLE_RUNS to its original run list (see above) or pick a new tag')
 
