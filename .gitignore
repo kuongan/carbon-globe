@@ -7,3 +7,9 @@ __pycache__/
 *.zip
 result/*.csv
 result/globel-train/**/submission*.txt
+
+# training checkpoints and any submission CSV anywhere under result/
+*_ckpt/
+result/**/*.csv
+!result/globel-train/globel_probe/global_probe_screen.csv
+

@@ -10,8 +10,9 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 
 ## 0. Hiện trạng
 
-- **LB tốt nhất đã nộp: 0.091** (`result/submission_blend_latest_x.csv`). Bản an toàn hơn (không trọng số âm):
-  `result/bg_scn.csv` (0.094).
+- **LB tốt nhất đã nộp: 0.091**, hai file: `result/submission_blend_latest_x.csv` (blend) và
+  `result/globel-train/third-run/submission_ep4_none.csv` (model đơn không CO2, không trọng số âm).
+- Chờ nộp: `result/submission_blend_noco2.csv` (ước tính **0.0828**), sau đó probe bias `result/bn_probe1..4_*.csv`.
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -56,6 +57,12 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 32 | Hybrid `hyb_global_co2_hist.csv` | 0.109 | | probe |
 | 33 | Hybrid `hyb_global.csv` | 0.116 | | probe |
 | 34 | Hybrid `hyb_ecoformer_ed.csv` | 0.125 | | probe |
+
+| 35 | Session B (`result/globel-train/third-run`), grid **không CO2**, `submission.csv` = EMA epoch 6 (best holdout) | 0.109 | | |
+| 36 | Session B `submission_ep3_none.csv` | 0.116 | | |
+| 37 | Session B `submission_ep4_none.csv` | **0.091** | | **model đơn tốt nhất** |
+| 38 | Session A `submission_global_co2x2.csv` (trọng số **run 2**, không phải run 1) | 0.126 | | run 2 co2_hist = 0.130 |
+| 39 | Session A `submission_global_co2x3.csv` (run 2) | 0.128 | | |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -198,6 +205,36 @@ Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính x
   model cần thấy ở ssp585 cao hơn cả lịch sử. Session A (`co2x3`, `co2_cont`) kiểm tra trực tiếp.
 - Ước tính: `submission_blend_scn.csv` 0.0935 (không đáng nộp), `submission_blend_scn_x.csv` **0.0902** (chỉ hơn
   0.091 khoảng 0.001, nhỏ hơn sai số ±0.002 của blend có trọng số âm lớn; rủi ro private LB cao hơn).
+
+### 4.9 Model không CO2 (session B) [KC]
+
+- Cùng kiến trúc, cùng dữ liệu lưới, CO2 bị giữ cố định khi train và test: epoch 4 đạt **0.091** (model CO2 tốt nhất:
+  0.122). Bỏ CO2 là đòn bẩy lớn nhất từ khi chuyển sang dữ liệu lưới. Model không học được phản ứng CO2 sai, và hiệu
+  ứng theo kịch bản để cho hệ số hậu kỳ.
+- **LB dao động rất mạnh giữa các epoch** của cùng một run: ep3 0.116, ep4 0.091, ep6 0.109 (ep5 chưa chấm). Khoảng
+  cách prediction giữa các epoch 0.034–0.074 (cỡ khoảng cách giữa hai model khác nhau). Holdout không chọn được epoch:
+  holdout random của ep3/ep4/ep6 là 0.092/0.126/0.113, ngược hẳn thứ tự LB (3 điểm, có thể trùng hợp; run 1 cũng có
+  epoch tốt nhất trên LB là epoch có holdout random tệ nhất). [GT] Model thay đổi cách ngoại suy từ epoch này sang
+  epoch khác; trung bình nhiều snapshot/seed sẽ giảm phương sai này.
+- AGB trung bình theo epoch (ssp126/ssp585): ep3 0.97/0.96, ep4 1.02/1.01, ep5 0.90/0.88, ep6 1.05/1.03. Trên holdout
+  lịch sử, ep6 dự đoán AGB **cao hơn thật 10%**, trong khi trên test LB lại muốn AGB cao hơn: thêm một dấu hiệu lịch
+  sử và tương lai cần hướng sửa ngược nhau.
+- Blend với mọi file đã chấm (`submission_blend_noco2.csv`, simplex): noco2_ep4 0.55, bg_scn 0.33, v2 0.06, lstm_xl
+  0.04, noco2_ep6 0.02 → ước tính **0.0828** (0.0825–0.0831). Cho phép trọng số âm trên `global`/`global2_co2_hist`
+  (`submission_blend_noco2_x.csv`): **0.0790**.
+
+### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
+
+- `global_probe_preds.npz` khớp `global2_co2_hist` (msd 1e-6), không khớp run 1 (0.071): file trọng số được gắn là
+  của run 2. Kết quả vẫn dùng được, chỉ là cho run 2: co2_hist 0.130 → **co2x2 0.126** → co2x3 0.128. Với run 2, tối
+  ưu ở khoảng ×2; đẩy CO2 mạnh hơn nữa bắt đầu hại. Preds lưu thành `result/g2_*_preds/`.
+- Screening (1500 site test, run 2, độ dịch so với `none`): ngoài CO2, chỉ nhóm **v2 (34, 38, …, 126)** có tác dụng
+  (msd 0.024 / 0.009; bỏ độ lệch test của nó làm AGB giảm 8% / 5%, tức độ lệch đó đang *nâng* AGB, đúng chiều LB muốn:
+  giữ nguyên). v1 nhỏ (0.003), v3 nhỏ (0.0015). **Feature 7, v4, static, f0–f6: không ảnh hưởng** (msd ≤ 0.0001);
+  `f7_fix` vô hại nên không cần nộp.
+- `co2_start` (CO2 cố định ở 1980) giảm AGB 7–11%; `co2_end`/`co2_cont` tăng AGB 14–21%: phản ứng CO2 của model lớn và
+  đơn điệu, đúng như mục 4.2.
+- Part B (y0 memory): chưa có output (cần dòng in của cell).
 
 ## 6. Ghi chú train trên lưới
 

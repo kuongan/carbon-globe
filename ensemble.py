@@ -27,11 +27,17 @@ LB_ROUND = 0.0005                             # half of the last LB digit shown
 #   OLD6=v2_scheduled_sampling,lstm_xl,lstm_xl_co2_hist,ecoformer_ed,global,global_co2_hist
 #   ENSEMBLE_RUNS=$OLD6 ENSEMBLE_TAG=blend_global                       -> submission_blend_global.csv   (LB 0.100)
 #   ENSEMBLE_RUNS=$OLD6 ENSEMBLE_FREE=global ENSEMBLE_TAG=blend_global_x -> submission_blend_global_x.csv (est 0.0977)
-#   (no env)                                                             -> submission_blend_latest.csv (all RUNS)
+#   ENSEMBLE_RUNS=$OLD6,global2_co2_hist,bg_scn ENSEMBLE_FREE=global ENSEMBLE_TAG=blend_latest_x -> LB 0.091
+#   ENSEMBLE_RUNS=<all runs up to g2_co2x3> ENSEMBLE_TAG=blend_noco2     -> submission_blend_noco2.csv (est 0.0828)
+#   (no env)                                                             -> submission_blend_new.csv (all RUNS)
 FREE_RUNS = tuple(r for r in os.environ.get('ENSEMBLE_FREE', '').split(',') if r)
 # env ENSEMBLE_RUNS (comma-separated keys of RUNS) restricts the blend; env ENSEMBLE_TAG names the output.
 #   the scored 0.100 file = ENSEMBLE_RUNS of the 6 runs before global2_co2_hist / bg_scn, TAG blend_global
-TAG = os.environ.get('ENSEMBLE_TAG', 'blend_latest')   # -> result/submission_<TAG>.csv, ensemble_weights_<TAG>.json
+TAG = os.environ.get('ENSEMBLE_TAG', 'blend_new')      # -> result/submission_<TAG>.csv, ensemble_weights_<TAG>.json
+# scored files must never be overwritten by a run with a different run list
+SCORED_TAGS = {'blend_global', 'blend_latest_x'}
+if TAG in SCORED_TAGS and not os.environ.get('ENSEMBLE_RUNS'):
+    raise SystemExit(f'TAG {TAG!r} is a scored file: set ENSEMBLE_RUNS to its original run list (see above) or pick a new tag')
 
 # run -> (public LB score, VAL 40-year metric or None)
 RUNS = {
@@ -43,6 +49,11 @@ RUNS = {
     'global_co2_hist':       (0.122, None),    # same weights, test CO2 -> grid-mean 1980-2020 series
     'global2_co2_hist':      (0.130, None),    # grid run 2 (EMA epoch 8, K=1 only), co2_hist
     'bg_scn':                (0.094, None),    # submission_blend_global.csv x per-scenario bias factors (a scored file)
+    'noco2_ep6':             (0.109, None),    # grid LSTM-XL, CO2 block held constant, best-holdout epoch 6
+    'noco2_ep3':             (0.116, None),
+    'noco2_ep4':             (0.091, None),    # best single model so far
+    'g2_co2x2':              (0.126, None),    # grid run 2 weights, CO2 moved 2x toward history
+    'g2_co2x3':              (0.128, None),
 }
 BLEND_ON = 'lb'   # 'lb' (tuned for the test distribution) or 'val'
 

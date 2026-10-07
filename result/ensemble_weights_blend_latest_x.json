@@ -43,6 +43,26 @@
     "bg_scn": [
       0.094,
       null
+    ],
+    "noco2_ep6": [
+      0.109,
+      null
+    ],
+    "noco2_ep3": [
+      0.116,
+      null
+    ],
+    "noco2_ep4": [
+      0.091,
+      null
+    ],
+    "g2_co2x2": [
+      0.126,
+      null
+    ],
+    "g2_co2x3": [
+      0.128,
+      null
     ]
   }
 }
