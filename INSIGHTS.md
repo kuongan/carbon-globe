@@ -74,6 +74,11 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 47 | `par_noco2_ep4.csv` | 0.094 | | CV probe |
 | 48 | `par_global.csv` | 0.113 | | CV probe |
 | 49 | `par_lstm_xl.csv` | 0.129 | | CV probe |
+| 50 | `third-run/submission_ep5_none.csv` (no CO2, seed 42, epoch 5) | 0.133 | | tệ nhất trong các snapshot |
+| 51 | `bx_probe1_agb110.csv` (blend 0.079, agb ×1.1) | 0.095 | | probe |
+| 52 | `bx_probe2_height110.csv` | 0.083 | | probe |
+| 53 | `bx_probe3_agb110_ssp126.csv` | 0.088 | | probe |
+| 54 | `bx_probe4_height110_ssp126.csv` | 0.081 | | probe |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -279,6 +284,22 @@ Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính x
 - [KC] Blend có trọng số âm (global, global2_co2_hist): trong mẫu 0.0785, đánh giá chéo **0.0803** (overfit ≈
   +0.0009 ở cỡ đầy đủ), vẫn hơn simplex đánh giá chéo 0.003. Trọng số âm trên global cùng dấu hai nửa (−0.30 / −0.51).
   ⇒ file 0.079 dự kiến private ≈ 0.080: **an toàn làm lựa chọn cuối #1**.
+
+### 4.12 Bias của blend 0.079 (probe #51–54) [KC]
+
+| Hệ số tối ưu | ssp126 | ssp585 |
+|---|---|---|
+| agb | 0.990 (0.986–0.995) | 1.007 (1.003–1.011) |
+| height | **1.026** (1.018–1.034) | **1.028** (1.020–1.035) |
+
+- Blend 0.079 **gần như không còn bias**: AGB lệch ≤ 1%, height thiếu ~2.7% đều ở cả hai kịch bản (blend cũ thì
+  thừa height 5–6% ở ssp126). Blend có trọng số âm đã hấp thụ gần hết hiệu ứng theo kịch bản.
+- `result/bx_scn.csv` (blend 0.079 × 4 hệ số): ước tính **0.0783** (gain 0.0006–0.0009, luôn > 0).
+- Hệ quả: hiệu chỉnh bias gần như hết dư địa. Lỗi còn lại là scatter ⇒ đòn bẩy tiếp theo là thêm member đa dạng
+  (bagging, seed), không phải hiệu chỉnh.
+- Snapshot seed 42: ep3 0.116, ep4 0.091, ep5 0.133, ep6 0.109. Ep5 (epoch đầu sau khi LR giảm một nửa, AGB trung
+  bình 0.89) tệ nhất: phương sai giữa epoch rất lớn và không theo quy luật ⇒ trung bình snapshot (`snapmean`) là
+  bắt buộc.
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
