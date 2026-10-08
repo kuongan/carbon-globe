@@ -71,6 +71,9 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 44 | `par_s7_ep3.csv` | 0.106 | | CV probe |
 | 45 | `par_v2_scheduled_sampling.csv` | 0.136 | | CV probe |
 | 46 | `par_global2_co2_hist.csv` | 0.110 | | CV probe |
+| 47 | `par_noco2_ep4.csv` | 0.094 | | CV probe |
+| 48 | `par_global.csv` | 0.113 | | CV probe |
+| 49 | `par_lstm_xl.csv` | 0.129 | | CV probe |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -267,7 +270,15 @@ Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính x
 - Trọng số blend: fit trên một nửa, chấm trên nửa kia → overfit +0.0007 ở cỡ nửa (≈ +0.0004 ở cỡ đầy đủ). Trọng số
   âm trên global2_co2_hist: cùng dấu ở hai nửa (−0.125 / −0.216), đánh giá chéo 0.0909 so với 0.0914 simplex ⇒
   phần ngoại suy CO2 **đứng vững ngoài mẫu** trong tập này.
-- Còn thiếu: par_noco2_ep4 (ep4 có phải may không), par_global (trọng số âm lớn nhất, −0.41), par_lstm_xl.
+- **Đủ 8/8 probe** (so với noco2_ep4, chẵn / lẻ): bg_scn +0.000/+0.006, noco2_ep6 +0.018/+0.018, noco2_ep3
+  +0.022/+0.028, s7_ep3 +0.024/+0.030, global2_co2_hist +0.032/+0.046, global +0.038/+0.048, lstm_xl +0.070/+0.084,
+  v2 +0.084/+0.106.
+- [KC] **ep4 tốt nhất ở cả hai nửa** (winner's curse = 0): 0.091 không phải may mắn do chọn site public. Ep4 thật sự
+  tốt hơn các snapshot khác trên test.
+- [KC] Blend simplex: trong mẫu 0.0826, đánh giá chéo 0.0834 (overfit ≈ +0.0004 ở cỡ đầy đủ).
+- [KC] Blend có trọng số âm (global, global2_co2_hist): trong mẫu 0.0785, đánh giá chéo **0.0803** (overfit ≈
+  +0.0009 ở cỡ đầy đủ), vẫn hơn simplex đánh giá chéo 0.003. Trọng số âm trên global cùng dấu hai nửa (−0.30 / −0.51).
+  ⇒ file 0.079 dự kiến private ≈ 0.080: **an toàn làm lựa chọn cuối #1**.
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 

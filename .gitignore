@@ -17,3 +17,7 @@ result/**/*.csv
 # repo clones copied from Kaggle outputs
 result/**/carbon-globe/
 
+
+# files staged for upload as Kaggle datasets
+kaggle_upload/
+
