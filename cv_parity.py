@@ -42,6 +42,7 @@ RUNS_CV = ['noco2_ep4', 'noco2_ep3', 'noco2_ep6', 's7_ep3', 'v2_scheduled_sampli
 # runs allowed a negative weight in the cross-fitted blend (env ENSEMBLE_FREE, as in ensemble.py)
 FREE_RUNS = tuple(r for r in os.environ.get('ENSEMBLE_FREE', '').split(',') if r)
 PAR_LB = {r: None for r in RUNS_CV}                       # LB of result/par_<run>.csv (fill in after submitting)
+PAR_LB.update(noco2_ep3=0.105, noco2_ep6=0.103, s7_ep3=0.106, v2_scheduled_sampling=0.136, global2_co2_hist=0.110)
 SNAPSHOT_PREFIX = ('noco2', 's7')                         # candidates for the winner's-curse check
 ALPHA_B = 1.2
 HALVES = ('even', 'odd')

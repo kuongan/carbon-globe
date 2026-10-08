@@ -38,9 +38,15 @@ COMP = f'{ROOT_IN}/competitions/ieee-bigdata-cup-2026-ai-emulation-challenge/pub
 BASE = f'{ROOT_IN}/datasets/zhihaow/carbonglobe'
 OUT = '/kaggle/working'
 
+# Default target: the best single model, no-CO2 seed 42 epoch 4 (LB 0.091). Attach a dataset with its snapshot
+# `global_noco2_ckpt/snap_ep4.npz` (result/globel-train/third-run/global_noco2_ckpt/snap_ep4.npz).
+CO2_CONST = True                   # weights trained with CO2_MODE='const': the CO2 block is 0 after standardization
+WEIGHTS_GLOB = 'snap_ep4.npz'      # file name searched under /kaggle/input when WEIGHTS_FILE is empty
+                                   # ('global_lstmxl.weights.h5' for grid run 1/2, CO2_CONST=False)
+Z_CLIP = 10.0                      # standardized inputs clipped like in training (None for grid run 1)
 SCREEN, SCREEN_SITES = True, 1500
 Y0_TEST, Y0_SITES = True, 1000
-FULL_VARIANTS = ['co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_hist+f7_fix', 'co2_hist']  # co2_hist = reproduction
+FULL_VARIANTS = [] if CO2_CONST else ['co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_hist+f7_fix', 'co2_hist']
 WEIGHTS_FILE = ''                  # optional explicit path; default: the first global_lstmxl.weights.h5 under /kaggle/input
                                    # (attach ONLY grid run 1's weights: its co2_hist scored 0.122, run 2's 0.130)
 GRID_STRIDE = 20                   # grid reference statistics from every 20th site (~2.7k sites, ~0.7 GB read)
@@ -55,8 +61,8 @@ GROUPS = {**{f'f{i}': [i] for i in range(8)},
           'static': list(range(129, 136))}
 TARGET = {'ssp126': dict(h=-4.7, agb=-0.4), 'ssp585': dict(h=-0.3, agb=+8.5)}   # % change wanted by the LB probes
 
-_w = [WEIGHTS_FILE] if WEIGHTS_FILE else sorted(glob.glob(f'{ROOT_IN}/**/global_lstmxl.weights.h5', recursive=True))
-assert _w, 'attach a dataset that contains global_lstmxl.weights.h5'
+_w = [WEIGHTS_FILE] if WEIGHTS_FILE else sorted(glob.glob(f'{ROOT_IN}/**/{WEIGHTS_GLOB}', recursive=True))
+assert _w, f'attach a dataset that contains {WEIGHTS_GLOB}'
 if len(_w) > 1:
     print('WARNING: several weight files found, using the first; set WEIGHTS_FILE to choose:', _w)
 WEIGHTS = _w[0]
@@ -138,7 +144,14 @@ class LSTMXLBackbone(keras.Model):
 
 MODEL = LSTMXLBackbone()
 _ = MODEL(tf.zeros((2, N_T, N_FEA), tf.float32), training=False)
-MODEL.load_weights(WEIGHTS)
+if WEIGHTS.endswith('.npz'):                       # snapshot / best.npz of carbonglobe-global.ipynb: b0..bN
+    _z = np.load(WEIGHTS)
+    _tv = MODEL.trainable_variables
+    assert len([k for k in _z.files if k.startswith('b')]) == len(_tv), 'snapshot does not match the model'
+    for _k, _v in enumerate(_tv):
+        _v.assign(_z[f'b{_k}'])
+else:
+    MODEL.load_weights(WEIGHTS)
 assert sum(float(np.abs(b.head.kernel.numpy()).sum()) for b in MODEL.branches) > 0, 'weights did not load'
 print(f'loaded {WEIGHTS} | {MODEL.count_params() / 1e6:.2f}M params')
 
@@ -162,6 +175,15 @@ def rollout(env_at, n_sites, y0_raw, desc=None):
             nxt[s:e] = np.maximum(infer(tf.constant(xb, tf.float32)).numpy(), FLOOR_N)
         prev = nxt
     return np.maximum(invNormData(prev, Y_MEAN, Y_STD).reshape(A, N, N_OUT), 0.0)
+
+def zscore(e):
+    """Standardize like in training: clip to +/- Z_CLIP, CO2 block at its mean (0) for no-CO2 weights."""
+    z = normData(e, X_MEAN, X_STD)
+    if Z_CLIP is not None:
+        z = np.clip(z, -Z_CLIP, Z_CLIP)
+    if CO2_CONST:
+        z[..., CO2] = 0.0
+    return z.astype(np.float32)
 
 def msd(a, b):
     return 0.5 * (np.mean(((a[..., 0] - b[..., 0]) / Y_MEAN[0]) ** 2) + np.mean(((a[..., 1] - b[..., 1]) / Y_MEAN[1]) ** 2))
@@ -221,7 +243,7 @@ def env_fn(scn, variant, sites=None):
                 e[..., g] -= T['delta'][:, g].astype(np.float32)
             else:
                 raise ValueError(f'unknown variant part {p!r}')
-        return normData(e, X_MEAN, X_STD).astype(np.float32)
+        return zscore(e)
     return env_at
 
 def change_row(name, scn, p, ref):
@@ -239,8 +261,9 @@ if SCREEN:
         sites = np.sort(rng.choice(TEST[scn]['x'].shape[0], SCREEN_SITES, replace=False))
         y0 = TEST[scn]['y0'][:, sites]
         ref = rollout(env_fn(scn, 'none', sites), len(sites), y0, desc=f'{scn} none')
-        names = (['co2x0.5', 'co2_hist', 'co2x1.5', 'co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_start', 'f7_fix']
-                 + [f'dsh_{g}' for g in GROUPS])
+        co2_names = ['co2x0.5', 'co2_hist', 'co2x1.5', 'co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_start']
+        names = (([] if CO2_CONST else co2_names) + ['f7_fix']
+                 + [f'dsh_{g}' for g in GROUPS if not (CO2_CONST and g == 'co2')])
         for v in tqdm(names, desc=f'screen {scn}'):
             rows.append(change_row(v, scn, rollout(env_fn(scn, v, sites), len(sites), y0), ref))
     scr = pd.DataFrame(rows)
@@ -259,7 +282,7 @@ if Y0_TEST:
     y0g, y40g = yg[:, :, 0], yg[:, :, 40]                                     # (15, n, 7)
     ty0 = np.concatenate([TEST[s]['y0'] for s in SCENARIOS], axis=1)
     ratio = ty0.mean(1, keepdims=True) / (y0g.mean(1, keepdims=True) + 1e-12)  # per age and variable
-    env_g = lambda t: normData(gxs[:, t], X_MEAN, X_STD).astype(np.float32)
+    env_g = lambda t: zscore(gxs[:, t])
     p_true = rollout(env_g, len(gs), y0g, desc='y0 true')
     p_shift = rollout(env_g, len(gs), y0g * ratio, desc='y0 x test ratio')
     sc = lambda p: 0.5 * (np.mean(((p[..., 0] - y40g[..., 0]) / Y_MEAN[0]) ** 2) + np.mean(((p[..., 1] - y40g[..., 1]) / Y_MEAN[1]) ** 2))

@@ -13,6 +13,26 @@
    `solve_bias` gives the pooled per-scenario factors plus an in-sample vs cross-fitted gain.
 4. **Final picks**: best fitted blend + bias (no negative weights), and the zero-parameter average + bias.
 
+### Ensemble of bagged members (2026-10-08)
+
+One Kaggle session = one member: `carbonglobe-global.ipynb`, change only the 4 lines below, no checkpoint attached.
+Submit only `submission_snapmean_none.csv` per member (1 slot); send `<RUN_NAME>_preds.npz`.
+Final = equal-weight mean of all members' snapmean (+ earlier no-CO2 runs), then per-scenario bias via `cv_parity.py`.
+
+| Member | RUN_NAME | SEED | BAG_FRAC | DROP_GROUPS | Purpose |
+|---|---|---|---|---|---|
+| m1 | bag_m1 | 21 | 0.7 | () | default as committed |
+| m2 | bag_m2 | 22 | 0.7 | () | |
+| m3 | bag_m3 | 23 | 0.7 | from screening of no-CO2 ep4 (e.g. ('v2',)) | invariance to a shifted group |
+| m4 | bag_m4 | 24 | 0.7 | () | |
+
+Spatial blocks are 10°×10° (`BAG_BLOCK_DEG`); the holdout is identical for every member (`HOLDOUT_SEED`).
+
+### Data probe of the best model (0 slots, ~1 h GPU T4 x1)
+`global_probe.py` as committed (CO2_CONST=True, loads `snap_ep4.npz`): attach a dataset with
+`result/globel-train/third-run/global_noco2_ckpt/snap_ep4.npz`. Send the part A table and part B lines: they pick the
+DROP_GROUPS of m3 and decide whether y0 augmentation is worth building.
+
 Older runbook below.
 
 Best LB: **0.091** (`result/submission_blend_latest_x.csv`); safe fallback 0.094 (`result/bg_scn.csv`). Evidence for every

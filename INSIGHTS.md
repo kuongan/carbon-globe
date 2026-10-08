@@ -66,6 +66,11 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 39 | Session A `submission_global_co2x3.csv` (run 2) | 0.128 | | |
 | 40 | Run 4 (`result/fourth-run`), no CO2, SEED 7, `submission.csv` = EMA epoch 3 (best holdout) | 0.118 | | holdout shift 0.032 = tốt nhất từ trước tới nay |
 | 41 | `submission_blend_noco2_x.csv` (bg_scn 0.767, noco2_ep4 0.601, noco2_ep6 0.114, v2 0.048, global −0.41, global2_co2_hist −0.119) | **0.079** | 0.0790 | **tốt nhất**; trọng số âm |
+| 42 | `par_noco2_ep3.csv` (run trên site chẵn, bg_scn trên site lẻ) | 0.105 | | CV probe |
+| 43 | `par_noco2_ep6.csv` | 0.103 | | CV probe |
+| 44 | `par_s7_ep3.csv` | 0.106 | | CV probe |
+| 45 | `par_v2_scheduled_sampling.csv` | 0.136 | | CV probe |
+| 46 | `par_global2_co2_hist.csv` | 0.110 | | CV probe |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -244,6 +249,25 @@ Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính x
   sai giữa epoch hiệu quả nhất.
 - Công cụ kiểm tra overfit: `cv_parity.py` (chia site chẵn/lẻ trên chính LB public; đã tự kiểm tra với tập public
   giả lập 45% site: hệ số bias khớp ±0.001, LB dự báo khớp ±0.0002, đánh giá chéo blend lệch ~0.0006).
+
+### 4.11 CV chẵn/lẻ trên LB public, kết quả một phần (5/8 probe, `cv_parity.py`) [KC, đại số]
+
+Độ chênh so với bg_scn, mỗi nửa (đơn vị LB đầy đủ; nhiễu làm tròn ±0.002 mỗi số):
+
+| Run | site chẵn | site lẻ |
+|---|---|---|
+| noco2_ep3 | +0.022 | +0.022 |
+| noco2_ep6 | +0.018 | +0.012 |
+| s7_ep3 | +0.024 | +0.024 |
+| global2_co2_hist | +0.032 | +0.040 |
+| v2 | +0.084 | +0.100 |
+
+- Thứ hạng giống nhau ở hai nửa ⇒ khác biệt giữa các snapshot là **thật** (model khác nhau thật trên test), không phải
+  nhiễu do chọn site public. LB public là trọng tài đáng tin cho các khác biệt ≥ ~0.005.
+- Trọng số blend: fit trên một nửa, chấm trên nửa kia → overfit +0.0007 ở cỡ nửa (≈ +0.0004 ở cỡ đầy đủ). Trọng số
+  âm trên global2_co2_hist: cùng dấu ở hai nửa (−0.125 / −0.216), đánh giá chéo 0.0909 so với 0.0914 simplex ⇒
+  phần ngoại suy CO2 **đứng vững ngoài mẫu** trong tập này.
+- Còn thiếu: par_noco2_ep4 (ep4 có phải may không), par_global (trọng số âm lớn nhất, −0.41), par_lstm_xl.
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
