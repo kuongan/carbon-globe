@@ -12,8 +12,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 
 - **LB tốt nhất đã nộp: 0.075** (`result/submission_blend_a2_x.csv`). Model đơn tốt nhất: 0.089
   (`session A2/submission_global_dsh_v2.csv`, không trọng số âm).
-- Chờ nộp: 5 hybrid probe `result/hyb_{a2_dsh_v2,a2_y0bx1,noco2_ep6,s7_ep3,noco2_ep4}.csv` → blend riêng theo kịch
-  bản (`ensemble_scn.py`); `result/submission_blend_a2.csv` (0.0773, simplex) không cần nộp nữa.
+- Chờ nộp: `result/submission_blend_scn2_x.csv` (blend riêng theo kịch bản, ước tính **0.0753**) và
+  `result/submission_blend_scn2.csv` (theo kịch bản, **không có trọng số âm**, ước tính **0.0764**).
 - GPU tiếp theo: `carbonglobe-global.ipynb` = `global_nov2` (no CO2 + bỏ nhóm v2, đủ dữ liệu, seed 42).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
@@ -86,6 +86,11 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 58 | `session A2/submission_global_y0bx1.csv` (noco2_ep4, stock ban đầu về mức lưới) | 0.138 | | đối chứng |
 | 59 | `bagging/submission.csv` (bag_m1: 70% khối 10°, seed 21, epoch tốt nhất theo holdout = 6) | 0.128 | | |
 | 60 | `submission_blend_a2_x.csv` (bg_scn 0.62, dsh_v2 0.47, y0bx1 0.21, v2 0.09, ep6 0.04, s7_ep3 0.04, global −0.29, global2_co2_hist −0.17) | **0.075** | 0.0764 | **tốt nhất** |
+| 61 | `hyb_a2_dsh_v2.csv` (run trên ssp126 + bg_scn trên ssp585) | 0.089 | | probe |
+| 62 | `hyb_a2_y0bx1.csv` | 0.131 | | probe |
+| 63 | `hyb_noco2_ep6.csv` | 0.104 | | probe |
+| 64 | `hyb_s7_ep3.csv` | 0.103 | | probe |
+| 65 | `hyb_noco2_ep4.csv` | 0.093 | | probe |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -376,6 +381,32 @@ Cùng 6171 site, cùng y0, chỉ forcing khác nhau. Độ khác giữa dự đo
   thuộc kịch bản, và model train trên lịch sử không phân biệt được hai kịch bản. Phần làm được là **ensemble riêng
   theo kịch bản** (trọng số và hệ số bias khác nhau), vì lỗi của các model khác nhau theo kịch bản (mục 4.8: model cũ
   tệ hơn hẳn ở ssp585; ssp585 muốn ngoại suy CO2 mạnh hơn ssp126 nhiều).
+
+### 4.16 Ensemble riêng theo kịch bản (hybrid #61–65, `ensemble_scn.py`) [KC, đại số]
+
+Lỗi so với bg_scn trong từng kịch bản (chính xác trong một kịch bản; đơn vị LB đầy đủ):
+
+| Model | ssp126 | ssp585 |
+|---|---|---|
+| noco2_ep4 | −0.002 | −0.004 |
+| **a2_dsh_v2** | **−0.010** | +0.000 |
+| noco2_ep6 | +0.020 | +0.010 |
+| s7_ep3 | +0.018 | +0.030 |
+| **a2_y0bx1** | **+0.074** | **+0.014** |
+| global_co2_hist | +0.030 | +0.026 |
+| v2 / lstm_xl / eco | +0.06 | +0.09–0.12 |
+
+- `dsh_v2` (bỏ độ lệch v2) giúp **chủ yếu ở ssp126** (−0.010; ssp585 ≈ 0).
+- `y0bx1` (stock ban đầu nâng lên mức lưới) **rất tệ ở ssp126 nhưng gần tốt nhất ở ssp585**. ssp585 cần stock cao hơn
+  (khớp hệ số bias AGB ×1.09–1.12 của ssp585); nâng stock ban đầu là một cách gián tiếp để có điều đó. [GT] Đây là
+  proxy cho phản ứng CO2/ấm lên mà model không có, không phải bản sửa vật lý.
+- Blend theo kịch bản: simplex **0.0764** (trọng số chung trên cùng thành phần: 0.0789); có trọng số âm trên cặp CO2
+  **0.0753** (chung: 0.0764 = ước tính của file 0.075). Ổn định với làm tròn LB (0.0754–0.0758). ssp585 vẫn muốn ngoại
+  suy CO2 mạnh hơn (global −0.48 / global_co2_hist +0.39) so với ssp126 (−0.23 / 0).
+- `submission_blend_scn2.csv` **không có trọng số âm ở bất kỳ tầng nào** (bg_scn là blend simplex × hệ số) mà ước tính
+  ngang file 0.075: ứng viên chọn cuối "an toàn" tốt nhất.
+- Chưa đo overfit của trọng số theo kịch bản (cần probe chẵn/lẻ × kịch bản). Số tham số gấp đôi; theo CV trước, fit
+  trọng số overfit ~0.0004–0.0009 ⇒ phần lợi 0.001 của bản theo kịch bản có thể mất một nửa trên private.
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 

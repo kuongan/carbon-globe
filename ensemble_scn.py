@@ -29,11 +29,11 @@ HYB_LB = {
     'global_co2_hist':       0.109,
     'global2_co2_hist':      0.109,
     # components of the LB-0.075 blend that have no hybrid yet (result/hyb_<run>.csv, fill in after submitting)
-    'a2_dsh_v2':             None,
-    'a2_y0bx1':              None,
-    'noco2_ep6':             None,
-    's7_ep3':                None,
-    'noco2_ep4':             None,
+    'a2_dsh_v2':             0.089,
+    'a2_y0bx1':              0.131,
+    'noco2_ep6':             0.104,
+    's7_ep3':                0.103,
+    'noco2_ep4':             0.093,
 }
 
 
