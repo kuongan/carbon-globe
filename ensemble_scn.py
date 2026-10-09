@@ -86,7 +86,9 @@ def solve():
     Cb = E.error_cov(lb, E.msd_matrix([np.concatenate([load_scn(r, s) for s in E.SCENARIOS], 1) for r in runs]))
     wb, vb = E.best_simplex_weights(Cb, free)
     print(f'estimated LB: per-scenario weights {est:.4f} | shared weights {vb:.4f} | base {lb[0]:.4f}')
-    path = f'result/submission_blend_scn{"_x" if free else ""}.csv'
+    # scored: submission_blend_scn2.csv (simplex, LB 0.074), submission_blend_scn2_x.csv (ENSEMBLE_FREE=global,
+    # global2_co2_hist, LB 0.074); ENSEMBLE_TAG picks another name so scored files are not overwritten
+    path = f'result/submission_{os.environ.get("ENSEMBLE_TAG", "blend_scn_new")}{"_x" if free else ""}.csv'
     write(out, path)
     print('wrote', path)
 

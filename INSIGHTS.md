@@ -10,10 +10,12 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 
 ## 0. Hiện trạng
 
-- **LB tốt nhất đã nộp: 0.075** (`result/submission_blend_a2_x.csv`). Model đơn tốt nhất: 0.089
-  (`session A2/submission_global_dsh_v2.csv`, không trọng số âm).
-- Chờ nộp: `result/submission_blend_scn2_x.csv` (blend riêng theo kịch bản, ước tính **0.0753**) và
-  `result/submission_blend_scn2.csv` (theo kịch bản, **không có trọng số âm**, ước tính **0.0764**).
+- **LB tốt nhất đã nộp: 0.074**, hai file: `result/submission_blend_scn2.csv` (không có trọng số âm ở tầng nào) và
+  `result/submission_blend_scn2_x.csv` (có). Model đơn tốt nhất: 0.089 (`session A2/submission_global_dsh_v2.csv`).
+- Chọn cuối đề xuất: `submission_blend_scn2.csv` + `submission_blend_scn2_x.csv`.
+- Tái tạo: `python ensemble_scn.py solve` (+ `ENSEMBLE_FREE=global,global2_co2_hist` cho bản _x) với
+  `ENSEMBLE_TAG=blend_scn2`; đã kiểm tra trùng tuyệt đối (max |diff| = 0).
+- GPU tiếp theo: `carbonglobe-global.ipynb` = `global_nov2` (no CO2 + bỏ nhóm v2, đủ dữ liệu, seed 42).
 - GPU tiếp theo: `carbonglobe-global.ipynb` = `global_nov2` (no CO2 + bỏ nhóm v2, đủ dữ liệu, seed 42).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
@@ -91,6 +93,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 63 | `hyb_noco2_ep6.csv` | 0.104 | | probe |
 | 64 | `hyb_s7_ep3.csv` | 0.103 | | probe |
 | 65 | `hyb_noco2_ep4.csv` | 0.093 | | probe |
+| 66 | `submission_blend_scn2.csv` (trọng số riêng theo kịch bản, **không trọng số âm**) | **0.074** | 0.0764 | **tốt nhất, an toàn** |
+| 67 | `submission_blend_scn2_x.csv` (theo kịch bản, trọng số âm trên cặp CO2) | **0.074** | 0.0753 | |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -407,6 +411,10 @@ Lỗi so với bg_scn trong từng kịch bản (chính xác trong một kịch 
   ngang file 0.075: ứng viên chọn cuối "an toàn" tốt nhất.
 - Chưa đo overfit của trọng số theo kịch bản (cần probe chẵn/lẻ × kịch bản). Số tham số gấp đôi; theo CV trước, fit
   trọng số overfit ~0.0004–0.0009 ⇒ phần lợi 0.001 của bản theo kịch bản có thể mất một nửa trên private.
+- [KC] Kết quả: scn2 (simplex) **0.074** = scn2_x (trọng số âm) **0.074**. Khi trọng số đã riêng theo kịch bản, trọng
+  số âm trên cặp CO2 không còn đem lại lợi thấy được ⇒ bản an toàn thắng (ít rủi ro hơn với cùng điểm).
+- [KC] Ba blend gần nhất đều tốt hơn ước tính 0.001–0.002 (0.0764→0.075, 0.0764→0.074, 0.0753→0.074). Ước tính hơi
+  bi quan khi các thành phần khác nhau nhiều; vẫn dùng tốt để xếp hạng.
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
