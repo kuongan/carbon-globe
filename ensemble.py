@@ -57,6 +57,11 @@ RUNS = {
     'g2_co2x3':              (0.128, None),
     's7_ep3':                (0.118, None),    # run 4: no CO2, SEED 7, best-holdout epoch 3
     'noco2_ep5':             (0.133, None),
+    'bx_scn':                (0.078, None),    # submission_blend_noco2_x.csv x per-scenario bias factors (a scored file)
+    'a2_dsh_v2':             (0.089, None),    # noco2_ep4 weights, test v2 group shifted back to the grid mean
+    'a2_y0fx1':              (0.091, None),    # noco2_ep4, initial lai/gpp/npp/rh mapped to grid level (msd 0.0002)
+    'a2_y0bx1':              (0.138, None),    # noco2_ep4, initial height/agb/soil mapped to grid level (control)
+    'bag1_ep6':              (0.128, None),    # bagging member m1 (70% of 10-degree blocks), best-holdout epoch 6
 }
 BLEND_ON = 'lb'   # 'lb' (tuned for the test distribution) or 'val'
 

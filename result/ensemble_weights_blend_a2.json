@@ -1,0 +1,101 @@
+{
+  "blend_on": "lb",
+  "weights": {
+    "bx_scn": 0.6661756165170417,
+    "noco2_ep4": 0.0,
+    "a2_dsh_v2": 0.13947980709149344,
+    "a2_y0bx1": 0.12073065989283843,
+    "bag1_ep6": 0.0,
+    "noco2_ep6": 0.0,
+    "s7_ep3": 0.007028586565257105,
+    "noco2_ep3": 0.0,
+    "v2_scheduled_sampling": 0.05171396142387215,
+    "lstm_xl": 0.0,
+    "global": 0.0,
+    "global2_co2_hist": 0.0,
+    "bg_scn": 0.014871368509497274
+  },
+  "estimated_lb_mse": 0.07727833142616156,
+  "inputs": {
+    "v2_scheduled_sampling": [
+      0.186,
+      0.03253
+    ],
+    "lstm_xl": [
+      0.168,
+      0.03793
+    ],
+    "lstm_xl_co2_hist": [
+      0.166,
+      null
+    ],
+    "ecoformer_ed": [
+      0.169,
+      0.06093
+    ],
+    "global": [
+      0.134,
+      null
+    ],
+    "global_co2_hist": [
+      0.122,
+      null
+    ],
+    "global2_co2_hist": [
+      0.13,
+      null
+    ],
+    "bg_scn": [
+      0.094,
+      null
+    ],
+    "noco2_ep6": [
+      0.109,
+      null
+    ],
+    "noco2_ep3": [
+      0.116,
+      null
+    ],
+    "noco2_ep4": [
+      0.091,
+      null
+    ],
+    "g2_co2x2": [
+      0.126,
+      null
+    ],
+    "g2_co2x3": [
+      0.128,
+      null
+    ],
+    "s7_ep3": [
+      0.118,
+      null
+    ],
+    "noco2_ep5": [
+      0.133,
+      null
+    ],
+    "bx_scn": [
+      0.078,
+      null
+    ],
+    "a2_dsh_v2": [
+      0.089,
+      null
+    ],
+    "a2_y0fx1": [
+      0.091,
+      null
+    ],
+    "a2_y0bx1": [
+      0.138,
+      null
+    ],
+    "bag1_ep6": [
+      0.128,
+      null
+    ]
+  }
+}

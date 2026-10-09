@@ -13,7 +13,14 @@
    `solve_bias` gives the pooled per-scenario factors plus an in-sample vs cross-fitted gain.
 4. **Final picks**: best fitted blend + bias (no negative weights), and the zero-parameter average + bias.
 
-### Ensemble of bagged members (2026-10-08)
+### Update 2026-10-09 (INSIGHTS 4.14)
+- Spatial bagging dropped: bag_m1 (70% of blocks) scored 0.128 and gets weight 0 in every blend.
+- Next GPU run = `carbonglobe-global.ipynb` as committed: `global_nov2` = no CO2 + group v2 held at its mean, all
+  sites, SEED 42 (same seed as the 0.091 run, so the only difference is v2). Submit `submission_snapmean_none.csv`
+  first, then `submission_ep4_none.csv`; send `global_nov2_preds.npz`.
+- After that, more diversity = more seeds of the better of {no CO2, no CO2 + no v2}, full data, snapmean only.
+
+### Ensemble of bagged members (2026-10-08, superseded: bagging hurt)
 
 One Kaggle session = one member: `carbonglobe-global.ipynb`, change only the 4 lines below, no checkpoint attached.
 Submit only `submission_snapmean_none.csv` per member (1 slot); send `<RUN_NAME>_preds.npz`.
@@ -28,10 +35,25 @@ Final = equal-weight mean of all members' snapmean (+ earlier no-CO2 runs), then
 
 Spatial blocks are 10°×10° (`BAG_BLOCK_DEG`); the holdout is identical for every member (`HOLDOUT_SEED`).
 
-### Data probe of the best model (0 slots, ~1 h GPU T4 x1)
-`global_probe.py` as committed (CO2_CONST=True, loads `snap_ep4.npz`): attach a dataset with
-`result/globel-train/third-run/global_noco2_ckpt/snap_ep4.npz`. Send the part A table and part B lines: they pick the
-DROP_GROUPS of m3 and decide whether y0 augmentation is worth building.
+### Data probe of the best model
+- Session A (parts A + B): **done** (INSIGHTS 4.13). Only feature group v2 moves the no-CO2 model; the year-40
+  prediction keeps 55–62% of a shift in y0.
+- **Session A2** (part C, ~1 h GPU T4 x1): `global_probe.py` as it is now (parts A/B off, `FULL_VARIANTS = none,
+  dsh_v2, y0fx1, y0bx1`). Inputs: competition data, `zhihaow/carbonglobe`, the `noco2-ep4` dataset
+  (`kaggle_upload/noco2-ep4/snap_ep4.npz`); optional `result/globel-train/third-run/global_noco2_preds.npz` for the
+  reproduction line. `submission_global_none.csv` = the scored 0.091 file: do not submit it.
+  Submit `submission_global_dsh_v2.csv`, `submission_global_y0fx1.csv`, then `submission_global_y0bx1.csv`.
+
+| Result (vs 0.091) | Meaning | Next |
+|---|---|---|
+| `dsh_v2` better | the model's response to the v2 shift is spurious, like CO2 was | member m3 with `DROP_GROUPS=('v2',)` |
+| `dsh_v2` worse | the v2 shift is real signal | keep v2 in every member |
+| `y0fx1` better | initial fluxes mislead the model | a training option that hides lai/gpp/npp/rh of the *initial* state |
+| `y0fx1` worse | initial fluxes carry useful information (likely the present-day CO2 effect) | keep |
+| `y0bx1` much worse | stock memory is real physics (expected) | nothing; it is a control and a blend component |
+
+Every scored variant is also a blend component (same model, different treatment of one shifted input), like the
+`global` / `global_co2_hist` pair that gave the negative-weight gain.
 
 Older runbook below.
 

@@ -10,10 +10,11 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 
 ## 0. Hiện trạng
 
-- **LB tốt nhất đã nộp: 0.079** (`result/submission_blend_noco2_x.csv`, có trọng số âm −0.53 tổng trên hai model
-  CO2). Bản không trọng số âm tốt nhất đã chấm: 0.091 (`third-run/submission_ep4_none.csv`).
-- Chờ nộp: `result/submission_blend_noco2.csv` (ước tính 0.0828, không trọng số âm: ứng viên chọn cuối "an toàn");
-  probe kiểm tra overfit `result/par_*.csv` (8 file, `cv_parity.py`).
+- **LB tốt nhất đã nộp: 0.078** (`result/bx_scn.csv` = blend 0.079 × hệ số bias). Model đơn tốt nhất: 0.089
+  (`session A2/submission_global_dsh_v2.csv`, không trọng số âm).
+- Chờ nộp: `result/submission_blend_a2.csv` (ước tính **0.0773**, simplex trên các file đã chấm),
+  `result/submission_blend_a2_x.csv` (ước tính **0.0764**, trọng số âm trên cặp CO2).
+- GPU tiếp theo: `carbonglobe-global.ipynb` = `global_nov2` (no CO2 + bỏ nhóm v2, đủ dữ liệu, seed 42).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -79,6 +80,11 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 52 | `bx_probe2_height110.csv` | 0.083 | | probe |
 | 53 | `bx_probe3_agb110_ssp126.csv` | 0.088 | | probe |
 | 54 | `bx_probe4_height110_ssp126.csv` | 0.081 | | probe |
+| 55 | `bx_scn.csv` (blend 0.079 × hệ số bias theo kịch bản) | **0.078** | 0.0783 | **tốt nhất** |
+| 56 | `session A2/submission_global_dsh_v2.csv` (noco2_ep4, bỏ độ lệch test của nhóm v2) | **0.089** | | model đơn tốt nhất |
+| 57 | `session A2/submission_global_y0fx1.csv` (noco2_ep4, flux ban đầu về mức lưới) | 0.091 | | = ep4 |
+| 58 | `session A2/submission_global_y0bx1.csv` (noco2_ep4, stock ban đầu về mức lưới) | 0.138 | | đối chứng |
+| 59 | `bagging/submission.csv` (bag_m1: 70% khối 10°, seed 21, epoch tốt nhất theo holdout = 6) | 0.128 | | |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -117,8 +123,9 @@ Ngoại suy với trọng số âm (#28) cũng khớp, nên hướng "CO2 chưa 
 | CO2 8–31 | mức thấp hơn (−0.75 sd ssp126, −0.38 sd ssp585 so với lưới), xu hướng phẳng (+0.37 / +1.45 sd so với +3 sd), gần như không có mùa | **lớn**: chỉ *mức* CO2 có tác động; mất chu kỳ mùa vô hại |
 | Biến 4 (36, 40, …, 128) | một climatology tháng lặp lại 40 năm | vô hại (msd 0.0004) |
 | Biến 3 (35, …, 127; "SUS") | sàn là một hằng số ngay dưới 0 | vô hại; `clip` hơi tệ hơn (#8) |
-| Feature 7 | biên độ mùa ~20×, std tổng ~5× | chưa đo (`f7_fix` trong `global_probe.py`) |
-| Tĩnh 129, 135 | giá trị không trùng lưới nhưng trong khoảng | chưa đo |
+| Feature 7 | biên độ mùa ~20×, std tổng ~5× | vô hại (msd ≤ 0.0001, mục 4.13) |
+| Tĩnh 129, 135 | giá trị không trùng lưới nhưng trong khoảng | vô hại (msd ≤ 0.0001) |
+| Biến 2 (34, 38, …, 126) | lệch so với lưới | **có tác động**: nâng AGB ~3–5% (mục 4.13) |
 
 ## 4. Phát hiện chính
 
@@ -301,6 +308,54 @@ Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính x
   bình 0.89) tệ nhất: phương sai giữa epoch rất lớn và không theo quy luật ⇒ trung bình snapshot (`snapmean`) là
   bắt buộc.
 
+### 4.13 Probe dữ liệu trên model tốt nhất (no CO2, seed 42, ep4; `global_probe.py` part A + B) [KC]
+
+Screening (1500 site test, bỏ độ lệch test−lưới của từng nhóm feature, so với dự đoán gốc):
+
+| Nhóm | msd ssp126 / ssp585 | ΔAGB | Δheight |
+|---|---|---|---|
+| **v2** (34, 38, …, 126) | **0.0092 / 0.0036** | −4.8% / −3.0% | ≈ 0 |
+| v1 (33, 37, …) | 0.0013 / 0.0004 | +2.9% / +1.6% | +0.7% / +0.5% |
+| v3 (35, 39, …) | 0.0010 / 0.0009 | −1.3% / −1.2% | −0.3% |
+| f0–f7, v4, static, `f7_fix` | ≤ 0.0001 | < 0.4% | < 0.4% |
+
+- Như với run 2 (v2 msd 0.024 / 0.009): **v2 là đòn bẩy duy nhất ngoài CO2**, và độ lệch test của nó đang *nâng* AGB
+  lên ~3–5%. Chưa biết đúng hay sai: LB của `dsh_v2` sẽ trả lời. Feature 7 và nhóm static vô hại (đóng câu hỏi mở).
+- Cột `toward_target_pct` dùng hướng bias của blend cũ, không có nghĩa với model này: bỏ qua.
+
+y0 memory (1000 site lưới, metric với y0 thật 0.115; scale y0 theo tỷ lệ test/lưới):
+
+- Dự đoán năm 40 dịch **msd 0.062** (≈ 2/3 toàn bộ LB 0.091). Height: y0 −17.3% → năm 40 −10.7% (giữ **62%**);
+  AGB: y0 −28.4% → năm 40 −15.5% (giữ **55%**). Độ lệch `test_y0` là **một kênh lớn**, không phải chuyện nhỏ (bản thử
+  trên dữ liệu giả lập từng cho −4%).
+- [GT] Trong ED, gpp/npp/rh (và một phần lai) là đại lượng *chẩn đoán* (tính từ trạng thái + khí hậu + CO2 mỗi năm),
+  còn height/agb/soil là trạng thái có trí nhớ thật. Flux năm 0 của test cao hơn lưới 10–30%, nhiều khả năng do CO2
+  hiện tại cao hơn 1980. Model không CO2 có thể đọc flux ban đầu cao như "site năng suất cao" rồi mang nó suốt 40
+  năm (hoặc ngược lại: đó là thông tin CO2 duy nhất nó có).
+- Thí nghiệm (inference, `global_probe.py` part C): `y0fx1` = đưa lai/gpp/npp/rh của test y0 về mức lưới theo từng
+  tuổi; `y0bx1` = đưa height/agb/soil về mức lưới (đối chứng: trí nhớ trạng thái là vật lý, dự kiến tệ hơn).
+
+### 4.14 Session A2 (biến đổi input của noco2_ep4) và bagging member m1 [KC]
+
+- `none` của A2 trùng tuyệt đối file 0.091 (msd 0.0): script probe tái lập đúng tiền xử lý của notebook.
+- **v2: dsh_v2 0.089 < 0.091.** Phản ứng của model với độ lệch test của nhóm v2 một phần là sai, giống CO2 (CO2:
+  0.134 → 0.122 khi sửa ở inference, rồi 0.091 khi bỏ hẳn khi train). LB dọc đường ep4 → dsh_v2 cực tiểu ở t ≈ 0.66
+  (≈ 0.088). Bỏ v2 làm AGB giảm 1.013 → 0.973. ⇒ train model **không CO2 + không v2** (`global_nov2`).
+- **Flux ban đầu: y0fx1 = 0.091, msd so với ep4 chỉ 0.0002.** Model gần như *bỏ qua* lai/gpp/npp/rh ban đầu. Giả
+  thuyết "model mang flux ban đầu cao suốt 40 năm" (mục 4.13) **sai**; 55–62% trí nhớ y0 là trí nhớ của stock.
+- **Stock ban đầu: y0bx1 = 0.138.** Đưa height/agb/soil ban đầu về mức lưới làm hỏng nặng: stock thấp của test là
+  thật và model dùng đúng. Nhưng LB dọc ep4 → y0bx1 cực tiểu ở t ≈ 0.13 (≈ 0.090) và blend cho y0bx1 trọng số
+  0.12–0.21: dịch nhẹ stock ban đầu lên giúp chút ít. [GT] model nhớ stock thấp hơi quá mức (hoặc dự đoán tăng trưởng
+  từ stock thấp hơi thấp).
+- **Bagging m1 (70% khối 10°): epoch 6 = 0.128**, tệ hơn mọi snapshot đủ dữ liệu cùng vị trí (seed 42 ep6 0.109).
+  Blend cho nó trọng số 0; snapmean của nó chỉ có ích nếu LB ≤ 0.10. ⇒ bỏ bagging theo không gian; giữ đủ dữ liệu,
+  tạo đa dạng bằng seed + bỏ nhóm feature có mục tiêu.
+- Trung bình snapshot (0 tham số): 4 snapshot seed 42 (0.116/0.091/0.133/0.109, trung bình 0.112) → ước tính
+  **0.0938**; không có ep4 → 0.1017. Trung bình snapshot gần bằng snapshot tốt nhất mà không cần chọn epoch.
+- Blend mới (đều trên file đã chấm): `submission_blend_a2.csv` 0.0773 (bx_scn 0.67, dsh_v2 0.14, y0bx1 0.12, v2
+  0.05, …); `submission_blend_a2_x.csv` 0.0764 (bg_scn 0.62, dsh_v2 0.47, y0bx1 0.21, v2 0.09, global −0.29,
+  global2_co2_hist −0.17, …). Lợi đã nhỏ dần: 0.078 → ~0.077.
+
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
 - `global_probe_preds.npz` khớp `global2_co2_hist` (msd 1e-6), không khớp run 1 (0.071): file trọng số được gắn là
@@ -338,6 +393,10 @@ Lỗi của mỗi model so với `bg_scn` **trong cùng kịch bản** (chính x
 - "Dữ liệu lưới chỉ giúp vừa phải" → giúp nhiều nhất.
 - "Blend model hiện có đã chạm trần 0.149" → đúng với model cũ; model lưới phá trần nhờ lỗi khác kiểu.
 - "Train model lưới lâu hơn sẽ tốt hơn" → holdout tốt hơn nhưng LB tệ hơn (0.122 → 0.130).
+- "Độ lệch `test_y0` chỉ là chuyện nhỏ" → model tốt nhất giữ 55–62% độ lệch y0 tới năm 40 (msd 0.062, mục 4.13).
+- "Feature 7 (biên độ mùa 20×) gây hại" → không ảnh hưởng gì (msd ≤ 0.0001).
+- "Model mang flux ban đầu cao của test suốt 40 năm" → model gần như bỏ qua flux ban đầu (y0fx1 msd 0.0002).
+- "Bagging theo khối không gian tạo member đa dạng có ích" → m1 0.128, trọng số blend 0.
 
 ## 8. Câu hỏi mở
 

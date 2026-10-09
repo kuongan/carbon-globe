@@ -24,8 +24,12 @@ Variant grammar: parts joined by '+', applied in order to the raw test forcing o
              was f ~ 1.9 in output space, and the blend with a negative weight on `global` (LB 0.091) relies on it
   f7_fix     feature 7: seasonal anomaly shrunk to the grid's amplitude (test amplitude is ~20x the grid's)
   dsh_<g>    feature group g shifted by -(test mean - grid mean), per month (see GROUPS)
+  y0x<f>     initial state y0: every variable times (grid year-0 mean / test y0 mean)^f, per seed age
+  y0fx<f>    same for the flux variables only (lai, gpp, npp, rh: test ~1.1-1.3x the grid)
+  y0bx<f>    same for the stock variables only (height, agb, soil: test ~0.7-0.85x the grid)
+             (ratios with a mean below 1% of Y_MEAN are left at 1, all ratios clipped to [0.25, 4])
 """
-import gc, glob, os, time
+import gc, glob, os, re, time
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -44,11 +48,16 @@ CO2_CONST = True                   # weights trained with CO2_MODE='const': the 
 WEIGHTS_GLOB = 'snap_ep4.npz'      # file name searched under /kaggle/input when WEIGHTS_FILE is empty
                                    # ('global_lstmxl.weights.h5' for grid run 1/2, CO2_CONST=False)
 Z_CLIP = 10.0                      # standardized inputs clipped like in training (None for grid run 1)
-SCREEN, SCREEN_SITES = True, 1500
-Y0_TEST, Y0_SITES = True, 1000
-FULL_VARIANTS = [] if CO2_CONST else ['co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_hist+f7_fix', 'co2_hist']
-WEIGHTS_FILE = ''                  # optional explicit path; default: the first global_lstmxl.weights.h5 under /kaggle/input
-                                   # (attach ONLY grid run 1's weights: its co2_hist scored 0.122, run 2's 0.130)
+SCREEN, SCREEN_SITES = False, 1500    # done for no-CO2 ep4 (INSIGHTS 4.13): only v2 matters
+Y0_TEST, Y0_SITES = False, 1000      # done: year-40 keeps ~60% of a height / ~55% of an AGB shift in y0
+# 'none' reproduces the scored file (LB 0.091) and costs no slot; the others are one LB submission each
+FULL_VARIANTS = (['none', 'dsh_v2', 'y0fx1', 'y0bx1'] if CO2_CONST else
+                 ['co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_hist+f7_fix', 'co2_hist'])
+# rollout state ceiling of carbonglobe-global.ipynb (2 x grid max, printed as 'state ceiling (physical)');
+# needed to reproduce runs 2-4 exactly; grid run 1 had none
+STATE_CEIL_PHYS = [70.0, 72.322, 213.836, 23.221, 14.709, 7.307, 14.592] if CO2_CONST else None
+WEIGHTS_FILE = ''                  # optional explicit path; default: the first WEIGHTS_GLOB match under /kaggle/input
+                                   # (attach only ONE snap_ep4.npz: seed 42's, the LB-0.091 model)
 GRID_STRIDE = 20                   # grid reference statistics from every 20th site (~2.7k sites, ~0.7 GB read)
 BS = 8192
 SEED = 0
@@ -89,6 +98,8 @@ AGE_MEAN_N, AGE_SLOPE_N = normData(TRI_MEAN, Y_MEAN, Y_STD), normData(TRI_SLOPE,
 AGE_FEAT = np.stack([np.concatenate([[TRI_AGE[i] / 500.0], AGE_MEAN_N[i], AGE_SLOPE_N[i]])
                      for i in range(N_AGES)]).astype(np.float32)
 FLOOR_N = normData(np.zeros(N_OUT, np.float32), Y_MEAN, Y_STD).astype(np.float32)
+CEIL_N = (None if STATE_CEIL_PHYS is None else
+          normData(np.array(STATE_CEIL_PHYS, np.float32), Y_MEAN, Y_STD).astype(np.float32))
 
 # ------------------------------------------------------------------ LSTM-XL backbone (identical to carbonglobe-global.ipynb)
 class GatedBranch(layers.Layer):
@@ -172,7 +183,8 @@ def rollout(env_at, n_sites, y0_raw, desc=None):
             e = min(s + BS, A * N)
             xb = np.concatenate([env_t[site_idx[s:e]], np.repeat(prev[s:e, None, :], N_T, axis=1),
                                  np.repeat(af_rows[s:e, None, :], N_T, axis=1)], axis=-1)
-            nxt[s:e] = np.maximum(infer(tf.constant(xb, tf.float32)).numpy(), FLOOR_N)
+            p = np.maximum(infer(tf.constant(xb, tf.float32)).numpy(), FLOOR_N)
+            nxt[s:e] = p if CEIL_N is None else np.minimum(p, CEIL_N)
         prev = nxt
     return np.maximum(invNormData(prev, Y_MEAN, Y_STD).reshape(A, N, N_OUT), 0.0)
 
@@ -216,6 +228,36 @@ for scn in SCENARIOS:
           f'feature-7 amplitude ratio test/grid {TEST[scn]["f7_ratio"]:.2f}')
     del d; gc.collect()
 
+# ---- initial-state variants (y0x / y0fx / y0bx) ----
+Y0_FLUX, Y0_STOCK = [3, 4, 5, 6], [0, 1, 2]
+NEED_Y0 = any(p.startswith('y0') for v in FULL_VARIANTS for p in v.split('+'))
+if NEED_Y0:
+    G0 = np.stack([np.asarray(np.load(f'{BASE}/data_global/glob_Y{a:03d}.npy', mmap_mode='r')[GIDX, 0, 11, :],
+                              np.float64).mean(axis=0) for a in SEED_AGES])          # (15 ages, 7) grid year-0 mean
+    Y0_RATIO = {}
+    for scn in SCENARIOS:
+        T0 = TEST[scn]['y0'].astype(np.float64).mean(axis=1)                         # (15, 7)
+        eps = 0.01 * Y_MEAN[None, :]
+        r = np.where((G0 > eps) & (T0 > eps), G0 / np.maximum(T0, 1e-12), 1.0)
+        Y0_RATIO[scn] = np.clip(r, 0.25, 4.0)
+        print(f'{scn}: grid/test y0 ratio, median over ages [h,agb,soil,lai,gpp,npp,rh]:',
+              np.round(np.median(Y0_RATIO[scn], axis=0), 3))
+
+def y0_fn(scn, variant, sites=None):
+    y0 = TEST[scn]['y0'] if sites is None else TEST[scn]['y0'][:, sites]
+    parts = [p for p in variant.split('+') if p.startswith('y0')]
+    if not parts:
+        return y0
+    y0 = y0.astype(np.float32).copy()
+    for p in parts:
+        m = re.fullmatch(r'y0([fb]?)x([0-9.]+)', p)
+        assert m, f'unknown y0 variant {p!r}'
+        idx = {'': list(range(N_OUT)), 'f': Y0_FLUX, 'b': Y0_STOCK}[m.group(1)]
+        f = float(m.group(2))
+        for v in idx:
+            y0[:, :, v] *= (Y0_RATIO[scn][:, v] ** f).astype(np.float32)[:, None]
+    return y0
+
 def env_fn(scn, variant, sites=None):
     T = TEST[scn]; tx = T['x'] if sites is None else T['x'][sites]
     parts = [] if variant == 'none' else variant.split('+')
@@ -241,6 +283,8 @@ def env_fn(scn, variant, sites=None):
             elif p.startswith('dsh_'):
                 g = GROUPS[p[4:]]
                 e[..., g] -= T['delta'][:, g].astype(np.float32)
+            elif p.startswith('y0'):
+                continue                                     # handled by y0_fn
             else:
                 raise ValueError(f'unknown variant part {p!r}')
         return zscore(e)
@@ -299,7 +343,7 @@ if FULL_VARIANTS:
     sample_sub = pd.read_csv(f'{COMP}/sample_submission.csv')
     preds = {}
     for v in FULL_VARIANTS:
-        preds[v] = {scn: rollout(env_fn(scn, v), TEST[scn]['x'].shape[0], TEST[scn]['y0'], desc=f'{scn} {v}')
+        preds[v] = {scn: rollout(env_fn(scn, v), TEST[scn]['x'].shape[0], y0_fn(scn, v), desc=f'{scn} {v}')
                     for scn in SCENARIOS}
         parts = []
         for scn in SCENARIOS:
@@ -318,6 +362,17 @@ if FULL_VARIANTS:
         for scn in SCENARIOS:
             print(f'reproduction {scn}: msd(co2_hist, original run) = {msd(preds["co2_hist"][scn], z[scn + "_co2_hist"]):.2e} '
                   f'(~1e-5 or less: the grid reference here is a {GRID_STRIDE}-site-stride subsample)')
+    ref_np = glob.glob(f'{ROOT_IN}/**/global_noco2_preds.npz', recursive=True)   # optional: run 3 output
+    if ref_np and 'none' in preds and CO2_CONST:
+        z = np.load(ref_np[0])
+        if 'ssp126_ep4_none' in z.files:
+            for scn in SCENARIOS:
+                print(f'reproduction {scn}: msd(none, run-3 epoch 4) = {msd(preds["none"][scn], z[scn + "_ep4_none"]):.2e} '
+                      f'(~1e-6 or less: same weights, same preprocessing)')
+    if 'none' in preds:
+        for v in preds:
+            if v != 'none':
+                print(f'{v:12s} msd vs none: ' + ' '.join(f'{scn} {msd(preds[v][scn], preds["none"][scn]):.4f}' for scn in SCENARIOS))
     np.savez_compressed(f'{OUT}/global_probe_preds.npz',
                         **{f'{s}_{v.replace("+", "_")}': p for v, d in preds.items() for s, p in d.items()})
     print('wrote', f'{OUT}/global_probe_preds.npz')
