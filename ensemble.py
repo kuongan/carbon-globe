@@ -36,7 +36,7 @@ FREE_RUNS = tuple(r for r in os.environ.get('ENSEMBLE_FREE', '').split(',') if r
 #   the scored 0.100 file = ENSEMBLE_RUNS of the 6 runs before global2_co2_hist / bg_scn, TAG blend_global
 TAG = os.environ.get('ENSEMBLE_TAG', 'blend_new')      # -> result/submission_<TAG>.csv, ensemble_weights_<TAG>.json
 # scored files must never be overwritten by a run with a different run list
-SCORED_TAGS = {'blend_global', 'blend_latest_x', 'blend_noco2_x'}
+SCORED_TAGS = {'blend_global', 'blend_latest_x', 'blend_noco2_x', 'blend_a2_x'}
 if TAG in SCORED_TAGS and not os.environ.get('ENSEMBLE_RUNS'):
     raise SystemExit(f'TAG {TAG!r} is a scored file: set ENSEMBLE_RUNS to its original run list (see above) or pick a new tag')
 
@@ -63,6 +63,8 @@ RUNS = {
     'a2_y0bx1':              (0.138, None),    # noco2_ep4, initial height/agb/soil mapped to grid level (control)
     'bag1_ep6':              (0.128, None),    # bagging member m1 (70% of 10-degree blocks), best-holdout epoch 6
 }
+# scored blend files reusable as components would go here too (e.g. blend_a2_x, LB 0.075); a blend of blends adds no
+# new direction, so they are left out
 BLEND_ON = 'lb'   # 'lb' (tuned for the test distribution) or 'val'
 
 
