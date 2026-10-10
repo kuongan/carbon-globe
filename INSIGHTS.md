@@ -95,6 +95,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 65 | `hyb_noco2_ep4.csv` | 0.093 | | probe |
 | 66 | `submission_blend_scn2.csv` (trọng số riêng theo kịch bản, **không trọng số âm**) | **0.074** | 0.0764 | **tốt nhất, an toàn** |
 | 67 | `submission_blend_scn2_x.csv` (theo kịch bản, trọng số âm trên cặp CO2) | **0.074** | 0.0753 | |
+| 68 | Run 5 `fifth-run/submission_snapmean_none.csv` (global_nov2: no CO2 + bỏ v2 khi train, seed 42) | 0.136 | | |
+| 69 | Run 5 `fifth-run/submission_ep4_none.csv` | 0.135 | | cùng seed/epoch với 0.091 |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -416,6 +418,22 @@ Lỗi so với bg_scn trong từng kịch bản (chính xác trong một kịch 
 - [KC] Ba blend gần nhất đều tốt hơn ước tính 0.001–0.002 (0.0764→0.075, 0.0764→0.074, 0.0753→0.074). Ước tính hơi
   bi quan khi các thành phần khác nhau nhiều; vẫn dùng tốt để xếp hạng.
 
+### 4.17 Run 5: bỏ v2 khi train làm hỏng (0.135) [KC]
+
+- Cùng công thức với run 3 (no CO2, đủ dữ liệu, seed 42) chỉ khác bỏ nhóm v2: ep4 **0.135** (run 3 ep4: 0.091), snapmean
+  0.136. Trọng số trong blend: 0.
+- ⇒ **v2 mang tín hiệu thật** (khác CO2). Sửa ở inference (dsh_v2: giữ v2 nhưng bỏ *độ lệch* test của nó) giúp; bỏ hẳn v2
+  khi train làm mất phần thông tin không gian của nó. Bài học từ CO2 không khái quát sang nhóm khác: CO2 gần như đồng
+  nhất trong không gian (chỉ là đồng hồ thời gian), v2 thì không.
+- Cùng seed 42 nhưng input khác cho model khác hẳn (msd nov2_ep4 vs noco2_ep4 0.052): không tách được hiệu ứng v2 khỏi
+  ngẫu nhiên của training chỉ bằng một run. Nhưng 0.135 nằm ngoài cả phân phối no-CO2 (0.091–0.133) nên kết luận vẫn
+  đứng.
+- Tổng hợp các model no-CO2 train từ đầu: 0.091, 0.109, 0.116, 0.118, 0.128 (bag), 0.133, 0.135, 0.136. Điển hình
+  ~0.11–0.13; **0.091 (seed 42 ep4) là một lần train "trúng"** (CV chẵn/lẻ loại trừ may mắn do chọn site public, không
+  loại trừ may mắn của quá trình train). Train thêm model từ đầu khó tạo được thành phần có ích cho blend.
+- Hướng tiếp: fine-tune / SWA quanh nghiệm tốt (`swa_ep4`: khởi tạo từ snap_ep4, LR hằng 5e-5, 8 × 0.5M mẫu, snapshot
+  2/4/6/8 + snapmean). [GT] Trung bình các điểm gần một nghiệm tốt thường tốt bằng hoặc hơn chính nó và ổn định hơn.
+
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
 - `global_probe_preds.npz` khớp `global2_co2_hist` (msd 1e-6), không khớp run 1 (0.071): file trọng số được gắn là
@@ -457,6 +475,7 @@ Lỗi so với bg_scn trong từng kịch bản (chính xác trong một kịch 
 - "Feature 7 (biên độ mùa 20×) gây hại" → không ảnh hưởng gì (msd ≤ 0.0001).
 - "Model mang flux ban đầu cao của test suốt 40 năm" → model gần như bỏ qua flux ban đầu (y0fx1 msd 0.0002).
 - "Bagging theo khối không gian tạo member đa dạng có ích" → m1 0.128, trọng số blend 0.
+- "Bỏ v2 khi train sẽ giúp như bỏ CO2" → 0.135 (mục 4.17); v2 có tín hiệu thật, chỉ độ lệch test của nó là có vấn đề.
 
 ## 8. Câu hỏi mở
 

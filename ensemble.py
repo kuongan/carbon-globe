@@ -62,6 +62,8 @@ RUNS = {
     'a2_y0fx1':              (0.091, None),    # noco2_ep4, initial lai/gpp/npp/rh mapped to grid level (msd 0.0002)
     'a2_y0bx1':              (0.138, None),    # noco2_ep4, initial height/agb/soil mapped to grid level (control)
     'bag1_ep6':              (0.128, None),    # bagging member m1 (70% of 10-degree blocks), best-holdout epoch 6
+    'nov2_snapmean':         (0.136, None),    # run 5: no CO2 + group v2 dropped in training, mean of all snapshots
+    'nov2_ep4':              (0.135, None),
 }
 # scored blend files reusable as components would go here too (e.g. blend_a2_x, LB 0.075); a blend of blends adds no
 # new direction, so they are left out

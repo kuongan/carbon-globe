@@ -13,6 +13,16 @@
    `solve_bias` gives the pooled per-scenario factors plus an in-sample vs cross-fitted gain.
 4. **Final picks**: best fitted blend + bias (no negative weights), and the zero-parameter average + bias.
 
+### Update 2026-10-10 (INSIGHTS 4.17): fine-tune around the 0.091 model
+- global_nov2 (v2 dropped in training) scored 0.135: superseded. From-scratch no-CO2 runs typically score 0.11–0.13.
+- Next GPU run = `carbonglobe-global.ipynb` as committed, profile `swa_ep4`: initialised from `snap_ep4.npz` (attach the
+  `noco2-ep4` dataset, the same one as for `global_probe.py`), constant LR 5e-5, 8 short epochs of 0.5M samples,
+  snapshots 2/4/6/8. GPU T4 x2, Internet on, competition data + `zhihaow/carbonglobe` + `noco2-ep4`, no checkpoint.
+- Check in the log: `initialised from .../snap_ep4.npz | lr 5.0e-05 (constant ...)`; epoch-1 holdout shift should be
+  close to run 3's epoch-4 value (0.038). If it is far worse, stop the session.
+- Submit `submission_ep2_none.csv` first (closest to the 0.091 weights: tells whether fine-tuning keeps the quality),
+  then `submission_snapmean_none.csv`; send `swa_ep4_preds.npz`.
+
 ### Update 2026-10-09 (INSIGHTS 4.14)
 - Spatial bagging dropped: bag_m1 (70% of blocks) scored 0.128 and gets weight 0 in every blend.
 - Next GPU run = `carbonglobe-global.ipynb` as committed: `global_nov2` = no CO2 + group v2 held at its mean, all
