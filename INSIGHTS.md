@@ -15,8 +15,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 - Chọn cuối đề xuất: `submission_blend_scn2.csv` + `submission_blend_scn2_x.csv`.
 - Tái tạo: `python ensemble_scn.py solve` (+ `ENSEMBLE_FREE=global,global2_co2_hist` cho bản _x) với
   `ENSEMBLE_TAG=blend_scn2`; đã kiểm tra trùng tuyệt đối (max |diff| = 0).
-- GPU tiếp theo: `carbonglobe-global.ipynb` = `global_nov2` (no CO2 + bỏ nhóm v2, đủ dữ liệu, seed 42).
-- GPU tiếp theo: `carbonglobe-global.ipynb` = `global_nov2` (no CO2 + bỏ nhóm v2, đủ dữ liệu, seed 42).
+- GPU tiếp theo: `carbonglobe-global.ipynb` = `swa_ep4` (fine-tune từ snap_ep4 của model 0.091, mục 4.17).
+- GPU tiếp theo: `carbonglobe-global.ipynb` = `swa_ep4` (fine-tune từ snap_ep4 của model 0.091, mục 4.17).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
