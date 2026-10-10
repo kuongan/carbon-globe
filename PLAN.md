@@ -13,6 +13,14 @@
    `solve_bias` gives the pooled per-scenario factors plus an in-sample vs cross-fitted gain.
 4. **Final picks**: best fitted blend + bias (no negative weights), and the zero-parameter average + bias.
 
+### Session D: feature selection without retraining (INSIGHTS 4.18, ~1–1.5 h GPU T4 x1, 0 slots)
+- Add `global_noco2_holdout.npz` to the `noco2-ep4` dataset (new version; both files are in `kaggle_upload/noco2-ep4/`).
+- Notebook: one cell with `global_probe.py` as committed (parts A/B/C off, D1 + D2 on). Inputs: competition data,
+  `zhihaow/carbonglobe`, `noco2-ep4`.
+- Send back the `== D1` table, the `== D2` table and the per-group sum lines (or `global_probe_importance.csv` and
+  `global_probe_feature_screen.csv`). I then pick 1–3 `dshf_...` variants (1 slot each) for part C.
+- Can run independently of the `swa_ep4` training session.
+
 ### Update 2026-10-10 (INSIGHTS 4.17): fine-tune around the 0.091 model
 - global_nov2 (v2 dropped in training) scored 0.135: superseded. From-scratch no-CO2 runs typically score 0.11–0.13.
 - Next GPU run = `carbonglobe-global.ipynb` as committed, profile `swa_ep4`: initialised from `snap_ep4.npz` (attach the

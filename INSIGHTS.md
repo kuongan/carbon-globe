@@ -434,6 +434,19 @@ Lỗi so với bg_scn trong từng kịch bản (chính xác trong một kịch 
 - Hướng tiếp: fine-tune / SWA quanh nghiệm tốt (`swa_ep4`: khởi tạo từ snap_ep4, LR hằng 5e-5, 8 × 0.5M mẫu, snapshot
   2/4/6/8 + snapmean). [GT] Trung bình các điểm gần một nghiệm tốt thường tốt bằng hoặc hơn chính nó và ổn định hơn.
 
+### 4.18 Feature selection: làm ở đâu cho đúng [GT + KC]
+
+- 136 feature = f0–f7 (8), CO2 (24), hằng số 32, 4 biến × 24 lớp (96, v1–v4), tĩnh (7).
+- Train lại với tập feature khác **không đo được hiệu quả**: cùng một công thức cho LB 0.091–0.136 tùy seed/epoch
+  (độ lệch chuẩn ~0.015), lớn hơn hiệu ứng thường thấy của feature selection (~0.005). Cần ≥3–4 seed cho mỗi tập
+  feature (~20 h GPU mỗi so sánh). Lần duy nhất ngoài CO2 (bỏ v2) thất bại rõ (0.135).
+- Dữ liệu 31M cặp, model 22.7M tham số: feature nhiễu ít gây overfit; lợi chính của feature selection ở đây không phải
+  giảm nhiễu mà là **bỏ feature mà model dùng sai khi test bị lệch phân phối** (đúng như CO2).
+- Part A đã làm việc đó ở mức nhóm (chỉ CO2 và v2 có tác dụng). Bước tiếp, không cần train: `global_probe.py` part D
+  trên model 0.091: D1 permutation importance theo nhóm trên holdout có nhãn (model dựa vào nhóm nào), D2 screening
+  độ lệch test **từng feature** trong v1/v2/v3 (72 feature). Feature quan trọng + bị lệch + làm dự đoán dịch nhiều là
+  ứng viên; biến thể `dshf_<i>_<j>` sửa đúng các feature đó ở inference.
+
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
 - `global_probe_preds.npz` khớp `global2_co2_hist` (msd 1e-6), không khớp run 1 (0.071): file trọng số được gắn là

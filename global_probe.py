@@ -24,6 +24,7 @@ Variant grammar: parts joined by '+', applied in order to the raw test forcing o
              was f ~ 1.9 in output space, and the blend with a negative weight on `global` (LB 0.091) relies on it
   f7_fix     feature 7: seasonal anomaly shrunk to the grid's amplitude (test amplitude is ~20x the grid's)
   dsh_<g>    feature group g shifted by -(test mean - grid mean), per month (see GROUPS)
+  dshf_<i>_<j>_...  same for the listed single features (e.g. dshf_34_38)
   y0x<f>     initial state y0: every variable times (grid year-0 mean / test y0 mean)^f, per seed age
   y0fx<f>    same for the flux variables only (lai, gpp, npp, rh: test ~1.1-1.3x the grid)
   y0bx<f>    same for the stock variables only (height, agb, soil: test ~0.7-0.85x the grid)
@@ -51,7 +52,16 @@ Z_CLIP = 10.0                      # standardized inputs clipped like in trainin
 SCREEN, SCREEN_SITES = False, 1500    # done for no-CO2 ep4 (INSIGHTS 4.13): only v2 matters
 Y0_TEST, Y0_SITES = False, 1000      # done: year-40 keeps ~60% of a height / ~55% of an AGB shift in y0
 # 'none' reproduces the scored file (LB 0.091) and costs no slot; the others are one LB submission each
-FULL_VARIANTS = (['none', 'dsh_v2', 'y0fx1', 'y0bx1'] if CO2_CONST else
+# D. feature selection without retraining (INSIGHTS 4.18):
+#   D1 permutation importance: shuffle one feature group across held-out grid sites (truth known) -> metric increase
+#      = how much the model relies on it. Uses the 'random' holdout of global_noco2_holdout.npz if attached
+#      (sites the 0.091 model never trained on), else random grid sites (partly training sites: in-sample).
+#   D2 per-feature shift screening: remove the test-vs-grid shift of ONE feature at a time on test sites.
+#   Important + shifted + moved = a candidate like CO2; unimportant = can be dropped, but dropping gains little.
+IMPORTANCE, IMP_SITES = True, 1000
+FEAT_SCREEN, FEAT_SCREEN_SITES = ('v2', 'v1', 'v3'), 600   # groups broken down into single features
+# A2 variants (none, dsh_v2, y0fx1, y0bx1) are scored; D-session default: no full rollouts
+FULL_VARIANTS = ([] if CO2_CONST else
                  ['co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_hist+f7_fix', 'co2_hist'])
 # rollout state ceiling of carbonglobe-global.ipynb (2 x grid max, printed as 'state ceiling (physical)');
 # needed to reproduce runs 2-4 exactly; grid run 1 had none
@@ -280,6 +290,9 @@ def env_fn(scn, variant, sites=None):
             elif p == 'f7_fix':
                 m = e[..., 7].mean(axis=1, keepdims=True)
                 e[..., 7] = m + (e[..., 7] - m) / T['f7_ratio']
+            elif p.startswith('dshf_'):
+                fs = [int(x) for x in p[5:].split('_') if x]
+                e[..., fs] -= T['delta'][:, fs].astype(np.float32)
             elif p.startswith('dsh_'):
                 g = GROUPS[p[4:]]
                 e[..., g] -= T['delta'][:, g].astype(np.float32)
@@ -337,6 +350,60 @@ if Y0_TEST:
         put_in = (ratio[..., v] * y0g[..., v]).mean() / y0g[..., v].mean() * 100 - 100
         print(f'  {name}: y0 mean changed {put_in:+.1f}% -> year-40 prediction mean changed {moved:+.1f}%')
     del gxs, yg; gc.collect()
+
+# ------------------------------------------------------------------ D1. permutation importance (truth known)
+if IMPORTANCE:
+    hp = sorted(glob.glob(f'{ROOT_IN}/**/global_noco2_holdout.npz', recursive=True))
+    if hp:
+        gs = np.sort(np.load(hp[0])['random'])[:IMP_SITES]
+        src = f'{len(gs)} held-out random grid sites of run 3 (never trained on)'
+    else:
+        gs = np.sort(np.random.default_rng(SEED + 2).choice(N_GLOB, IMP_SITES, replace=False))
+        src = f'{len(gs)} random grid sites (WARNING: ~95% are training sites, importance is in-sample)'
+    gxs = np.asarray(gx[gs], np.float32)
+    yg = np.stack([np.load(f'{BASE}/data_global/glob_Y{a:03d}.npy', mmap_mode='r')[gs][:, :, 11, :] for a in SEED_AGES])
+    y0g, y40g = yg[:, :, 0], yg[:, :, 40]
+    del yg; gc.collect()
+    sc = lambda p: 0.5 * (np.mean(((p[..., 0] - y40g[..., 0]) / Y_MEAN[0]) ** 2) + np.mean(((p[..., 1] - y40g[..., 1]) / Y_MEAN[1]) ** 2))
+    base_p = rollout(lambda t: zscore(gxs[:, t]), len(gs), y0g, desc='importance base')
+    b0 = sc(base_p)
+    perm = np.random.default_rng(SEED + 3).permutation(len(gs))
+    rows = []
+    for g, idx in tqdm([(g, i) for g, i in GROUPS.items() if not (CO2_CONST and g == 'co2')], desc='importance'):
+        xp = gxs.copy()
+        xp[..., idx] = gxs[perm][..., idx]          # shuffle the group across sites, keep its distribution
+        p = rollout(lambda t: zscore(xp[:, t]), len(gs), y0g)
+        rows.append(dict(group=g, n_feats=len(idx), metric=sc(p), increase=sc(p) - b0, msd_vs_base=msd(p, base_p)))
+        del xp
+    imp = pd.DataFrame(rows).sort_values('increase', ascending=False)
+    imp.to_csv(f'{OUT}/global_probe_importance.csv', index=False)
+    print(f'\n== D1. permutation importance on {src}: base metric {b0:.5f}')
+    print(imp.round(5).to_string(index=False))
+    del gxs; gc.collect()
+
+# ------------------------------------------------------------------ D2. per-feature shift screening (test sites)
+if FEAT_SCREEN:
+    rng = np.random.default_rng(SEED + 4)
+    rows = []
+    for scn in SCENARIOS:
+        sites = np.sort(rng.choice(TEST[scn]['x'].shape[0], FEAT_SCREEN_SITES, replace=False))
+        y0 = TEST[scn]['y0'][:, sites]
+        ref = rollout(env_fn(scn, 'none', sites), len(sites), y0, desc=f'{scn} none')
+        feats = [(g, f) for g in FEAT_SCREEN for f in GROUPS[g]]
+        for g, f in tqdm(feats, desc=f'feature screen {scn}'):
+            r = change_row(f'dshf_{f}', scn, rollout(env_fn(scn, f'dshf_{f}', sites), len(sites), y0), ref)
+            r.update(group=g, feat=f, shift_z=float(np.mean(TEST[scn]['delta'][:, f]) / (X_STD[f] + 1e-10)))
+            rows.append(r)
+    fsc = pd.DataFrame(rows)
+    fsc.to_csv(f'{OUT}/global_probe_feature_screen.csv', index=False)
+    tab = fsc.pivot_table(index=['group', 'feat'], columns='scn', values=['msd_vs_none', 'd_agb_pct', 'shift_z'])
+    tab = tab.sort_values(('msd_vs_none', 'ssp126'), ascending=False)
+    print('\n== D2. per-feature shift screening (top 25 by ssp126 msd; full table in global_probe_feature_screen.csv)')
+    print(tab.round(4).head(25).to_string())
+    for g in FEAT_SCREEN:
+        sub_ = fsc[fsc.group == g]
+        print(f'  {g}: sum of single-feature msd ssp126 {sub_[sub_.scn == "ssp126"].msd_vs_none.sum():.4f} '
+              f'(compare with dsh_{g} of part A; much smaller sum = the effect needs several features together)')
 
 # ------------------------------------------------------------------ C. full-size submissions
 if FULL_VARIANTS:
