@@ -35,7 +35,8 @@ HYB_LB = {
     'noco2_ep6':             0.104,
     's7_ep3':                0.103,
     'noco2_ep4':             0.093,
-    'y0_persist':            None,    # persistence (LB 0.285); result/hyb_y0_persist.csv written, fill in its LB
+    'y0_persist':            0.174,   # persistence (LB 0.285) -> blend_scn3 (not submitted, gain <= 0.0005)
+    # to reproduce the scored blend_scn2 / blend_scn2_x files, set 'y0_persist' to None (comment it out)
 }
 
 

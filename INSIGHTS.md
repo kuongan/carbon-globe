@@ -15,8 +15,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 - Chọn cuối đề xuất: `submission_blend_scn2.csv` + `submission_blend_scn2_x.csv`.
 - Tái tạo: `python ensemble_scn.py solve` (+ `ENSEMBLE_FREE=global,global2_co2_hist` cho bản _x) với
   `ENSEMBLE_TAG=blend_scn2`; đã kiểm tra trùng tuyệt đối (max |diff| = 0).
-- Không train model mới nữa (mục 4.19). Đang làm: thêm y0 vào blend theo kịch bản (mục 4.20); chờ LB của
-  `result/hyb_y0_persist.csv`.
+- Không train model mới nữa (mục 4.19). Thêm y0 vào blend chỉ lợi ≤ 0.0005, bằng sai số làm tròn LB (mục 4.20):
+  không nộp. Hết hướng cải thiện không cần GPU đã liệt kê; hai file trên là lựa chọn cuối.
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -99,8 +99,9 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 69 | Run 5 `fifth-run/submission_ep4_none.csv` | 0.135 | | cùng seed/epoch với 0.091 |
 | 70 | Run 6 `sixth-run/submission_snapmean_none.csv` (swa_ep4: fine-tune từ noco2_ep4, LR 5e-5, 8 × 0.5M mẫu) | 0.136 | | |
 | 71 | `submission_y0.csv` (persistence: năm 40 = y0, `y0_persist.py`) | 0.285 | | thành phần blend, không dùng riêng |
+| 72 | `hyb_y0_persist.csv` (y0 ở ssp126 + bg_scn ở ssp585) | 0.174 | | probe |
 
-Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
+Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
 Run 1 của notebook global (`notebook2dbddcbdc5.ipynb`) không có điểm LB.
 
@@ -489,6 +490,12 @@ ssp585, nên hướng này có tín hiệu. 2 lượt: `submission_y0.csv` và h
 - Ước tính blend theo kịch bản (không trọng số âm) theo LB(hyb_y0) giả định: 0.17 → 0.0756, 0.18 → 0.0759 (không lợi),
   0.20 → 0.0735, 0.22 → 0.0694, 0.24 → 0.0637. Hybrid càng cao (y0 tệ ở ssp126, tức là tốt ở ssp585) thì y0 càng có
   ích, và trọng số đều rơi vào ssp585 (0.17–0.32).
+- **Kết quả: hybrid = 0.174** (#72), rơi đúng vào vùng không có lợi. `ENSEMBLE_TAG=blend_scn3 python ensemble_scn.py
+  solve`: w_y0 = 0.075 (ssp126) / 0.035 (ssp585), ước tính **0.0759** (scn2: 0.0764); bản trọng số âm
+  w_y0 = 0.05 / 0.013, **0.0752** (scn2_x: 0.0753). File mới chỉ lệch khỏi scn2 / scn2_x một msd 0.0005 / 0.0002.
+- Kết luận: y0 không thêm hướng mới. Hai việc y0 có thể làm (kéo mức dự đoán về trạng thái ban đầu, và đổi biên độ
+  tăng trưởng theo kịch bản) đã được làm sẵn bởi hiệu chỉnh bias theo kịch bản (bg_scn, bx_scn) và y0bx1 (trọng số
+  0.15 / 0.51). Không nộp scn3; giữ scn2 + scn2_x.
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 

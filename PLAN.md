@@ -13,6 +13,11 @@
    `solve_bias` gives the pooled per-scenario factors plus an in-sample vs cross-fitted gain.
 4. **Final picks**: best fitted blend + bias (no negative weights), and the zero-parameter average + bias.
 
+### Update (INSIGHTS 4.20): y0 done, plan closed
+- `submission_y0.csv` 0.285, `hyb_y0_persist.csv` 0.174 → y0 gets weight 0.03–0.08; per-scenario blend estimate
+  0.0759 (scn2: 0.0764) and 0.0752 with negative weights (scn2_x: 0.0753). Gain ≤ 0.0005 = LB rounding: not submitted.
+- **Final picks: `result/submission_blend_scn2.csv` + `result/submission_blend_scn2_x.csv` (both 0.074).**
+
 ### Update 2026-10-11 (INSIGHTS 4.19): stop training; y0 as a blend component
 - swa_ep4 scored 0.136; historical holdout is anti-correlated with the LB (−0.85). No more training runs.
 - Session D done: no single feature beats `dsh_v2`; v3, f7, static are not used by the model.
