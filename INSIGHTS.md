@@ -585,6 +585,15 @@ Phân tích trên `data/` (bản tải về đầy đủ của competition + dat
 - Không gian T của CO2: s ≈ 0.175 (so với đường SSP). Các model no-CO2 không dùng CO2.
 - Blend cũ có thêm sửa ô chết: `submission_blend_scn2d.csv` ≈ file 0.072 (msd 8e-6), ước tính 0.0744;
   `submission_blend_scn2d_x.csv` ước tính **0.0733** (dự kiến ~0.071, vì ước tính thường bi quan ~0.002).
+- **GBM direct (local, `carbonglobe_gbm.py`, 10 phút).** Holdout lịch sử (8% khối 10°) đạt 0.0305; persistence là
+  0.3675. Gain theo nhóm: với height thì state 0.37, v1 0.17, tuổi 0.16, f1 0.10; với agb thì f1 0.29, state 0.22,
+  tuổi 0.14. Trên test, đổi sang đơn vị vật lý rồi biến đổi lại với s = (0.876, 0.84): height trung bình 0.899 và
+  agb 0.691, trong khi file 0.072 có 0.989 và 1.004 ⇒ **rừng tương lai cao hơn ~10% và nhiều agb hơn ~35% so với
+  động lực lịch sử** (CO2; height có s chính xác nên khoảng chênh là thật). Climate đã đảo về vật lý (ấm hơn) còn làm
+  agb giảm thêm (0.978 so với 1.049 khi giữ climate như test cho).
+- Bản khớp trung bình (`slope.py match`: hệ số theo từng kịch bản/biến để ô sống có cùng trung bình với file 0.072):
+  hệ số agb là 1.11/1.22 với direct_inv và 1.03/1.13 với direct_y0inv. msd tới file 0.072 lần lượt là 0.114 và
+  0.058 ⇒ rất khác các LSTM, nên chỉ cần LB < 0.186 / 0.130 là đã giúp được blend.
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
