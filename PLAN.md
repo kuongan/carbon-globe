@@ -13,6 +13,16 @@
    `solve_bias` gives the pooled per-scenario factors plus an in-sample vs cross-fitted gain.
 4. **Final picks**: best fitted blend + bias (no negative weights), and the zero-parameter average + bias.
 
+### Update (INSIGHTS 4.21): tree models as diverse blend members
+- Averaging more grid LSTMs (subsets of rows/features/seeds) converges to ~0.097: no gain. A new member needs
+  msd(member, 0.074 blend) > LB(member) − 0.074; target ~0.11 LB with error correlation ≤ ~0.65.
+- Run `carbonglobe_gbm.py` on Kaggle: **CPU notebook** (no GPU quota), inputs = competition data +
+  `zhihaow/carbonglobe`, no repo clone, no Internet needed. Paste into one cell, Save & Run All (~2–4 h).
+- Submit `submission_gbm_direct.csv` and `submission_gbm_rollout.csv`; send both LBs + `gbm_preds.npz` +
+  `gbm_summary.json`. Then: `python ensemble_scn.py ingest gbm_direct gbm_preds.npz direct` (same for `rollout`),
+  2-way estimate vs the 0.074 blend, hybrids only for members that pass, `blend_scn4`.
+- `_dsh_v2` files only if the plain ones get weight.
+
 ### Update (INSIGHTS 4.20): y0 done, plan closed
 - `submission_y0.csv` 0.285, `hyb_y0_persist.csv` 0.174 → y0 gets weight 0.03–0.08; per-scenario blend estimate
   0.0759 (scn2: 0.0764) and 0.0752 with negative weights (scn2_x: 0.0753). Gain ≤ 0.0005 = LB rounding: not submitted.

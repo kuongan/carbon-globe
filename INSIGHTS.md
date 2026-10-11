@@ -15,8 +15,9 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 - Chọn cuối đề xuất: `submission_blend_scn2.csv` + `submission_blend_scn2_x.csv`.
 - Tái tạo: `python ensemble_scn.py solve` (+ `ENSEMBLE_FREE=global,global2_co2_hist` cho bản _x) với
   `ENSEMBLE_TAG=blend_scn2`; đã kiểm tra trùng tuyệt đối (max |diff| = 0).
-- Không train model mới nữa (mục 4.19). Thêm y0 vào blend chỉ lợi ≤ 0.0005, bằng sai số làm tròn LB (mục 4.20):
-  không nộp. Hết hướng cải thiện không cần GPU đã liệt kê; hai file trên là lựa chọn cuối.
+- Không train thêm LSTM (mục 4.19, 4.21). Thêm y0 vào blend chỉ lợi ≤ 0.0005, bằng sai số làm tròn LB (mục 4.20).
+- Đang thử: cây LightGBM trên lưới (`carbonglobe_gbm.py`, CPU), hai model `direct` và `rollout`, làm thành viên blend khác
+  hẳn LSTM (mục 4.21). Nếu không qua ngưỡng đa dạng thì giữ hai file trên.
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -521,6 +522,13 @@ thành viên hoán đổi được, trung bình đều có MSE = mean(C_ii)/M + 
 - [GT] Nguồn khác biệt duy nhất chưa thử: inductive bias khác hẳn khi ngoại suy, ví dụ cây (LightGBM một bước trên lưới,
   bagging_fraction + feature_fraction: chính là random subspace + bagging). Cây không ngoại suy ra ngoài miền train
   (hằng số ngoài biên), ngược với LSTM.
+- `carbonglobe_gbm.py` (CPU, không clone repo), hai model:
+  - **direct**: (y0, tuổi gốc, khí hậu 40 năm: trung bình 111 feature, trung bình theo thập kỷ f0–f7, khí hậu theo tháng
+    f0–f6) → thay đổi height/agb sau 40 năm. Mỗi (site, tuổi) một dòng, không rollout nên không tích lũy lỗi.
+  - **rollout**: (trạng thái năm t, tuổi đứng, khí hậu năm t) → năm t+1. Stock dự đoán theo mức thay đổi, flux theo
+    mức, cuộn 40 năm như LSTM. 3M dòng một bước.
+  - Không dùng CO2/hằng số; f7 chỉ lấy trung bình năm (biên độ mùa ở test gấp ~20 lần lưới). Holdout là 8% số khối 10°,
+    chỉ để early stopping và kiểm tra hợp lý, không dùng để xếp hạng.
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
