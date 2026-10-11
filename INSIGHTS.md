@@ -107,6 +107,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 74 | `submission_blend_scn2d_x.csv` (blend_scn2_x + ô chết, bỏ ô chết khỏi bài toán trọng số) | 0.072 | 0.0733 | |
 | 75 | `match_direct_y0inv.csv` (LightGBM direct, y0 → vật lý, climate giữ nguyên, khớp trung bình) | **0.108** | | thành phần: tương quan lỗi 0.69 |
 | 76 | `match_direct_inv.csv` (giống #75 + climate → vật lý) | 0.164 | | đảo climate làm hỏng |
+| 77 | `submission_blend_t2b.csv` (trọng số chung: dead_t2 0.48 + scn2d_x 0.34 + gbm_direct_y0inv 0.19) | **0.070** | 0.0698 | **tốt nhất** |
+| 78 | `hyb_gbm_direct_y0inv.csv` (GBM ở ssp126 + bg_scn ở ssp585) | 0.097 | | probe |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -607,6 +609,12 @@ Phân tích trên `data/` (bản tải về đầy đủ của competition + dat
 - Blend trọng số chung, có ô chết (`ensemble_scn.py shared`): dead_t2 0.48 + scn2d_x 0.34 + gbm_direct_y0inv 0.19
   ⇒ ước tính **0.0698** (`submission_blend_t2b.csv`); gbm_direct_inv nhận trọng số 0.
 - scn2d_x cũng ra 0.072 (ước tính 0.0733 so với 0.0744 của scn2d; cả hai làm tròn về 0.072).
+- t2b = **0.070**, ước tính 0.0698: lần này ước tính đúng (blend trọng số chung với 3 thành phần ít nhiễu làm tròn).
+- Hybrid GBM = 0.097 ⇒ lỗi theo kịch bản so với bg_scn (sai khác một hằng số): ssp126 0.100 (bg 0.092), ssp585
+  0.116 (bg 0.092). Cây yếu hơn ở ssp585, đúng như dự đoán vì nó không có phản ứng với CO2. Blend theo kịch bản
+  (`blend_t2s`): GBM nhận 0.34 ở ssp126 và 0.24 ở ssp585, ước tính 0.0707; bản _x (trọng số âm trên cặp CO2)
+  ước tính 0.0700. Không hơn t2b (0.0698) ⇒ dư địa của blend gần hết; đòn bẩy tiếp theo là thành phần tốt hơn
+  (GBM bagging, GBM rollout, LSTM y0inv).
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 

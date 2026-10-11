@@ -40,6 +40,7 @@ HYB_LB = {
     's7_ep3':                0.103,
     'noco2_ep4':             0.093,
     'y0_persist':            0.174,   # persistence (LB 0.285) -> blend_scn3 (not submitted, gain <= 0.0005)
+    'gbm_direct_y0inv':      0.097,   # T2 era: LightGBM direct (LB 0.108), test-space file with exact dead rows
     # to reproduce the scored blend_scn2 / blend_scn2_x files, set 'y0_persist' to None (comment it out)
 }
 
