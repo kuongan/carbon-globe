@@ -34,6 +34,7 @@ HYB_LB = {
     'noco2_ep6':             0.104,
     's7_ep3':                0.103,
     'noco2_ep4':             0.093,
+    # 'y0_persist': None,   # add when y0_preds.npz is laid out in result/y0_persist_preds and submission_y0.csv scored
 }
 
 

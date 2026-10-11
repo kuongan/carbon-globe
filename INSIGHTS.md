@@ -15,8 +15,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 - Chọn cuối đề xuất: `submission_blend_scn2.csv` + `submission_blend_scn2_x.csv`.
 - Tái tạo: `python ensemble_scn.py solve` (+ `ENSEMBLE_FREE=global,global2_co2_hist` cho bản _x) với
   `ENSEMBLE_TAG=blend_scn2`; đã kiểm tra trùng tuyệt đối (max |diff| = 0).
-- GPU tiếp theo: `carbonglobe-global.ipynb` = `swa_ep4` (fine-tune từ snap_ep4 của model 0.091, mục 4.17).
-- GPU tiếp theo: `carbonglobe-global.ipynb` = `swa_ep4` (fine-tune từ snap_ep4 của model 0.091, mục 4.17).
+- Không train model mới nữa (mục 4.19). Bước tiếp: `y0_persist.py` (CPU) → blend theo kịch bản có thêm y0.
+- Không train model mới nữa (mục 4.19). Bước tiếp: `y0_persist.py` (CPU) → blend theo kịch bản có thêm y0.
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -97,6 +97,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 67 | `submission_blend_scn2_x.csv` (theo kịch bản, trọng số âm trên cặp CO2) | **0.074** | 0.0753 | |
 | 68 | Run 5 `fifth-run/submission_snapmean_none.csv` (global_nov2: no CO2 + bỏ v2 khi train, seed 42) | 0.136 | | |
 | 69 | Run 5 `fifth-run/submission_ep4_none.csv` | 0.135 | | cùng seed/epoch với 0.091 |
+| 70 | Run 6 `sixth-run/submission_snapmean_none.csv` (swa_ep4: fine-tune từ noco2_ep4, LR 5e-5, 8 × 0.5M mẫu) | 0.136 | | |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -447,6 +448,35 @@ Lỗi so với bg_scn trong từng kịch bản (chính xác trong một kịch 
   độ lệch test **từng feature** trong v1/v2/v3 (72 feature). Feature quan trọng + bị lệch + làm dự đoán dịch nhiều là
   ứng viên; biến thể `dshf_<i>_<j>` sửa đúng các feature đó ở inference.
 
+### 4.19 Fit lịch sử tốt hơn ⇒ LB tệ hơn; feature selection không còn gì (run 6 + session D) [KC]
+
+**Fine-tune (swa_ep4) từ trọng số 0.091:**
+- Khởi tạo đúng (holdout shift epoch 1 = 0.037, như run 3 ep4 0.038). Chỉ sau 1M mẫu (ep2) dự đoán test đã cách
+  noco2_ep4 msd 0.042, sau 4M mẫu 0.080 (cỡ khoảng cách giữa hai seed). AGB test giảm 1.013 → 0.93. Snapmean **0.136**,
+  trọng số blend 0.
+- Cùng lúc holdout lịch sử *tốt lên* liên tục (random 0.083 → 0.054; AGB holdout pred/true 1.004, run 3 ep6: 1.10).
+- **Tương quan giữa metric holdout random (lịch sử) và LB trên 7 file no-CO2: −0.85.** File fit lịch sử tốt nhất
+  (swa, bag) có LB tệ nhất; noco2_ep4 có holdout random tệ nhất (0.126) và LB tốt nhất. [GT] Tương lai của ED (CO2 cao,
+  ấm hơn) cho rừng mọc nhanh hơn lịch sử; model không CO2 không biết điều đó, nên model "mọc quá mức so với lịch sử"
+  lại gần tương lai hơn. Hệ số bias theo kịch bản chỉ sửa được phần mức trung bình.
+- Hệ quả: 0.091 không phải đáy của một vùng tốt mà là một điểm trên quỹ đạo train; train tiếp (fine-tune, SWA, seed
+  mới, bagging) đều kéo về phía "đúng với lịch sử" và làm LB tệ đi. **Dừng train model mới**: 6 run sau 0.091 không run
+  nào có ích cho blend.
+
+**Feature selection (session D, model 0.091):**
+- D1 permutation importance (1000 site holdout chưa train): v1 +0.64, v2 +0.31, f1 +0.10, f0 +0.03, f6 +0.02, f3 +0.016,
+  f5 +0.011, v4 +0.010, f2 +0.005, f4 +0.004, static +0.0015, f7 −0.004, **v3 −0.007**. Model không dùng v3 (nhóm có
+  sàn lệch "SUS"), f7, static: các feature lệch phân phối kỳ lạ của test đều vô hại vì không được dùng.
+- D2 từng feature: không feature đơn lẻ nào làm dự đoán dịch quá msd 0.0002. Tổng 24 feature của v2: 0.0009, trong khi
+  sửa cả nhóm (part A): 0.0092 ⇒ hiệu ứng v2 là một **profile chung** (độ lệch test âm ~−0.13 z ở lớp 0–5 và 21–23, ≈ 0
+  ở các lớp giữa), chỉ tác động khi đi cùng nhau. Sửa từng feature không thể tốt hơn `dsh_v2`.
+- ⇒ feature selection đã khai thác hết: CO2 (bỏ), v2 (sửa độ lệch ở inference). Phần còn lại hoặc không được dùng hoặc
+  không bị lệch.
+
+**Hướng còn lại (không GPU):** thêm y0 (trạng thái năm 0) làm thành phần blend theo kịch bản (`y0_persist.py`): cho
+blend tách "mức" khỏi "tăng trưởng" (y40' = Σ wᵢpᵢ + w₀·y0). y0bx1 (nâng stock ban đầu) đã nhận trọng số 0.4–0.5 ở
+ssp585, nên hướng này có tín hiệu. 2 lượt: `submission_y0.csv` và hybrid của nó.
+
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
 - `global_probe_preds.npz` khớp `global2_co2_hist` (msd 1e-6), không khớp run 1 (0.071): file trọng số được gắn là
@@ -489,6 +519,8 @@ Lỗi so với bg_scn trong từng kịch bản (chính xác trong một kịch 
 - "Model mang flux ban đầu cao của test suốt 40 năm" → model gần như bỏ qua flux ban đầu (y0fx1 msd 0.0002).
 - "Bagging theo khối không gian tạo member đa dạng có ích" → m1 0.128, trọng số blend 0.
 - "Bỏ v2 khi train sẽ giúp như bỏ CO2" → 0.135 (mục 4.17); v2 có tín hiệu thật, chỉ độ lệch test của nó là có vấn đề.
+- "Fine-tune / SWA quanh nghiệm 0.091 giữ hoặc cải thiện chất lượng" → 0.136; dự đoán trôi xa ngay sau 1M mẫu (4.19).
+- "Holdout lịch sử dùng để chọn model được, chỉ nhiễu" → tệ hơn: tương quan −0.85 với LB (4.19).
 
 ## 8. Câu hỏi mở
 

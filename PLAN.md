@@ -13,7 +13,14 @@
    `solve_bias` gives the pooled per-scenario factors plus an in-sample vs cross-fitted gain.
 4. **Final picks**: best fitted blend + bias (no negative weights), and the zero-parameter average + bias.
 
-### Session D: feature selection without retraining (INSIGHTS 4.18, ~1–1.5 h GPU T4 x1, 0 slots)
+### Update 2026-10-11 (INSIGHTS 4.19): stop training; y0 as a blend component
+- swa_ep4 scored 0.136; historical holdout is anti-correlated with the LB (−0.85). No more training runs.
+- Session D done: no single feature beats `dsh_v2`; v3, f7, static are not used by the model.
+- Next (CPU, 2 slots): `y0_persist.py` in a Kaggle cell (competition data only) → submit `submission_y0.csv`, send
+  `y0_preds.npz` → I build `result/hyb_y0_persist.csv` (1 slot) → per-scenario blend with y0.
+- Final picks unless that wins: `submission_blend_scn2.csv` + `submission_blend_scn2_x.csv` (both 0.074).
+
+### Session D: feature selection without retraining (INSIGHTS 4.18, done)
 - Add `global_noco2_holdout.npz` to the `noco2-ep4` dataset (new version; both files are in `kaggle_upload/noco2-ep4/`).
 - Notebook: one cell with `global_probe.py` as committed (parts A/B/C off, D1 + D2 on). Inputs: competition data,
   `zhihaow/carbonglobe`, `noco2-ep4`.
