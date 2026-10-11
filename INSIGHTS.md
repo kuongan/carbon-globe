@@ -16,10 +16,11 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 - Tái tạo: `python ensemble_scn.py solve` (+ `ENSEMBLE_FREE=global,global2_co2_hist` cho bản _x) với
   `ENSEMBLE_TAG=blend_scn2`; đã kiểm tra trùng tuyệt đối (max |diff| = 0).
 - Không train thêm LSTM (mục 4.19, 4.21). Thêm y0 vào blend chỉ lợi ≤ 0.0005, bằng sai số làm tròn LB (mục 4.20).
-- **LB tốt nhất mới: 0.072** (`result/probe_dead_T2.csv`). Phát hiện lớn (mục 4.22): test = lưới CarbonGlobe sau
-  một phép biến đổi affine theo từng biến, và **đáp án ẩn cũng nằm trong không gian đó (T2, mục 4.23)**.
-- Đang làm (mục 4.23): đưa input test về đơn vị vật lý, chạy model, rồi biến đổi output ngược lại. Có hai nhánh:
-  `global_probe.py` session E (LSTM, Kaggle) và `carbonglobe_gbm.py` (cây, chạy local).
+- **LB tốt nhất:** 0.070 (`result/probe_dead_T2.csv` = 0.072; `result/submission_blend_t2b.csv` = 0.070).
+  Test = lưới CarbonGlobe sau phép biến đổi affine; đáp án nằm trong không gian đó (T2). Blend đã hội tụ tại 0.072
+  sau khi thêm GBM rollout và seed-avg (mục 4.26). Đòn bẩy còn lại: LSTM `y0inv` trên Kaggle (session E).
+- Bước tiếp quan trọng nhất: **Kaggle session E** — `global_probe.py` (GPU), attach `test_maps.npz` vào `noco2-ep4`,
+  submit `submission_global_y0inv.csv`, gửi `global_probe_preds.npz`.
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -109,6 +110,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 76 | `match_direct_inv.csv` (giống #75 + climate → vật lý) | 0.164 | | đảo climate làm hỏng |
 | 77 | `submission_blend_t2b.csv` (trọng số chung: dead_t2 0.48 + scn2d_x 0.34 + gbm_direct_y0inv 0.19) | **0.070** | 0.0698 | **tốt nhất** |
 | 78 | `hyb_gbm_direct_y0inv.csv` (GBM ở ssp126 + bg_scn ở ssp585) | 0.097 | | probe |
+| 79 | `submission_blend_t2c.csv` (dead_t2 0.51 + scn2d_x 0.30 + gbm_avg 0.10 + gbm_rollout 0.09) | 0.072 | 0.0685 | blend hội tụ, ước tính lạc quan |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -677,3 +679,15 @@ Phân tích trên `data/` (bản tải về đầy đủ của competition + dat
 Xem `PLAN.md` (Q1–Q7): CO2 test có bị scale sai không; nhóm feature nào khác hoạt động như CO2; feature 7; mức độ
 model nhớ `test_y0`; train lại model lưới lâu hơn; model lưới thứ hai (EcoFormer); sửa CO2 ngay khi train.
 
+
+### 4.26 blend_t2c = 0.072, blend hội tụ [KC]
+
+- `submission_blend_t2c.csv` (#79) ước tính 0.0685 nhưng thực = **0.072** = y hệt t2b và scn2d_x.
+- Chẩn đoán: `dead_t2` và `scn2d_x` có msd nhau chỉ 0.001 → cơ bản là 1 thành phần. `gbm_rollout_y0inv` dù msd
+  tới LSTM là 0.173 nhưng LB thực cũng 0.072 → sau mean-match nó chỉ đổi pattern, không đổi level; trọng số về 0
+  khi LB đúng. Ước tính lạc quan vì giả định LB rollout 0.14–0.20.
+- **Blend trọng số chung đã hội tụ tại 0.072.** Để xuống 0.070 hoặc thấp hơn cần một model thực sự tốt hơn.
+- Hướng: **LSTM `y0inv`** (Kaggle session E, `global_probe.py`): attach `test_maps.npz` vào `noco2-ep4`, chạy GPU,
+  submit `submission_global_y0inv.csv`, gửi `global_probe_preds.npz`. Nếu LB 0.085–0.090, blend 2 chiều với t2b
+  cho ~0.055–0.065. Đây là đòn bẩy thực sự nhất còn lại.
+- Lưu ý: `dead_t2` = 0.072 là file tốt nhất hiện tại, không phải t2b. Cả hai là 0.072 nhưng `dead_t2` = `probe_dead_T2.csv` là bản gốc (blend_scn2 + ô chết đúng); t2b = dead-aware re-solve với GBM.
