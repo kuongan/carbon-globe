@@ -497,6 +497,31 @@ ssp585, nên hướng này có tín hiệu. 2 lượt: `submission_y0.csv` và h
   tăng trưởng theo kịch bản) đã được làm sẵn bởi hiệu chỉnh bias theo kịch bản (bg_scn, bx_scn) và y0bx1 (trọng số
   0.15 / 0.51). Không nộp scn3; giữ scn2 + scn2_x.
 
+### 4.21 Nhiều model nhỏ trên tập con feature/dữ liệu: giới hạn của việc lấy trung bình [KC, đại số]
+
+Đã có sẵn các thành viên kiểu này: bag1 (70% khối dữ liệu), nov2 (bỏ nhóm v2), s7 (seed khác), ep3–6, swa. Với M
+thành viên hoán đổi được, trung bình đều có MSE = mean(C_ii)/M + (1 − 1/M)·mean(C_ij), nên M → ∞ cho mean(C_ij):
+
+| Tập thành viên | LB TB | tương quan lỗi TB | TB đều | tối ưu simplex | M → ∞ |
+|---|---|---|---|---|---|
+| 8 run lưới no-CO2 | 0.121 | 0.80 | 0.100 | 0.0865 | **0.097** |
+| 6 run không chọn lọc (bỏ ep4, swa) | 0.123 | 0.81 | 0.104 | 0.098 | **0.0995** |
+| chỉ thành viên tập con (bag1, nov2 ×2) | 0.133 | 0.86 | 0.120 | 0.119 | **0.114** |
+
+- Lấy trung bình vô hạn model LSTM lưới vẫn **tệ hơn model đơn 0.091** và xa 0.074. Khoảng 80% lỗi là phần chung
+  (lệch phân phối test), mà phần chung thì trung bình không khử được.
+- So với blend 0.074, một model mới chỉ nhận trọng số > 0 khi msd(model, blend) > LB(model) − 0.074. Mọi run lưới
+  đều nằm dưới ngưỡng này (bag1: msd 0.044, cần > 0.054; tương quan lỗi với blend 0.81).
+- Blend 2 chiều với file 0.074, theo (LB mới, msd tới blend): (0.11, 0.07) → 0.0699; (0.11, 0.09) → 0.0659;
+  (0.13, 0.07) → 0.0733; (0.13, 0.09) → 0.0708. Giải lại theo kịch bản còn lợi hơn nữa, nên bảng này là cận dưới của mức lợi.
+  Muốn lợi ≥ 0.003 thì cần model ~0.11 với tương quan lỗi ≤ ~0.65, tức là khác bằng các model 3373 site cũ (0.64–0.70)
+  nhưng tốt hơn chúng nhiều.
+- Model to không phải nguyên nhân: trên 3373 site, v2 (nhỏ) 0.186, LSTM-XL 0.168, fusion-lite 0.167 (VAL tốt hơn 25%,
+  LB như nhau). Khoảng cách VAL → LB do lệch phân phối, không do quá khớp dữ liệu train. Fusion không có trong blend cuối.
+- [GT] Nguồn khác biệt duy nhất chưa thử: inductive bias khác hẳn khi ngoại suy, ví dụ cây (LightGBM một bước trên lưới,
+  bagging_fraction + feature_fraction: chính là random subspace + bagging). Cây không ngoại suy ra ngoài miền train
+  (hằng số ngoài biên), ngược với LSTM.
+
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
 - `global_probe_preds.npz` khớp `global2_co2_hist` (msd 1e-6), không khớp run 1 (0.071): file trọng số được gắn là
