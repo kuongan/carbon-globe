@@ -65,6 +65,7 @@ RUNS = {
     'nov2_snapmean':         (0.136, None),    # run 5: no CO2 + group v2 dropped in training, mean of all snapshots
     'nov2_ep4':              (0.135, None),
     'swa_snapmean':          (0.136, None),    # run 6: fine-tune from noco2_ep4 (LR 5e-5, 8 x 0.5M), mean of snapshots
+    'y0_persist':            (0.285, None),    # persistence: year-40 state = test_y0 (y0_persist.py); blend component only
 }
 # scored blend files reusable as components would go here too (e.g. blend_a2_x, LB 0.075); a blend of blends adds no
 # new direction, so they are left out

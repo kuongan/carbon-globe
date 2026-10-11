@@ -15,8 +15,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 - Chọn cuối đề xuất: `submission_blend_scn2.csv` + `submission_blend_scn2_x.csv`.
 - Tái tạo: `python ensemble_scn.py solve` (+ `ENSEMBLE_FREE=global,global2_co2_hist` cho bản _x) với
   `ENSEMBLE_TAG=blend_scn2`; đã kiểm tra trùng tuyệt đối (max |diff| = 0).
-- Không train model mới nữa (mục 4.19). Bước tiếp: `y0_persist.py` (CPU) → blend theo kịch bản có thêm y0.
-- Không train model mới nữa (mục 4.19). Bước tiếp: `y0_persist.py` (CPU) → blend theo kịch bản có thêm y0.
+- Không train model mới nữa (mục 4.19). Đang làm: thêm y0 vào blend theo kịch bản (mục 4.20); chờ LB của
+  `result/hyb_y0_persist.csv`.
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -98,6 +98,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 68 | Run 5 `fifth-run/submission_snapmean_none.csv` (global_nov2: no CO2 + bỏ v2 khi train, seed 42) | 0.136 | | |
 | 69 | Run 5 `fifth-run/submission_ep4_none.csv` | 0.135 | | cùng seed/epoch với 0.091 |
 | 70 | Run 6 `sixth-run/submission_snapmean_none.csv` (swa_ep4: fine-tune từ noco2_ep4, LR 5e-5, 8 × 0.5M mẫu) | 0.136 | | |
+| 71 | `submission_y0.csv` (persistence: năm 40 = y0, `y0_persist.py`) | 0.285 | | thành phần blend, không dùng riêng |
 
 Chưa nộp: `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -476,6 +477,18 @@ Lỗi so với bg_scn trong từng kịch bản (chính xác trong một kịch 
 **Hướng còn lại (không GPU):** thêm y0 (trạng thái năm 0) làm thành phần blend theo kịch bản (`y0_persist.py`): cho
 blend tách "mức" khỏi "tăng trưởng" (y40' = Σ wᵢpᵢ + w₀·y0). y0bx1 (nâng stock ban đầu) đã nhận trọng số 0.4–0.5 ở
 ssp585, nên hướng này có tín hiệu. 2 lượt: `submission_y0.csv` và hybrid của nó.
+
+### 4.20 y0 làm thành phần blend (#71) [KC + đại số]
+
+- `submission_y0.csv` = **0.285** (để so: model đơn tốt nhất 0.089). Preds ở `result/y0_persist_preds/`
+  (`python ensemble_scn.py ingest y0_persist y0_preds.npz`).
+- Blend trọng số chung (chỉ cần LB của y0): 0.0789 → 0.0786 (w_y0 0.04); bản có trọng số âm: 0.0764 → 0.0764.
+  ⇒ y0 chỉ có ích nếu trọng số **khác nhau theo kịch bản**.
+- Ràng buộc PSD của ma trận hiệp phương sai không khoanh được LB(hyb_y0): mọi giá trị 0.14–0.26 đều hợp lệ, nên
+  phải nộp hybrid.
+- Ước tính blend theo kịch bản (không trọng số âm) theo LB(hyb_y0) giả định: 0.17 → 0.0756, 0.18 → 0.0759 (không lợi),
+  0.20 → 0.0735, 0.22 → 0.0694, 0.24 → 0.0637. Hybrid càng cao (y0 tệ ở ssp126, tức là tốt ở ssp585) thì y0 càng có
+  ích, và trọng số đều rơi vào ssp585 (0.17–0.32).
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
