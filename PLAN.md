@@ -13,6 +13,16 @@
    `solve_bias` gives the pooled per-scenario factors plus an in-sample vs cross-fitted gain.
 4. **Final picks**: best fitted blend + bias (no negative weights), and the zero-parameter average + bias.
 
+### Update (INSIGHTS 4.22/4.23): the test is the grid behind affine maps; the truth is in the mapped space (T2)
+- probe_dead_T2.csv = **0.072** (best). Every model now: map test inputs back to physical, run, map outputs forward.
+- **Kaggle session E** (`global_probe.py` as committed, GPU T4 x1, no repo clone): add `test_maps.npz`
+  (kaggle_upload/noco2-ep4/, written by test_transform.py) to the `noco2-ep4` dataset as a new version. Inputs:
+  competition data, `zhihaow/carbonglobe`, `noco2-ep4` (snap_ep4.npz + test_maps.npz). Variants none, y0inv,
+  y0inv+xinv, xinv. Submit `submission_global_y0inv.csv`, then `submission_global_y0inv_xinv.csv`; send
+  `global_probe_preds.npz` (physical predictions; locally `ensemble_scn.py ingest <run> <npz> <key> map`).
+- Local: `carbonglobe_gbm.py` (LightGBM 4.6.0, data/ folder) -> result/gbm/.
+- Candidate now: `result/submission_blend_scn2d_x.csv` (est 0.0733 -> ~0.071).
+
 ### Update (INSIGHTS 4.21): tree models as diverse blend members
 - Averaging more grid LSTMs (subsets of rows/features/seeds) converges to ~0.097: no gain. A new member needs
   msd(member, 0.074 blend) > LB(member) − 0.074; target ~0.11 LB with error correlation ≤ ~0.65.

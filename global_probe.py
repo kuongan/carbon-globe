@@ -29,6 +29,13 @@ Variant grammar: parts joined by '+', applied in order to the raw test forcing o
   y0fx<f>    same for the flux variables only (lai, gpp, npp, rh: test ~1.1-1.3x the grid)
   y0bx<f>    same for the stock variables only (height, agb, soil: test ~0.7-0.85x the grid)
              (ratios with a mean below 1% of Y_MEAN are left at 1, all ratios clipped to [0.25, 4])
+  -- transform-aware (INSIGHTS 4.22/4.23: test = s * physical + b per variable; the truth is in that space too) --
+  y0inv      initial state back to physical units: y0 = max((test_y0 - y_b) / y_s, 0) (height exact; dead -> 0)
+  xinv       forcing back to physical units: x = (test_x - x_b) / x_s per feature (static exact, climate fitted on
+             2015-2020 at the matched grid sites); the CO2 block stays as it is (held at 0 for no-CO2 weights)
+  Maps from test_maps.npz (kaggle_upload/noco2-ep4/, written by test_transform.py). For variants with 'inv' the
+  submission CSV is mapped back: pred = y_s * physical + y_b (so dead stands land on the mapped zero); the npz keeps
+  the PHYSICAL predictions so the output slope (agb) can be re-tuned locally.
 """
 import gc, glob, os, re, time
 import numpy as np
@@ -58,11 +65,13 @@ Y0_TEST, Y0_SITES = False, 1000      # done: year-40 keeps ~60% of a height / ~5
 #      (sites the 0.091 model never trained on), else random grid sites (partly training sites: in-sample).
 #   D2 per-feature shift screening: remove the test-vs-grid shift of ONE feature at a time on test sites.
 #   Important + shifted + moved = a candidate like CO2; unimportant = can be dropped, but dropping gains little.
-IMPORTANCE, IMP_SITES = True, 1000
-FEAT_SCREEN, FEAT_SCREEN_SITES = ('v2', 'v1', 'v3'), 600   # groups broken down into single features
-# A2 variants (none, dsh_v2, y0fx1, y0bx1) are scored; D-session default: no full rollouts
-FULL_VARIANTS = ([] if CO2_CONST else
+IMPORTANCE, IMP_SITES = False, 1000           # done (session D, INSIGHTS 4.19)
+FEAT_SCREEN, FEAT_SCREEN_SITES = (), 600      # done; was ('v2', 'v1', 'v3')
+# A2 variants (none, dsh_v2, y0fx1, y0bx1) are scored. Session E (transform-aware): 'none' reproduces the 0.091 file
+# (no slot, reference for the msd table); submit y0inv first, then y0inv+xinv; xinv alone only if slots are free
+FULL_VARIANTS = (['none', 'y0inv', 'y0inv+xinv', 'xinv'] if CO2_CONST else
                  ['co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_hist+f7_fix', 'co2_hist'])
+MAPS_GLOB = 'test_maps.npz'        # searched under /kaggle/input (add it to the noco2-ep4 dataset)
 # rollout state ceiling of carbonglobe-global.ipynb (2 x grid max, printed as 'state ceiling (physical)');
 # needed to reproduce runs 2-4 exactly; grid run 1 had none
 STATE_CEIL_PHYS = [70.0, 72.322, 213.836, 23.221, 14.709, 7.307, 14.592] if CO2_CONST else None
@@ -79,6 +88,15 @@ GROUPS = {**{f'f{i}': [i] for i in range(8)},
           'v3': list(range(35, 129, 4)), 'v4': list(range(36, 129, 4)),
           'static': list(range(129, 136))}
 TARGET = {'ssp126': dict(h=-4.7, agb=-0.4), 'ssp585': dict(h=-0.3, agb=+8.5)}   # % change wanted by the LB probes
+
+NEED_MAPS = any('inv' in p for v in FULL_VARIANTS for p in v.split('+'))
+if NEED_MAPS:
+    _m = sorted(glob.glob(f'{ROOT_IN}/**/{MAPS_GLOB}', recursive=True))
+    assert _m, f'attach a dataset that contains {MAPS_GLOB} (kaggle_upload/noco2-ep4/)'
+    _mz = np.load(_m[0])
+    MAP_XS, MAP_XB = _mz['x_s'].astype(np.float32), _mz['x_b'].astype(np.float32)
+    MAP_YS, MAP_YB = _mz['y_s'].astype(np.float32), _mz['y_b'].astype(np.float32)
+    print(f'loaded {_m[0]} | y slopes {np.round(MAP_YS, 4)} | y zero images {np.round(MAP_YB, 4)}')
 
 _w = [WEIGHTS_FILE] if WEIGHTS_FILE else sorted(glob.glob(f'{ROOT_IN}/**/{WEIGHTS_GLOB}', recursive=True))
 assert _w, f'attach a dataset that contains {WEIGHTS_GLOB}'
@@ -260,6 +278,9 @@ def y0_fn(scn, variant, sites=None):
         return y0
     y0 = y0.astype(np.float32).copy()
     for p in parts:
+        if p == 'y0inv':
+            y0 = np.maximum((y0 - MAP_YB) / MAP_YS, 0.0).astype(np.float32)
+            continue
         m = re.fullmatch(r'y0([fb]?)x([0-9.]+)', p)
         assert m, f'unknown y0 variant {p!r}'
         idx = {'': list(range(N_OUT)), 'f': Y0_FLUX, 'b': Y0_STOCK}[m.group(1)]
@@ -274,7 +295,10 @@ def env_fn(scn, variant, sites=None):
     def env_at(t):
         e = tx[:, t].astype(np.float32).copy()
         for p in parts:
-            if p == 'co2_hist':
+            if p == 'xinv':
+                keep = np.ones(N_CONS, bool); keep[CO2] = False; keep[32] = False
+                e[..., keep] = (e[..., keep] - MAP_XB[keep]) / MAP_XS[keep]
+            elif p == 'co2_hist':
                 e[..., CO2] = CO2_HIST[t]
             elif p == 'co2_end':
                 e[..., CO2] = CO2_HIST[-1]
@@ -415,6 +439,8 @@ if FULL_VARIANTS:
         parts = []
         for scn in SCENARIOS:
             p = preds[v][scn]; N = p.shape[1]
+            if 'inv' in v:                               # physical -> the test/truth space (INSIGHTS 4.23)
+                p = p * MAP_YS + MAP_YB
             parts.append(pd.DataFrame({'id': [f'{scn}_{s}_{a}' for a in SEED_AGES for s in range(N)],
                                        'height': (p[:, :, 0] / Y_MEAN[0]).reshape(-1),
                                        'agb': (p[:, :, 1] / Y_MEAN[1]).reshape(-1)}))

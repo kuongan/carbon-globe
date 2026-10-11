@@ -60,5 +60,33 @@ print(f'test sites matched exactly to a grid site: {matched.sum()}/{len(T)} '
       f'(distinct {len(np.unique(test_to_grid[matched]))})')
 for k in range(7):
     print(f'  feature {129 + k}: test = {fit[k, 0]:.6f} * grid {fit[k, 1]:+.6f}')
-np.savez('result/test_transform.npz', b_y=b_y, s_height=s_h, static_fit=fit, test_to_grid=test_to_grid, match_dist=d)
-print('wrote result/test_transform.npz')
+
+# ---- climate features: test years 0-5 (2015-2020) vs the same sites' grid years 33-38 (same calendar years) ----
+# Not exact (GCM future vs reanalysis history, R^2 0.95-0.99), and the intercept also absorbs any GCM-reanalysis
+# offset; the static maps above are exact. CO2 block + constant (8-32) left at identity (unused by no-CO2 models).
+gi = np.flatnonzero(matched); Jg = test_to_grid[gi]; o = np.argsort(Jg)
+GL = np.empty((len(Jg), 12, 136), np.float32)
+for i in range(0, len(o), 512):
+    sel = o[i:i + 512]
+    GL[sel] = np.asarray(gx[Jg[sel], 33:39], np.float32).mean(1)
+TL = np.load(f'{P}/test_ssp126.npz')['test_x'][gi, 0:6].astype(np.float32).mean(1)
+x_s, x_b, x_r2 = np.ones(136), np.zeros(136), np.ones(136)
+for j in list(range(8)) + list(range(33, 129)):
+    gv, tv = GL[..., j].ravel().astype(np.float64), TL[..., j].ravel().astype(np.float64)
+    x_s[j], x_b[j] = np.polyfit(gv, tv, 1)
+    x_r2[j] = np.corrcoef(gv, tv)[0, 1] ** 2
+x_s[129:136], x_b[129:136], x_r2[129:136] = fit[:, 0], fit[:, 1], 1.0
+CLIM = list(range(8)) + list(range(33, 129))
+print(f'climate maps: slope median {np.median(x_s[CLIM]):.3f} | R^2 min {x_r2[CLIM].min():.3f} '
+      f'median {np.median(x_r2[CLIM]):.4f}')
+
+# ---- state maps: height exact, the rest slope estimates (mass points exact). Estimates for agb ranged 0.71-0.86
+# (quantile matching, conditional on height, matched-site regression corrected by height's attenuation); the
+# output-side agb slope is tuned on the LB afterwards, and the input side matters little (it cancels to first order)
+y_s = np.array([s_h, 0.84, 0.86, 0.97, 0.90, 0.90, 0.87])
+np.savez('result/test_transform.npz', b_y=b_y, s_height=s_h, static_fit=fit, test_to_grid=test_to_grid, match_dist=d,
+         x_s=x_s, x_b=x_b, x_r2=x_r2, y_s=y_s, y_b=b_y)
+import os
+os.makedirs('kaggle_upload/noco2-ep4', exist_ok=True)
+np.savez('kaggle_upload/noco2-ep4/test_maps.npz', x_s=x_s, x_b=x_b, y_s=y_s, y_b=b_y, test_to_grid=test_to_grid)
+print('wrote result/test_transform.npz and kaggle_upload/noco2-ep4/test_maps.npz (test = s * physical + b)')

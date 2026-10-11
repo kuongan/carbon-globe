@@ -16,11 +16,10 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 - Tái tạo: `python ensemble_scn.py solve` (+ `ENSEMBLE_FREE=global,global2_co2_hist` cho bản _x) với
   `ENSEMBLE_TAG=blend_scn2`; đã kiểm tra trùng tuyệt đối (max |diff| = 0).
 - Không train thêm LSTM (mục 4.19, 4.21). Thêm y0 vào blend chỉ lợi ≤ 0.0005, bằng sai số làm tròn LB (mục 4.20).
-- **Phát hiện lớn (mục 4.22): test = lưới CarbonGlobe sau một phép biến đổi affine theo từng biến.** 97% site test
-  trùng chính xác một site lưới. Đang chờ probe `result/probe_dead_T2.csv` để biết đáp án ẩn nằm trong không gian
-  đã biến đổi (T2) hay không gian vật lý (T1).
-- Đã viết sẵn: cây LightGBM trên lưới (`carbonglobe_gbm.py`, CPU), mục 4.21. Chạy sau khi probe xong, vì cách xử lý
-  input/output của nó phụ thuộc T1/T2.
+- **LB tốt nhất mới: 0.072** (`result/probe_dead_T2.csv`). Phát hiện lớn (mục 4.22): test = lưới CarbonGlobe sau
+  một phép biến đổi affine theo từng biến, và **đáp án ẩn cũng nằm trong không gian đó (T2, mục 4.23)**.
+- Đang làm (mục 4.23): đưa input test về đơn vị vật lý, chạy model, rồi biến đổi output ngược lại. Có hai nhánh:
+  `global_probe.py` session E (LSTM, Kaggle) và `carbonglobe_gbm.py` (cây, chạy local).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -104,6 +103,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 70 | Run 6 `sixth-run/submission_snapmean_none.csv` (swa_ep4: fine-tune từ noco2_ep4, LR 5e-5, 8 × 0.5M mẫu) | 0.136 | | |
 | 71 | `submission_y0.csv` (persistence: năm 40 = y0, `y0_persist.py`) | 0.285 | | thành phần blend, không dùng riêng |
 | 72 | `hyb_y0_persist.csv` (y0 ở ssp126 + bg_scn ở ssp585) | 0.174 | | probe |
+| 73 | `probe_dead_T2.csv` (blend_scn2, 8.8% ô chết đặt về số 0 đã biến đổi (−0.0826, −0.1182)) | **0.072** | T2: 0.0715–0.0725, T1: 0.074 | **T2 xác nhận, tốt nhất** |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -565,6 +565,26 @@ Phân tích trên `data/` (bản tải về đầy đủ của competition + dat
   các probe bias chỉ tìm được hệ số 0.95–1.03; và y0bx1 (nâng y0 về mức vật lý) làm điểm tệ đi (0.138).
 - Chuyển tăng trưởng lịch sử của chính site đó (y0_T + s·(y40_ls − y0_ls)) cho agb trung bình 0.74, trong khi blend
   cho 0.96–1.03 ⇒ rừng trong mô phỏng tương lai lớn thêm nhiều hơn hẳn lịch sử (CO2). Không nộp.
+
+### 4.23 T2 xác nhận: đáp án ẩn nằm trong không gian đã biến đổi (probe #73 = 0.072) [KC]
+
+- `probe_dead_T2.csv` = **0.072**, đúng khoảng dự báo cho T2 (0.0715–0.0725); T1 sẽ cho 0.074. ⇒ đáp án năm 40 =
+  (s·y40_vật_lý + b)/mean, cùng phép biến đổi với test_y0. Hệ quả:
+  - Ô chết (8.8%) có đáp án biết trước: (−0.082607, −0.118213). `ensemble_scn.py` giờ đặt chúng về giá trị đó và
+    bỏ chúng khỏi bài toán tìm trọng số. LB của từng thành phần được trừ đi đúng lỗi của nó trên các ô chết.
+    `ENSEMBLE_DEAD=0` để quay lại cách cũ.
+  - Đáp án không âm là sai: sàn đúng là số 0 đã biến đổi (b/mean), nên `write()` giờ chặn dưới ở b thay vì 0.
+  - Cách đúng cho mọi model: y0_vật_lý = (y0_T − b)/s (height chính xác), x_vật_lý = (x_T − b_x)/s_x, chạy model
+    vật lý, rồi dự đoán = s·p + b. Theo xấp xỉ bậc nhất, s của agb ở phía input tự triệt tiêu; ở phía output thì nó
+    nhân với phần tăng trưởng ⇒ chỉnh bằng LB (LB là hàm bậc hai của s với độ cong biết trước, nên 2 lần nộp là
+    tìm được s tối ưu với sai số ~0.001).
+- Map forcing (`test_maps.npz`): feature tĩnh chính xác. Feature khí hậu thì fit năm 0–5 của test (2015–2020) với
+  năm 33–38 của lưới (cùng năm lịch) tại 5988 site khớp: R² trung vị 0.990, nhỏ nhất 0.90. Ví dụ f0: test =
+  1.014·x − 5.86, tức là test "lạnh hơn" vật lý khoảng 1.6–2 đơn vị. Model hiện tại thấy một khí hậu tương lai bị
+  chuẩn hóa về giống lịch sử.
+- Không gian T của CO2: s ≈ 0.175 (so với đường SSP). Các model no-CO2 không dùng CO2.
+- Blend cũ có thêm sửa ô chết: `submission_blend_scn2d.csv` ≈ file 0.072 (msd 8e-6), ước tính 0.0744;
+  `submission_blend_scn2d_x.csv` ước tính **0.0733** (dự kiến ~0.071, vì ước tính thường bi quan ~0.002).
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 

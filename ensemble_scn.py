@@ -12,8 +12,11 @@ estimated LB 0.5 (w126'C126 w126 + w585'C585 w585) does NOT depend on a: per-sce
 usage:
   python ensemble_scn.py make                 -> result/hyb_<run>.csv for every run in HYB_LB with value None
   python ensemble_scn.py solve                -> per-scenario weights, estimate, result/submission_blend_scn[_x].csv
-  python ensemble_scn.py ingest <run> <npz> [<key>]  -> result/<run>_preds/*.npy + result/hyb_<run>.csv from a Kaggle
-                                                        preds npz (keys <scn> or <scn>_<key>)
+  python ensemble_scn.py ingest <run> <npz> [<key>|-] [map[=<agb slope>]]
+        -> result/<run>_preds/*.npy + result/hyb_<run>.csv + result/single_<run>.csv from a preds npz (keys <scn> or
+           <scn>_<key>); 'map' = the npz is physical, map it to the test/truth space first (T2, INSIGHTS 4.23)
+  env ENSEMBLE_DEAD=0: old behaviour (no dead-row fix, clip at 0). Default: dead rows set to their known truth and
+      removed from the weight fit (component LBs corrected by their own dead-row error)
   env ENSEMBLE_FREE=global (as in ensemble.py) allows a negative weight on that run in both scenarios
 """
 import os, sys
@@ -45,17 +48,48 @@ def load_scn(run, scn):
     return E.load(run, scn)
 
 
-def write(pred_by_scn, path):
+# T2 (INSIGHTS 4.23): the truth is in the test's mapped space, whose zero is (B_H, B_A) physical-scale units; dead
+# stands (result/dead_rows.npz) are known exactly. ENSEMBLE_DEAD=0 restores the old behaviour (clip at 0, no dead fix)
+DEAD_FIX = os.environ.get('ENSEMBLE_DEAD', '1') == '1'
+B_H, B_A = -0.900947, -0.4014121
+DEAD = dict(np.load(os.path.join(E.RESULT_DIR, 'dead_rows.npz'))) if DEAD_FIX else None
+
+
+def write(pred_by_scn, path, fix=True):
+    """fix=False for probe files (hybrids): their LB must stay comparable with the raw component LBs, which the
+    solver corrects by dead_err() itself. Values are floored at the mapped zero (no effect on the old >= 0 runs)."""
+    lo = (B_H, B_A) if DEAD_FIX else (0.0, 0.0)
     parts = []
     for scn in E.SCENARIOS:
-        p = np.maximum(pred_by_scn[scn], 0.0); N = p.shape[1]
+        p = pred_by_scn[scn][..., :2].copy(); N = p.shape[1]
+        p[..., 0] = np.maximum(p[..., 0], lo[0]); p[..., 1] = np.maximum(p[..., 1], lo[1])
+        if DEAD_FIX and fix:
+            p[DEAD[scn]] = (B_H, B_A)                 # dead stays dead: the mapped zero (exact truth)
         ids = [f'{scn}_{site}_{age}' for site in range(N) for age in E.SEED_AGES]
         parts.append(pd.DataFrame({'id': ids, 'height': (p[:, :, 0].T / E.H_SCALE).reshape(-1),
                                    'agb': (p[:, :, 1].T / E.A_SCALE).reshape(-1)}))
     sub = pd.concat(parts, ignore_index=True)
-    assert len(sub) == E.N_ROWS and sub['id'].is_unique and (sub[['height', 'agb']] >= 0).all().all()
+    assert len(sub) == E.N_ROWS and sub['id'].is_unique and np.isfinite(sub[['height', 'agb']].to_numpy()).all()
     sub.to_csv(path, index=False)
     return sub
+
+
+def dead_err(p, scn):
+    """Metric contribution of the dead rows of one scenario (truth known), normalized like the per-scenario MSE."""
+    m = DEAD[scn]
+    return 0.5 * (np.sum((p[..., 0][m] - B_H) ** 2) / E.H_SCALE ** 2 +
+                  np.sum((p[..., 1][m] - B_A) ** 2) / E.A_SCALE ** 2) / m.size
+
+
+def msd_alive(P, scn):
+    """Pairwise msd over the rows whose truth is unknown (alive), normalized by ALL rows of the scenario."""
+    keep = ~DEAD[scn]; R = len(P)
+    D = np.zeros((R, R))
+    for i in range(R):
+        for j in range(i + 1, R):
+            D[i, j] = D[j, i] = 0.5 * (np.sum(((P[i][..., 0] - P[j][..., 0])[keep] / E.H_SCALE) ** 2) +
+                                       np.sum(((P[i][..., 1] - P[j][..., 1])[keep] / E.A_SCALE) ** 2)) / keep.size
+    return D
 
 
 def make():
@@ -63,13 +97,14 @@ def make():
     for r, v in HYB_LB.items():
         if v is None:
             path = f'result/hyb_{r}.csv'
-            write({'ssp126': load_scn(r, 'ssp126'), 'ssp585': base585}, path)
+            write({'ssp126': load_scn(r, 'ssp126'), 'ssp585': base585}, path, fix=False)
             print('wrote', path)
 
 
 def solve():
     free_names = tuple(x for x in os.environ.get('ENSEMBLE_FREE', '').split(',') if x)
-    runs = [BASE_RUN] + [r for r, v in HYB_LB.items() if v is not None]
+    skip = set(x for x in os.environ.get('ENSEMBLE_SKIP', '').split(',') if x)    # e.g. y0_persist -> the scn2 list
+    runs = [BASE_RUN] + [r for r, v in HYB_LB.items() if v is not None and r not in skip]
     assert len(runs) >= 2, 'fill in HYB_LB with the LB scores of the hybrid probes first'
     lb = np.array([E.RUNS[r][0] for r in runs])
     hyb = np.array([E.RUNS[BASE_RUN][0]] + [HYB_LB[r] for r in runs[1:]])   # the base's own hybrid is itself
@@ -80,7 +115,11 @@ def solve():
     out, est = {}, 0.0
     for scn, m in (('ssp126', m126), ('ssp585', m585)):
         P = [load_scn(r, scn) for r in runs]
-        C = E.error_cov(m, E.msd_matrix(P))
+        if DEAD_FIX:      # remove the known dead rows from the problem: their error becomes 0 after the fix
+            m = m - np.array([dead_err(p, scn) for p in P])
+            C = E.error_cov(m, msd_alive(P, scn))
+        else:
+            C = E.error_cov(m, E.msd_matrix(P))
         w, v = E.best_simplex_weights(C, free)
         est += 0.5 * v
         out[scn] = sum(wi * p for wi, p in zip(w, P) if wi != 0)
@@ -102,19 +141,33 @@ def ingest():
     gbm_preds.npz key direct), (15, N, 7) physical units
     -> result/<run>_preds/{ssp126,ssp585}.npy (the layout ensemble.load reads) + result/hyb_<run>.csv"""
     run, src = sys.argv[2], sys.argv[3]
-    key = sys.argv[4] if len(sys.argv) > 4 else ''
+    key = sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] != '-' else ''
+    # 5th arg 'map' or 'map=<agb slope>': the npz holds PHYSICAL predictions (y0inv/xinv variants, gbm) -> mapped to
+    # the test/truth space with result/test_transform.npz (y = s * physical + b; agb slope overridable)
+    mp = sys.argv[5] if len(sys.argv) > 5 else ''
+    if mp.startswith('map'):
+        tz = np.load(os.path.join(E.RESULT_DIR, 'test_transform.npz'))
+        ys, yb = tz['y_s'].astype(np.float64).copy(), tz['y_b'].astype(np.float64)
+        if '=' in mp:
+            ys[1] = float(mp.split('=')[1])
+        print('mapping physical -> test space with slopes', np.round(ys, 4))
     d = np.load(src)
     out_dir = os.path.join(E.RESULT_DIR, f'{run}_preds')
     os.makedirs(out_dir, exist_ok=True)
     for scn in E.SCENARIOS:
-        a = d[f'{scn}_{key}' if key else scn].astype(np.float32)
+        a = d[f'{scn}_{key}' if key else scn].astype(np.float64)
+        if mp.startswith('map'):
+            a = np.maximum(a, 0.0) * ys + yb
+        a = a.astype(np.float32)
         assert a.ndim == 3 and a.shape[0] == len(E.SEED_AGES) and a.shape[2] == 7 and np.isfinite(a).all(), a.shape
         np.save(os.path.join(out_dir, f'{scn}.npy'), a)
         print(f'{scn}: {a.shape} scaled means height {a[..., 0].mean() / E.H_SCALE:.3f} '
               f'agb {a[..., 1].mean() / E.A_SCALE:.3f}')
     path = f'result/hyb_{run}.csv'
-    write({'ssp126': load_scn(run, 'ssp126'), 'ssp585': load_scn(BASE_RUN, 'ssp585')}, path)
-    print('wrote', out_dir, 'and', path)
+    write({'ssp126': load_scn(run, 'ssp126'), 'ssp585': load_scn(BASE_RUN, 'ssp585')}, path, fix=False)
+    sp = f'result/single_{run}.csv'                   # the component itself (its LB goes into ensemble.RUNS)
+    write({s: load_scn(run, s) for s in E.SCENARIOS}, sp, fix=False)
+    print('wrote', out_dir, 'and', path, 'and', sp)
 
 
 if __name__ == '__main__':

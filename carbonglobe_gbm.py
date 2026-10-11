@@ -8,14 +8,18 @@
 # Trees do not extrapolate (constant beyond the training range), unlike the LSTMs: a different error pattern on the
 # shifted test climate. CO2 block + constant feature dropped (no-CO2 won: LB 0.091 vs 0.122).
 #
-# Kaggle: CPU notebook, inputs = competition data + zhihaow/carbonglobe. Paste this file into one cell (or split at
-# the "# %%" markers) and Save & Run All. Expected 2-4 h (most of it loading the 14 GB grid and the rollout models).
-# Outputs (/kaggle/working):
-#   submission_gbm_direct.csv            submit first
-#   submission_gbm_rollout.csv           submit second
-#   submission_gbm_<model>_dsh_v2.csv    test v2 group shifted back to the grid mean (only if the plain ones help)
-#   gbm_preds.npz                        send back: keys <scn>_<model>[_dsh_v2], (15, N, 7), physical units
-#   gbm_summary.json                     holdout metrics, best iterations, feature-group importance, timings
+# Transform-aware (INSIGHTS 4.22/4.23): the test inputs AND the hidden truth are `s * physical + b` per variable.
+# The trees learn physical dynamics on the grid; test inputs are mapped back to physical units with test_maps.npz
+# (written by test_transform.py) and the predictions are mapped forward again before writing the CSV.
+#   variant 'inv'  : y0 and forcing mapped back (main)
+#   variant 'y0inv': only y0 mapped back, forcing as given
+#
+# Runs locally (data/ folder, outputs in result/gbm/) or on Kaggle (CPU notebook; competition data +
+# zhihaow/carbonglobe + the dataset holding test_maps.npz; outputs in /kaggle/working).
+# Outputs:
+#   submission_gbm_<model>_<variant>.csv  model in {direct, rollout}
+#   gbm_preds.npz      keys <scn>_<model>_<variant>, (15, N, 7), PHYSICAL units (re-map locally with other slopes)
+#   gbm_summary.json   holdout metrics, best iterations, feature-group importance, timings
 
 # %%
 import os, time, gc, json, re
@@ -23,10 +27,21 @@ import numpy as np
 import pandas as pd
 import lightgbm as lgb
 
+import glob
+
 T0 = time.time()
-COMP = '/kaggle/input/competitions/ieee-bigdata-cup-2026-ai-emulation-challenge/public'
-BASE = '/kaggle/input/datasets/zhihaow/carbonglobe'
-OUT = '/kaggle/working'
+if os.path.isdir('/kaggle/input'):
+    COMP = '/kaggle/input/competitions/ieee-bigdata-cup-2026-ai-emulation-challenge/public'
+    BASE = '/kaggle/input/datasets/zhihaow/carbonglobe'
+    OUT = '/kaggle/working'
+    MAPS = sorted(glob.glob('/kaggle/input/**/test_maps.npz', recursive=True))[0]
+else:                                                # local copy of the data (repo root as working directory)
+    COMP, BASE, OUT = 'data/public', 'data/carbonglobe', 'result/gbm'
+    MAPS = 'kaggle_upload/noco2-ep4/test_maps.npz'
+os.makedirs(OUT, exist_ok=True)
+_mz = np.load(MAPS)
+MAP_XS, MAP_XB = _mz['x_s'].astype(np.float32), _mz['x_b'].astype(np.float32)
+MAP_YS, MAP_YB = _mz['y_s'].astype(np.float32), _mz['y_b'].astype(np.float32)
 
 SEED_AGES = [1, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 350, 400, 450, 500]
 SCENARIOS = ['ssp126', 'ssp585']
@@ -38,14 +53,15 @@ STOCK = (0, 1, 2)                                    # rollout: stocks predicted
 # ---- config ----
 SEED = 42
 RUN_DIRECT, RUN_ROLLOUT = True, True
-VARIANTS = ('none', 'dsh_v2')
+VARIANTS = ('inv', 'y0inv')
 HOLD_FRAC, BLOCK_DEG = 0.08, 10       # holdout = 8% of 10-degree blocks (neighbouring 0.5-degree cells are near-copies)
-ROLL_ROWS, ROLL_VAL_ROWS = 3_000_000, 300_000        # one-step (site, age, year) rows sampled for the rollout model
+ROLL_ROWS, ROLL_VAL_ROWS = 2_000_000, 200_000        # one-step (site, age, year) rows sampled for the rollout model
+                                                     # (peak RAM ~6 GB; 3M rows on Kaggle's 30 GB is fine too)
 STATE_CEIL = 2.0                      # rollout states capped at 2x the grid maximum (as in the LSTM notebook)
 LOAD_CHUNK = 1024
 PARAMS = dict(objective='l2', learning_rate=0.05, num_leaves=127, min_data_in_leaf=200,
               feature_fraction=0.5, bagging_fraction=0.7, bagging_freq=1, lambda_l2=1.0, max_bin=127,
-              num_threads=os.cpu_count() or 4, verbose=-1, seed=SEED)
+              num_threads=max(1, (os.cpu_count() or 4) - 2), verbose=-1, seed=SEED)   # leave 2 cores free
 DIRECT_ROUNDS, ROLL_ROUNDS, ES_ROUNDS = 5000, 3000, 100
 
 CO2 = list(range(8, 32))
@@ -134,36 +150,41 @@ hold_y0 = y_all[:, HOLD, 0].copy()
 stamp(f'train sites {len(TRAIN)} | holdout sites {len(HOLD)} ({len(_hb)}/{len(_ub)} blocks) | '
       f'holdout persistence (y40 = y0) metric {metric(hold_y0, hold_y40):.4f}')
 
-# ---- test ----
-sample_sub = pd.read_csv(f'{COMP}/sample_submission.csv')
+# ---- test: map the inputs back to physical units (test = s * physical + b per variable) ----
+_ss = f'{COMP}/sample_submission.csv'
+sample_ids = (pd.read_csv(_ss)['id'] if os.path.isfile(_ss) else       # local download has no sample_submission
+              pd.Series([f'{scn}_{s}_{a}' for scn in SCENARIOS for s in range(6171) for a in SEED_AGES]))
+X_KEEP = np.ones(N_CONS, bool); X_KEEP[CO2] = False; X_KEEP[32] = False
 TEST = {}
 for scn in SCENARIOS:
     d = np.load(f'{COMP}/test_{scn}.npz')
     tx = d['test_x'].astype(np.float32)                                   # (N, 40, 12, 136)
-    A_t = tx.mean(axis=2)
-    shift = A_t.mean(axis=(0, 1)) - GRID_MEAN                             # test - grid, annual mean, raw units
-    variants = {}
-    for v in VARIANTS:
-        a = A_t.copy() if v != 'none' else A_t
-        if v == 'dsh_v2':
-            a[..., V2] -= shift[V2]                                       # same as global_probe's dsh_v2
-        variants[v] = a
-    TEST[scn] = dict(A=variants, M=np.ascontiguousarray(tx[..., MON]),
-                     y0=np.transpose(d['test_y0'].astype(np.float32), (1, 0, 2)))   # (15, N, 7)
-    stamp(f'{scn}: test {tx.shape} | v2 shift (test - grid, mean over the group) {shift[V2].mean():+.4f} | '
+    y0_t = np.transpose(d['test_y0'].astype(np.float32), (1, 0, 2))     # (15, N, 7), test space
+    y0_p = np.maximum((y0_t - MAP_YB) / MAP_YS, 0.0).astype(np.float32)  # physical; dead stands -> exactly 0
+    A, M = {}, {}
+    assert set(VARIANTS) <= {'inv', 'y0inv'}, VARIANTS
+    if 'y0inv' in VARIANTS:                                               # forcing as given
+        A['y0inv'] = tx.mean(axis=2); M['y0inv'] = np.ascontiguousarray(tx[..., MON])
+    if 'inv' in VARIANTS:                                                 # forcing mapped back, in place (RAM)
+        for j in np.flatnonzero(X_KEEP):
+            tx[..., j] -= MAP_XB[j]; tx[..., j] /= MAP_XS[j]
+        A['inv'] = tx.mean(axis=2); M['inv'] = np.ascontiguousarray(tx[..., MON])
+    TEST[scn] = dict(A=A, M=M, y0=y0_p)
+    stamp(f'{scn}: test {tx.shape} | dead (y0 at the mapped zero) {np.mean(y0_p[..., 0] == 0):.4f} | '
           f'non-finite test inputs {int((~np.isfinite(tx)).sum())}')
     del tx, d; gc.collect()
 
 
 def write_submission(p_by_scn, path):
+    """Physical predictions -> the test/truth space (s * p + b; physical 0 -> the mass point) -> /global mean."""
     parts = []
     for scn in SCENARIOS:
-        p = np.maximum(p_by_scn[scn], 0.0); N = p.shape[1]
+        p = np.maximum(p_by_scn[scn], 0.0) * MAP_YS + MAP_YB; N = p.shape[1]
         ids = [f'{scn}_{site}_{age}' for age in SEED_AGES for site in range(N)]
         parts.append(pd.DataFrame({'id': ids, 'height': (p[:, :, 0] / H_SCALE).reshape(-1),
                                    'agb': (p[:, :, 1] / A_SCALE).reshape(-1)}))
-    sub = sample_sub[['id']].join(pd.concat(parts).set_index('id'), on='id')
-    assert len(sub) == len(sample_sub) and not sub[['height', 'agb']].isna().any().any(), 'missing ids / NaNs'
+    sub = pd.DataFrame({'id': sample_ids}).join(pd.concat(parts).set_index('id'), on='id')
+    assert len(sub) == len(sample_ids) and not sub[['height', 'agb']].isna().any().any(), 'missing ids / NaNs'
     sub.to_csv(path, index=False)
     return sub
 
@@ -218,8 +239,9 @@ def direct_X(y0, clim):
 def direct_predict(models, y0, clim):
     X = direct_X(y0, clim)
     p = y0.copy()                                     # channels 2-6 are not predicted: left at y0 (not scored)
+    dead = (y0[..., 0] == 0) & (y0[..., 1] == 0)      # on the grid a dead stand stays dead for 40 years (100%)
     for k, m in models.items():
-        p[..., k] = np.clip(y0[..., k] + m.predict(X).reshape(N_AGES, -1), 0.0, CEIL[k])
+        p[..., k] = np.where(dead, 0.0, np.clip(y0[..., k] + m.predict(X).reshape(N_AGES, -1), 0.0, CEIL[k]))
     return p
 
 
@@ -247,8 +269,8 @@ if RUN_DIRECT:
     SUMMARY['direct']['hold_metric'] = float(metric(hp, hold_y40))
     stamp(f'direct holdout metric {metric(hp, hold_y40):.4f} (persistence {SUMMARY["hold_persistence"]:.4f})')
     for v in VARIANTS:
-        key = 'direct' if v == 'none' else f'direct_{v}'
-        PREDS[key] = {scn: direct_predict(dmodels, T['y0'], direct_clim(T['A'][v], T['M'])) for scn, T in TEST.items()}
+        key = f'direct_{v}'
+        PREDS[key] = {scn: direct_predict(dmodels, T['y0'], direct_clim(T['A'][v], T['M'][v])) for scn, T in TEST.items()}
         write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}.csv')
         report(key)
     save_outputs()
@@ -282,6 +304,7 @@ def rollout(models, y0, A, M):
     st = y0.reshape(N_AGES * n, N_OUT).astype(np.float32).copy()
     age0 = np.repeat(np.asarray(SEED_AGES, np.float32), n)
     si = np.tile(np.arange(n), N_AGES)
+    dead = (st[:, 0] == 0) & (st[:, 1] == 0)          # dead at year 0 stays dead (100% on the grid)
     for t in range(N_YEAR):
         X = roll_X(st, age0 + t, A[si, t], M[si, t])
         new = np.empty_like(st)
@@ -289,12 +312,15 @@ def rollout(models, y0, A, M):
             p = models[k].predict(X)
             new[:, k] = st[:, k] + p if k in STOCK else p
         st = np.minimum(np.maximum(new, 0.0), CEIL)
+        st[dead] = 0.0
     return st.reshape(N_AGES, n, N_OUT)
 
 
 if RUN_ROLLOUT:
     Xr, Yr = sample_rows(TRAIN, ROLL_ROWS)
     Xv, Yv = sample_rows(HOLD, ROLL_VAL_ROWS)
+    A_hold, M_hold = A_all[HOLD], M_all[HOLD]        # all the rest of the grid arrays is no longer needed: free RAM
+    del A_all, M_all, y_all; gc.collect()
     stamp(f'rollout rows: train {Xr.shape} | holdout {Xv.shape}')
     # binned once (same params as training, so lgb.train does not need to rebuild it); only the label changes per target
     dtr = lgb.Dataset(Xr, Yr[:, 0], feature_name=RNAMES, params=PARAMS, free_raw_data=False).construct()
@@ -308,14 +334,14 @@ if RUN_ROLLOUT:
         SUMMARY.setdefault('rollout', {})[STATE_NAMES[k]] = dict(best_iter=rmodels[k].best_iteration, groups=gi, top=top)
         stamp(f'rollout {STATE_NAMES[k]}: best iter {rmodels[k].best_iteration} | gain by group {gi}')
     del dtr, dva, Xr, Yr, Xv, Yv; gc.collect()
-    hp = rollout(rmodels, hold_y0, A_all[HOLD], M_all[HOLD])
+    hp = rollout(rmodels, hold_y0, A_hold, M_hold)
     SUMMARY['rollout']['hold_metric'] = float(metric(hp, hold_y40))
     stamp(f'rollout holdout metric {metric(hp, hold_y40):.4f} (persistence {SUMMARY["hold_persistence"]:.4f})')
     for v in VARIANTS:
-        key = 'rollout' if v == 'none' else f'rollout_{v}'
+        key = f'rollout_{v}'
         PREDS[key] = {}
         for scn, T in TEST.items():
-            PREDS[key][scn] = rollout(rmodels, T['y0'], T['A'][v], T['M'])
+            PREDS[key][scn] = rollout(rmodels, T['y0'], T['A'][v], T['M'][v])
             stamp(f'rollout {key} {scn} done')
         write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}.csv')
         report(key)
