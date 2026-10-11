@@ -12,6 +12,7 @@ estimated LB 0.5 (w126'C126 w126 + w585'C585 w585) does NOT depend on a: per-sce
 usage:
   python ensemble_scn.py make                 -> result/hyb_<run>.csv for every run in HYB_LB with value None
   python ensemble_scn.py solve                -> per-scenario weights, estimate, result/submission_blend_scn[_x].csv
+  python ensemble_scn.py ingest <run> <npz>   -> result/<run>_preds/*.npy + result/hyb_<run>.csv from a Kaggle preds npz
   env ENSEMBLE_FREE=global (as in ensemble.py) allows a negative weight on that run in both scenarios
 """
 import os, sys
@@ -94,5 +95,23 @@ def solve():
     print('wrote', path)
 
 
+def ingest():
+    """python ensemble_scn.py ingest <run> <preds.npz>: npz with keys ssp126/ssp585, (15, N, 7) physical units
+    -> result/<run>_preds/{ssp126,ssp585}.npy (the layout ensemble.load reads) + result/hyb_<run>.csv"""
+    run, src = sys.argv[2], sys.argv[3]
+    d = np.load(src)
+    out_dir = os.path.join(E.RESULT_DIR, f'{run}_preds')
+    os.makedirs(out_dir, exist_ok=True)
+    for scn in E.SCENARIOS:
+        a = d[scn].astype(np.float32)
+        assert a.ndim == 3 and a.shape[0] == len(E.SEED_AGES) and a.shape[2] == 7 and np.isfinite(a).all(), a.shape
+        np.save(os.path.join(out_dir, f'{scn}.npy'), a)
+        print(f'{scn}: {a.shape} scaled means height {a[..., 0].mean() / E.H_SCALE:.3f} '
+              f'agb {a[..., 1].mean() / E.A_SCALE:.3f}')
+    path = f'result/hyb_{run}.csv'
+    write({'ssp126': load_scn(run, 'ssp126'), 'ssp585': load_scn(BASE_RUN, 'ssp585')}, path)
+    print('wrote', out_dir, 'and', path)
+
+
 if __name__ == '__main__':
-    {'make': make, 'solve': solve}[sys.argv[1]]()
+    {'make': make, 'solve': solve, 'ingest': ingest}[sys.argv[1]]()
