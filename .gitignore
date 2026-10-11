@@ -20,4 +20,8 @@ result/**/carbon-globe/
 
 # files staged for upload as Kaggle datasets
 kaggle_upload/
+# local copy of the competition + CarbonGlobe datasets (~30 GB) and analysis caches built from it
+data/
+/_*.npy
+/_*.npz
 

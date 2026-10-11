@@ -16,8 +16,11 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 - Tái tạo: `python ensemble_scn.py solve` (+ `ENSEMBLE_FREE=global,global2_co2_hist` cho bản _x) với
   `ENSEMBLE_TAG=blend_scn2`; đã kiểm tra trùng tuyệt đối (max |diff| = 0).
 - Không train thêm LSTM (mục 4.19, 4.21). Thêm y0 vào blend chỉ lợi ≤ 0.0005, bằng sai số làm tròn LB (mục 4.20).
-- Đang thử: cây LightGBM trên lưới (`carbonglobe_gbm.py`, CPU), hai model `direct` và `rollout`, làm thành viên blend khác
-  hẳn LSTM (mục 4.21). Nếu không qua ngưỡng đa dạng thì giữ hai file trên.
+- **Phát hiện lớn (mục 4.22): test = lưới CarbonGlobe sau một phép biến đổi affine theo từng biến.** 97% site test
+  trùng chính xác một site lưới. Đang chờ probe `result/probe_dead_T2.csv` để biết đáp án ẩn nằm trong không gian
+  đã biến đổi (T2) hay không gian vật lý (T1).
+- Đã viết sẵn: cây LightGBM trên lưới (`carbonglobe_gbm.py`, CPU), mục 4.21. Chạy sau khi probe xong, vì cách xử lý
+  input/output của nó phụ thuộc T1/T2.
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -529,6 +532,39 @@ thành viên hoán đổi được, trung bình đều có MSE = mean(C_ii)/M + 
     mức, cuộn 40 năm như LSTM. 3M dòng một bước.
   - Không dùng CO2/hằng số; f7 chỉ lấy trung bình năm (biên độ mùa ở test gấp ~20 lần lưới). Holdout là 8% số khối 10°,
     chỉ để early stopping và kiểm tra hợp lý, không dùng để xếp hạng.
+
+### 4.22 Test = lưới CarbonGlobe sau một phép biến đổi affine theo từng biến (dữ liệu local, `test_transform.py`) [KC]
+
+Phân tích trên `data/` (bản tải về đầy đủ của competition + dataset CarbonGlobe):
+
+- **Điểm khối (mass point) trong test_y0.** Mỗi biến có một giá trị lặp lại chính xác ở 8.8% số ô, cả hai kịch bản:
+  height −0.900947, agb −0.4014121, soil −0.5323946, lai 0.1179376, gpp 0.2590265, npp 0.1278152, rh 0.0846562.
+  Lưới có 8.3% ô bằng đúng 0 (rừng chết; rh: 55% ở lưới, 53% ở test). Theo tuổi, tỷ lệ chết cũng khớp: 0.2% ở tuổi
+  20–50, 13–15% từ tuổi 100. ⇒ các giá trị trên là ảnh của 0 vật lý. Test có height âm (14% ô) và agb âm (50% ô),
+  trong khi lưới không có giá trị âm nào.
+- **Phép biến đổi height là chính xác:** test = 0.8763248·y − 0.900947. Các giá trị height hay gặp nhất ở lưới (0,
+  0.051629, 0.058046, 0.094074, trần 35.000153) rơi đúng vào các giá trị hay gặp nhất ở test (sai lệch ≤ 2e-6).
+  Với các biến khác mới ước lượng được độ dốc: agb ~0.71–0.86, soil ~0.85, lai ~0.96, gpp/npp ~0.87, rh ~0.85.
+- **Forcing cũng bị biến đổi.** Feature 135: trần 1000.0 ở lưới thành 999.873718 ở test, với cùng tỷ lệ 98% số site.
+  Khối CO2 của test là đường SSP bị nén khoảng 0.175 lần: ssp126 tăng 365.2 → 372.6, ssp585 tăng 365.3 → 394.7
+  (+7 so với +29, tỷ lệ 4 đúng như SSP1-2.6 so với SSP5-8.5 giai đoạn 2015–2055). Đây là lý do "CO2 test thấp và
+  phẳng" (4.2), và có lẽ cũng giải thích phần lớn kết quả OOD audit ban đầu.
+- **97% site test là site lưới.** Đảo ngược map affine của 7 feature tĩnh (129–135; fit trên các cặp gần nhất, lặp lại)
+  thì 5988/6171 site test trùng chính xác (khoảng cách 0) một site lưới khác nhau. Các site này rải theo split
+  giống ngẫu nhiên: 322 ở train.csv, 50 ở val.csv, 5616 ở test.csv. 299 site trong số đó nằm trong holdout của các
+  run lưới.
+- **Nhưng trạng thái đầu khác:** test_y0 (đã đảo map) ≠ y0 của lưới tại cùng site, lệch trung vị 0.43 m. Lần chạy
+  tương lai bắt đầu từ một trạng thái khác, không phải chạy tiếp lần lịch sử.
+- [GT] Cơ chế phù hợp: test = (v − μ_tương lai)/σ_tương lai · σ_train + μ_train cho từng biến, tức là chuẩn hóa
+  bằng thống kê của mô phỏng tương lai rồi giải chuẩn hóa bằng `data_stats`. Với height, μ_tương lai = 13.47 và
+  σ_tương lai = 11.83 (lưới: 10.93 / 10.43).
+- **Câu hỏi quyết định:** đáp án ẩn nằm trong không gian đã biến đổi (T2) hay không gian vật lý (T1)? Ở lưới, rừng
+  chết lúc đầu thì vẫn chết sau 40 năm (100%), nên với các ô chết đáp án là 0 (T1) hoặc (−0.0826, −0.1182) sau khi
+  chia scale (T2). Probe `result/probe_dead_T2.csv` (blend_scn2, ô chết đặt về giá trị T2): T2 → 0.0715–0.0725,
+  T1 → 0.0735–0.0745. Bằng chứng gián tiếp nghiêng về T2: dưới T1, cây già sẽ bị dự đoán thiếu ~20% height, nhưng
+  các probe bias chỉ tìm được hệ số 0.95–1.03; và y0bx1 (nâng y0 về mức vật lý) làm điểm tệ đi (0.138).
+- Chuyển tăng trưởng lịch sử của chính site đó (y0_T + s·(y40_ls − y0_ls)) cho agb trung bình 0.74, trong khi blend
+  cho 0.96–1.03 ⇒ rừng trong mô phỏng tương lai lớn thêm nhiều hơn hẳn lịch sử (CO2). Không nộp.
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
