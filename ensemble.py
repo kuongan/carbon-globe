@@ -70,6 +70,8 @@ RUNS = {
     'dead_t2':               (0.072, None),    # probe_dead_T2.csv = blend_scn2 + dead rows at the mapped zero
     'scn2d_x':               (0.072, None),    # submission_blend_scn2d_x.csv
     'gbm_direct_y0inv':      (0.108, None),    # match_direct_y0inv.csv: LightGBM direct, y0 mapped back, mean-matched
+    'gbm_avg_y0inv':         (0.107, None),    # 4-seed average of direct_y0inv (estimated from msd; submit later)
+    'gbm_rollout_y0inv':     (0.200, None),    # LightGBM rollout, y0 mapped back, mean-matched; msd large -> helps if LB<0.245
     'gbm_direct_inv':        (0.164, None),    # match_direct_inv.csv: same + forcing mapped back
 }
 # scored blend files reusable as components would go here too (e.g. blend_a2_x, LB 0.075); a blend of blends adds no

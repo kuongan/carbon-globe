@@ -27,21 +27,23 @@ import ensemble as E
 BASE_RUN = 'bg_scn'
 # LB of result/hyb_<run>.csv (fill in after submitting); the base itself and runs with no file yet are skipped
 HYB_LB = {
+    # ---- pre-T2 era ----
     'v2_scheduled_sampling': 0.127,
     'lstm_xl':               0.123,
     'ecoformer_ed':          0.125,
     'global':                0.116,
     'global_co2_hist':       0.109,
     'global2_co2_hist':      0.109,
-    # components of the LB-0.075 blend that have no hybrid yet (result/hyb_<run>.csv, fill in after submitting)
     'a2_dsh_v2':             0.089,
     'a2_y0bx1':              0.131,
     'noco2_ep6':             0.104,
     's7_ep3':                0.103,
     'noco2_ep4':             0.093,
-    'y0_persist':            0.174,   # persistence (LB 0.285) -> blend_scn3 (not submitted, gain <= 0.0005)
-    'gbm_direct_y0inv':      0.097,   # T2 era: LightGBM direct (LB 0.108), test-space file with exact dead rows
-    # to reproduce the scored blend_scn2 / blend_scn2_x files, set 'y0_persist' to None (comment it out)
+    'y0_persist':            0.174,
+    # ---- T2 era: hybrid LB used for per-scenario solve ----
+    'gbm_direct_y0inv':      0.097,
+    'gbm_avg_y0inv':         None,    # placeholder for shared(); ingest_csv+hyb not needed
+    'gbm_rollout_y0inv':     None,    # rollout; only useful in shared()
 }
 
 
