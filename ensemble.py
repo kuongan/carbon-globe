@@ -66,6 +66,11 @@ RUNS = {
     'nov2_ep4':              (0.135, None),
     'swa_snapmean':          (0.136, None),    # run 6: fine-tune from noco2_ep4 (LR 5e-5, 8 x 0.5M), mean of snapshots
     'y0_persist':            (0.285, None),    # persistence: year-40 state = test_y0 (y0_persist.py); blend component only
+    # ---- T2 era (INSIGHTS 4.23): files in the test/truth space, dead rows exact (ensemble_scn.py ingest_csv) ----
+    'dead_t2':               (0.072, None),    # probe_dead_T2.csv = blend_scn2 + dead rows at the mapped zero
+    'scn2d_x':               (0.072, None),    # submission_blend_scn2d_x.csv
+    'gbm_direct_y0inv':      (0.108, None),    # match_direct_y0inv.csv: LightGBM direct, y0 mapped back, mean-matched
+    'gbm_direct_inv':        (0.164, None),    # match_direct_inv.csv: same + forcing mapped back
 }
 # scored blend files reusable as components would go here too (e.g. blend_a2_x, LB 0.075); a blend of blends adds no
 # new direction, so they are left out

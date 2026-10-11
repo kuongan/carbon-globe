@@ -51,9 +51,11 @@ STATE_NAMES = ['height', 'agb', 'soil', 'lai', 'gpp', 'npp', 'rh']
 STOCK = (0, 1, 2)                                    # rollout: stocks predicted as a yearly change, fluxes as a level
 
 # ---- config ----
-SEED = 42
-RUN_DIRECT, RUN_ROLLOUT = True, True
-VARIANTS = ('inv', 'y0inv')
+SEED = int(os.environ.get('GBM_SEED', 42))          # env overrides for local bagging runs (seed = trees, rows,
+_models = os.environ.get('GBM_MODELS', 'direct,rollout').split(',')   # features and the holdout blocks)
+RUN_DIRECT, RUN_ROLLOUT = 'direct' in _models, 'rollout' in _models
+TAG = os.environ.get('GBM_TAG', '')                  # suffix of every output file, e.g. '_s1'
+VARIANTS = tuple(os.environ.get('GBM_VARIANTS', 'inv,y0inv').split(','))   # y0inv scored 0.108, inv 0.164
 HOLD_FRAC, BLOCK_DEG = 0.08, 10       # holdout = 8% of 10-degree blocks (neighbouring 0.5-degree cells are near-copies)
 ROLL_ROWS, ROLL_VAL_ROWS = 2_000_000, 200_000        # one-step (site, age, year) rows sampled for the rollout model
                                                      # (peak RAM ~6 GB; 3M rows on Kaggle's 30 GB is fine too)
@@ -201,10 +203,10 @@ PREDS, SUMMARY = {}, dict(params=PARAMS, n_train_sites=int(len(TRAIN)), n_hold_s
 
 
 def save_outputs():
-    np.savez_compressed(f'{OUT}/gbm_preds.npz', **{f'{scn}_{k}': p for k, d in PREDS.items() for scn, p in d.items()})
-    with open(f'{OUT}/gbm_summary.json', 'w') as f:
+    np.savez_compressed(f'{OUT}/gbm_preds{TAG}.npz', **{f'{scn}_{k}': p for k, d in PREDS.items() for scn, p in d.items()})
+    with open(f'{OUT}/gbm_summary{TAG}.json', 'w') as f:
         json.dump(SUMMARY, f, indent=1, default=str)
-    stamp(f'saved gbm_preds.npz ({sorted(PREDS)}) + gbm_summary.json')
+    stamp(f'saved gbm_preds{TAG}.npz ({sorted(PREDS)}) + gbm_summary{TAG}.json')
 
 
 def report(key):
@@ -271,7 +273,7 @@ if RUN_DIRECT:
     for v in VARIANTS:
         key = f'direct_{v}'
         PREDS[key] = {scn: direct_predict(dmodels, T['y0'], direct_clim(T['A'][v], T['M'][v])) for scn, T in TEST.items()}
-        write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}.csv')
+        write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}{TAG}.csv')
         report(key)
     save_outputs()
 
@@ -343,7 +345,7 @@ if RUN_ROLLOUT:
         for scn, T in TEST.items():
             PREDS[key][scn] = rollout(rmodels, T['y0'], T['A'][v], T['M'][v])
             stamp(f'rollout {key} {scn} done')
-        write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}.csv')
+        write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}{TAG}.csv')
         report(key)
     save_outputs()
 

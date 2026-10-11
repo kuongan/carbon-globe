@@ -104,6 +104,9 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 71 | `submission_y0.csv` (persistence: năm 40 = y0, `y0_persist.py`) | 0.285 | | thành phần blend, không dùng riêng |
 | 72 | `hyb_y0_persist.csv` (y0 ở ssp126 + bg_scn ở ssp585) | 0.174 | | probe |
 | 73 | `probe_dead_T2.csv` (blend_scn2, 8.8% ô chết đặt về số 0 đã biến đổi (−0.0826, −0.1182)) | **0.072** | T2: 0.0715–0.0725, T1: 0.074 | **T2 xác nhận, tốt nhất** |
+| 74 | `submission_blend_scn2d_x.csv` (blend_scn2_x + ô chết, bỏ ô chết khỏi bài toán trọng số) | 0.072 | 0.0733 | |
+| 75 | `match_direct_y0inv.csv` (LightGBM direct, y0 → vật lý, climate giữ nguyên, khớp trung bình) | **0.108** | | thành phần: tương quan lỗi 0.69 |
+| 76 | `match_direct_inv.csv` (giống #75 + climate → vật lý) | 0.164 | | đảo climate làm hỏng |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -594,6 +597,16 @@ Phân tích trên `data/` (bản tải về đầy đủ của competition + dat
 - Bản khớp trung bình (`slope.py match`: hệ số theo từng kịch bản/biến để ô sống có cùng trung bình với file 0.072):
   hệ số agb là 1.11/1.22 với direct_inv và 1.03/1.13 với direct_y0inv. msd tới file 0.072 lần lượt là 0.114 và
   0.058 ⇒ rất khác các LSTM, nên chỉ cần LB < 0.186 / 0.130 là đã giúp được blend.
+
+### 4.24 Cây LightGBM là thành viên blend mạnh (#74–76) [KC]
+
+- `match_direct_y0inv` = **0.108**: một model cây đơn, 10 phút CPU, có tương quan lỗi với file 0.072 chỉ **0.69**
+  (các run LSTM lưới: 0.80–0.92). Bản đảo cả climate về vật lý thì kém hơn nhiều: 0.164. ⇒ đưa y0 về vật lý giúp,
+  còn đưa climate về vật lý thì hại. [GT] Map climate fit trên 2015–2020 (GCM so với reanalysis) chưa đủ chính xác,
+  hoặc phản ứng với ấm lên học từ lịch sử không còn đúng khi có CO2 tương lai.
+- Blend trọng số chung, có ô chết (`ensemble_scn.py shared`): dead_t2 0.48 + scn2d_x 0.34 + gbm_direct_y0inv 0.19
+  ⇒ ước tính **0.0698** (`submission_blend_t2b.csv`); gbm_direct_inv nhận trọng số 0.
+- scn2d_x cũng ra 0.072 (ước tính 0.0733 so với 0.0744 của scn2d; cả hai làm tròn về 0.072).
 
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 

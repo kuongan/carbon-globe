@@ -136,6 +136,47 @@ def solve():
     print('wrote', path)
 
 
+def ingest_csv():
+    """python ensemble_scn.py ingest_csv <run> <submission.csv>: a scored file (test/truth space, submission units)
+    -> result/<run>_preds/{ssp126,ssp585}.npy (height, agb in physical-scale units; other channels 0) + its hybrid"""
+    run, src = sys.argv[2], sys.argv[3]
+    sub = pd.read_csv(src).set_index('id')
+    out_dir = os.path.join(E.RESULT_DIR, f'{run}_preds'); os.makedirs(out_dir, exist_ok=True)
+    for scn in E.SCENARIOS:
+        N = 6171
+        ids = [f'{scn}_{site}_{age}' for age in E.SEED_AGES for site in range(N)]
+        v = sub.loc[ids]
+        a = np.zeros((len(E.SEED_AGES), N, 7), np.float32)
+        a[..., 0] = v['height'].to_numpy().reshape(len(E.SEED_AGES), N) * E.H_SCALE
+        a[..., 1] = v['agb'].to_numpy().reshape(len(E.SEED_AGES), N) * E.A_SCALE
+        np.save(os.path.join(out_dir, f'{scn}.npy'), a)
+    path = f'result/hyb_{run}.csv'
+    write({'ssp126': load_scn(run, 'ssp126'), 'ssp585': load_scn(BASE_RUN, 'ssp585')}, path, fix=False)
+    print('wrote', out_dir, 'and', path)
+
+
+def shared():
+    """python ensemble_scn.py shared: ONE weight vector for both scenarios over env ENSEMBLE_RUNS (keys of
+    ensemble.RUNS; no hybrid probes needed), dead rows exact. ENSEMBLE_FREE / ENSEMBLE_TAG as in solve."""
+    runs = [r for r in os.environ['ENSEMBLE_RUNS'].split(',') if r]
+    free_names = tuple(x for x in os.environ.get('ENSEMBLE_FREE', '').split(',') if x)
+    free = tuple(runs.index(r) for r in free_names if r in runs)
+    lb = np.array([E.RUNS[r][0] for r in runs], np.float64)
+    P = {s: [load_scn(r, s) for r in runs] for s in E.SCENARIOS}
+    m = lb - 0.5 * sum(np.array([dead_err(p, s) for p in P[s]]) for s in E.SCENARIOS)   # LB without dead rows
+    D = 0.5 * sum(msd_alive(P[s], s) for s in E.SCENARIOS)                             # both scenarios
+    C = E.error_cov(m, D)
+    corr = C / np.sqrt(np.outer(np.diag(C), np.diag(C)))
+    w, v = E.best_simplex_weights(C, free)
+    print('runs', runs, '\nLB without dead rows', np.round(m, 4))
+    print('error correlation\n', np.round(corr, 3))
+    print('weights', dict(zip(runs, np.round(w, 3))), f'| estimated LB {v:.4f}')
+    out = {s: sum(wi * p for wi, p in zip(w, P[s]) if wi != 0) for s in E.SCENARIOS}
+    path = f'result/submission_{os.environ.get("ENSEMBLE_TAG", "blend_shared_new")}.csv'
+    write(out, path)
+    print('wrote', path)
+
+
 def ingest():
     """python ensemble_scn.py ingest <run> <preds.npz> [<key>]: npz with keys ssp126/ssp585 (or <scn>_<key>, e.g.
     gbm_preds.npz key direct), (15, N, 7) physical units
@@ -171,4 +212,4 @@ def ingest():
 
 
 if __name__ == '__main__':
-    {'make': make, 'solve': solve, 'ingest': ingest}[sys.argv[1]]()
+    {'make': make, 'solve': solve, 'ingest': ingest, 'ingest_csv': ingest_csv, 'shared': shared}[sys.argv[1]]()
