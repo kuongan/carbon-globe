@@ -616,6 +616,17 @@ Phân tích trên `data/` (bản tải về đầy đủ của competition + dat
   ước tính 0.0700. Không hơn t2b (0.0698) ⇒ dư địa của blend gần hết; đòn bẩy tiếp theo là thành phần tốt hơn
   (GBM bagging, GBM rollout, LSTM y0inv).
 
+### 4.25 GBM rollout + GBM seed averaging [KC, cục bộ]
+
+- GBM rollout (y0inv): holdout lịch sử 0.046 (kém hơn direct: 0.031). Mean-match scale: height 0.984/1.015, agb
+  1.147/1.296 ⇒ rollout đoán AGB thấp hơn nhiều hơn direct. msd tới file 0.072: **0.173** (direct: 0.058).
+  Giúp blend chỉ khi LB < 0.245.
+- GBM trung bình 4 seed (s0 = seed 42 + s1/s2/s3): msd tới file 0.072 = **0.059**, gần như bằng single seed
+  (0.058). Noise giữa seed không đáng kể (bagging_fraction đã làm điều này nội bộ).
+- Blend trọng số chung (dead_t2 + scn2d_x + gbm_avg_y0inv + gbm_rollout_y0inv): ước tính **0.0685** (t2b: 0.0698).
+  Rollout đóng góp 0.093 nhờ msd lớn; trung bình seed thay thế single seed (trọng số giống hệt nhau vì hai file
+  gần như đồng nhất). Không nộp rollout riêng (LB dự báo ~0.145–0.200). Nộp `submission_blend_t2c.csv`.
+
 ### 4.10 Session A (CO2 sweep, screening) chạy với trọng số run 2 [KC]
 
 - `global_probe_preds.npz` khớp `global2_co2_hist` (msd 1e-6), không khớp run 1 (0.071): file trọng số được gắn là
