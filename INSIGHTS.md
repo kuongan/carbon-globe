@@ -870,4 +870,12 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
     trung bình năm của 111 feature + khí hậu tháng f0–f6 + y0 + tuổi → thay đổi height/agb ở năm 10/20/30/40),
     4 seed, 5 biến thể test như GBM. Pre-flight (20 bước + mọi biến thể trên 13 site) trước khi train thật. Đã chạy
     thử pipeline dữ liệu ở local với model giả (không có PyTorch local); phần PyTorch chỉ kiểm tra được trên Kaggle.
+
+### 4.37 Session G (seed 7 ep3, `result/noco2-s7/`) [đại số]
+
+- 'none' trùng tuyệt đối file s7_ep3 đã chấm (msd 0). Mức rất thấp: y0inv_xinv height 0.90 / agb 0.75 (ep4: 0.99 /
+  0.92), xinv 0.77 / 0.66.
+- LB dự báo (`rank_members.py`, bộ x2): s7_y0inv_xinv **0.189** (khả dĩ 0.077–0.301), s7_xinv **0.271** (0.167–0.349).
+  Lệch ±0.01 → 0.0618–0.0619, ±0.02 → 0.060. Khoảng khả dĩ rộng nên độ lệch thật có thể lớn; khi có cả hai thì thành
+  cặp như ep4 ⇒ nộp cả hai.
   thứ hai; đã tạo lại (khớp preds đã commit, 2e-6) và `slope.py` giờ từ chối ghi đè, nhận đường dẫn output.
