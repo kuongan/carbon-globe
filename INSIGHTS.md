@@ -820,3 +820,15 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - **Kết quả: x2 = 0.063** (#93, ước tính 0.0624). y0inv2 = 0.097 (#92), lệch dự báo chỉ +0.0015 ⇒ trọng số −0.04,
   ước tính vẫn 0.0624. Đơn lẻ, GBM y0inv2 (0.097) tốt hơn GBM y0inv (0.108): "y0 vượt quá vật lý" đúng cả trên một
   file không có trọng số âm.
+
+### 4.33 Họ cây khác: random forest (LightGBM `boosting='rf'`) [cục bộ + đại số]
+
+- Vì sao LightGBM mà không XGBoost/CatBoost: cùng họ boosting trên cùng feature ⇒ dự đoán gần như trùng (4 seed
+  LightGBM cách nhau msd 0.0018) ⇒ gần như không thêm hướng mới cho blend; máy local cũng chỉ có lightgbm. Random
+  forest (cây sâu, bagging, lấy trung bình, không boosting) là họ khác thật sự; LightGBM có sẵn chế độ `rf`
+  (`GBM_BOOSTING=rf`: num_leaves 1023, min_data_in_leaf 50, bagging 0.632, feature 0.5, ≤300 cây).
+- RF direct: holdout lịch sử 0.054 (GBM 0.031; holdout không xếp hạng được LB). Khớp trung bình:
+  `result/match_rf_y0inv.csv` (msd tới GBM y0inv **0.023**, gấp ~13 lần nhiễu giữa seed), `result/match_rf_none.csv`.
+- LB dự báo: rf_y0inv **0.104** (lệch ±0.01 → blend 0.061, ±0.02 → 0.0565); rf_none 0.1485 (±0.02 → 0.0585).
+- Sự cố: `slope.py match` đặt tên output theo key nên đã ghi đè `result/match_direct_y0inv.csv` (file đã chấm) lần
+  thứ hai; đã tạo lại (khớp preds đã commit, 2e-6) và `slope.py` giờ từ chối ghi đè, nhận đường dẫn output.

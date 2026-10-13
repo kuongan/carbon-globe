@@ -9,9 +9,10 @@ usage:
   python slope.py make  <npz> <key> <s_agb> [<s_height>]  -> result/slope_<key>_a<s_agb>_h<s_height>.csv (dead rows
                                                              exact, floor at the mapped zero)
   python slope.py solve <npz> <key> <var> <s1> <lb1> <s2> <lb2>   var = agb | height (the other slope held fixed)
-  python slope.py match <npz> <key> <ref.csv>   per-scenario slopes matching the alive-row means of a scored file
+  python slope.py match <npz> <key> <ref.csv> [<out.csv>]   per-scenario slopes matching the alive-row means of a
+                                                scored file (never overwrites; default out result/match_<key>.csv)
 """
-import sys
+import os, sys
 import numpy as np
 import pandas as pd
 
@@ -44,9 +45,10 @@ def make(npz, key, s_a, s_h=S_H_EXACT):
     print('wrote', path, '| means height', round(sub.height.mean(), 4), 'agb', round(sub.agb.mean(), 4))
 
 
-def match(npz, key, ref_csv):
+def match(npz, key, ref_csv, path=None):
     """Per-scenario, per-variable slopes that give the alive rows the same mean as a scored reference file (the
-    reference is LB-calibrated; the physical model is not: no CO2 response). Writes result/match_<key>.csv."""
+    reference is LB-calibrated; the physical model is not: no CO2 response). Writes `path` (default
+    result/match_<key>.csv); refuses to overwrite an existing file: keys repeat across npz files (direct_y0inv)."""
     P = load(npz, key); dead = np.load('result/dead_rows.npz')
     ref = pd.read_csv(ref_csv).set_index('id')
     parts, slopes = [], {}
@@ -64,7 +66,8 @@ def match(npz, key, ref_csv):
                                    'agb': out['agb'].T.reshape(-1)}))
     sub = pd.concat(parts, ignore_index=True)
     assert len(sub) == N_ROWS and sub.id.is_unique and np.isfinite(sub[['height', 'agb']].to_numpy()).all()
-    path = f'result/match_{key}.csv'
+    path = path or f'result/match_{key}.csv'
+    assert not os.path.exists(path), f'{path} exists (a scored file?): pass another output path'
     sub.to_csv(path, index=False)
     print('slopes', {f'{k[0]} {k[1]}': round(v, 4) for k, v in slopes.items()}, '| wrote', path)
 
@@ -84,6 +87,6 @@ if __name__ == '__main__':
     if a[1] == 'make':
         make(a[2], a[3], float(a[4]), float(a[5]) if len(a) > 5 else S_H_EXACT)
     elif a[1] == 'match':
-        match(a[2], a[3], a[4])
+        match(a[2], a[3], a[4], a[5] if len(a) > 5 else None)
     else:
         solve(a[2], a[3], a[4], *map(float, a[5:9]))

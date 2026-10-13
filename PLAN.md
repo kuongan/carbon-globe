@@ -2,7 +2,7 @@
 
 ## Now (2026-10-14, INSIGHTS 4.32)
 1. Done: x2 = 0.063 (best), GBM y0inv2 = 0.097 (no blend gain).
-2. Optional probe: `result/match_gbm_y0inv2.csv` (predicted 0.0955; add as `gbmm_y0inv2` in RUNS, re-solve x2's set).
+2. Next probe: `result/match_rf_y0inv.csv` (random forest, predicted 0.104; INSIGHTS 4.33), then re-solve x2 + rfm_y0inv.
 3. Final picks: x2 (if it confirms) + x1 (0.066, scored) as the safer one; `submission_blend_x2h.csv` (est 0.0638,
    half the negative weights) is the in-between option.
 

@@ -65,6 +65,12 @@ PARAMS = dict(objective='l2', learning_rate=0.05, num_leaves=127, min_data_in_le
               feature_fraction=0.5, bagging_fraction=0.7, bagging_freq=1, lambda_l2=1.0, max_bin=127,
               num_threads=max(1, (os.cpu_count() or 4) - 2), verbose=-1, seed=SEED)   # leave 2 cores free
 DIRECT_ROUNDS, ROLL_ROUNDS, ES_ROUNDS = 5000, 3000, 100
+# env GBM_BOOSTING=rf (INSIGHTS 4.33): LightGBM's random-forest mode, i.e. bagged deep trees averaged instead of
+# boosted, a different tree family from the same library (XGBoost / CatBoost would be more boosting)
+if os.environ.get('GBM_BOOSTING', 'gbdt') == 'rf':
+    PARAMS.update(boosting='rf', num_leaves=1023, min_data_in_leaf=50, bagging_fraction=0.632, bagging_freq=1,
+                  feature_fraction=0.5)
+    DIRECT_ROUNDS, ROLL_ROUNDS, ES_ROUNDS = 300, 300, 50
 
 CO2 = list(range(8, 32))
 KEEP = [j for j in range(N_CONS) if j not in CO2 and j != 32]   # 111 features: no CO2 block, no constant
