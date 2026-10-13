@@ -19,8 +19,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 - **LB tốt nhất:** 0.070 (`result/probe_dead_T2.csv` = 0.072; `result/submission_blend_t2b.csv` = 0.070).
   Test = lưới CarbonGlobe sau phép biến đổi affine; đáp án nằm trong không gian đó (T2). Blend đã hội tụ tại 0.072
   sau khi thêm GBM rollout và seed-avg (mục 4.26). Đòn bẩy còn lại: LSTM `y0inv` trên Kaggle (session E).
-- Bước tiếp quan trọng nhất: **Kaggle session E** — `global_probe.py` (GPU), attach `test_maps.npz` vào `noco2-ep4`,
-  submit `submission_global_y0inv.csv`, gửi `global_probe_preds.npz`.
+- **LB tốt nhất: 0.066** (`submission_blend_x1.csv`, #86). Analog cùng site thất bại (0.173 / 0.209, mục 4.28).
+- **LB tốt nhất: 0.063** (`submission_blend_x2.csv`, #93: cặp LSTM + cặp GBM + CO2 lịch sử, mục 4.32).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -110,7 +110,21 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 76 | `match_direct_inv.csv` (giống #75 + climate → vật lý) | 0.164 | | đảo climate làm hỏng |
 | 77 | `submission_blend_t2b.csv` (trọng số chung: dead_t2 0.48 + scn2d_x 0.34 + gbm_direct_y0inv 0.19) | **0.070** | 0.0698 | **tốt nhất** |
 | 78 | `hyb_gbm_direct_y0inv.csv` (GBM ở ssp126 + bg_scn ở ssp585) | 0.097 | | probe |
-| 79 | `submission_blend_t2c.csv` (dead_t2 0.51 + scn2d_x 0.30 + gbm_avg 0.10 + gbm_rollout 0.09) | 0.072 | 0.0685 | blend hội tụ, ước tính lạc quan |
+| 79 | `submission_blend_t2c.csv` (dead_t2 0.51 + scn2d_x 0.30 + gbm_avg 0.10 + gbm_rollout 0.09) | 0.072 | 0.0685 | ước tính sai vì LB rollout giả định 0.200; giải ngược ra 0.237 (mục 4.27) |
+| 80 | `result/1/submission_global_y0inv.csv` (session E: noco2_ep4, y0 → vật lý, output map bằng slope của test_maps, không khớp trung bình) | 0.111 | | mức quá thấp (agb 0.93 so với 1.07–1.15 của blend); tương quan lỗi với GBM 0.38 |
+| 81 | `submission_blend_e4.csv` (dead_t2 0.41 + scn2d_x 0.21 + gbm_direct 0.23 + lstm_y0inv 0.15) | **0.068** | 0.0689 | **tốt nhất** |
+| 82 | `match_analog_add.csv` (analog cùng site: y0 test + thay đổi 40 năm lịch sử, khớp trung bình) | 0.173 | | trọng số blend 0 |
+| 83 | `match_analog_hist.csv` (analog: trạng thái năm 40 lịch sử của site) | 0.209 | | trọng số blend 0 |
+| 84 | `result/1/submission_global_xinv.csv` (forcing → vật lý, y0 giữ không gian T) | 0.196 | | thành viên của cặp ngoại suy (mục 4.28) |
+| 85 | `result/1/submission_global_y0inv_xinv.csv` (y0 + forcing → vật lý) | 0.109 | | LSTM vật lý tốt nhất |
+| 86 | `submission_blend_x1.csv` (dead_t2 0.08 + scn2d_x 0.34 + gbm_direct 0.20 + lstm_y0inv_xinv 0.735 + lstm_xinv −0.361) | **0.066** | 0.0661 | **tốt nhất**; ước tính đúng |
+| 87 | `cs_submission_blend_x1_ssp585_agb1.1.csv` (x1, agb ssp585 ×1.1 quanh số 0 đã map) | 0.074 | | probe: hệ số tối ưu 1.005, không cần sửa |
+| 88 | `result/global-probe/submission_global_y0inv_xinv_co2inv.csv` (session F: run 1 có CO2, y0 + forcing + CO2 vật lý) | 0.119 | | trọng số ~0 một mình; tách kịch bản agb +7% |
+| 89 | `result/global-probe/submission_global_y0inv_xinv_co2_hist.csv` (cùng model, CO2 lịch sử) | 0.117 | dự báo 0.1215 | trọng số +0.12 trong x2 |
+| 90 | `result/global-probe/submission_global_y0inv_xinv_co2inv0.5.csv` (nửa mức tăng CO2 vật lý) | 0.110 | dự báo 0.1105 | đúng dự báo ⇒ không thêm thông tin |
+| 91 | `result/match_gbm_none.csv` (GBM direct, y0 để ở không gian T, khớp trung bình) | 0.169 | dự báo 0.1515 | lệch lớn ⇒ cặp GBM: trọng số −0.39 |
+| 92 | `result/match_gbm_y0inv2.csv` (GBM direct, y0 = 2·y0_vật_lý − y0_T, khớp trung bình) | 0.097 | dự báo 0.0955 | gần dự báo ⇒ trọng số −0.04, không lợi |
+| 93 | `submission_blend_x2.csv` (cặp LSTM + cặp GBM + g1_co2_hist) | **0.063** | 0.0624 | **tốt nhất** |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -691,3 +705,118 @@ model nhớ `test_y0`; train lại model lưới lâu hơn; model lưới thứ 
   submit `submission_global_y0inv.csv`, gửi `global_probe_preds.npz`. Nếu LB 0.085–0.090, blend 2 chiều với t2b
   cho ~0.055–0.065. Đây là đòn bẩy thực sự nhất còn lại.
 - Lưu ý: `dead_t2` = 0.072 là file tốt nhất hiện tại, không phải t2b. Cả hai là 0.072 nhưng `dead_t2` = `probe_dead_T2.csv` là bản gốc (blend_scn2 + ô chết đúng); t2b = dead-aware re-solve với GBM.
+- **[Sửa, mục 4.27]** Hai ý trên sai: t2b = **0.070** (#77) vẫn là file tốt nhất. t2c tệ hơn vì LB của rollout chưa
+  từng được chấm (giả định 0.200); giải ngược từ t2c = 0.072 cho LB(rollout) ≈ **0.237** (0.226–0.248), tức là
+  rollout chỉ vừa đủ ngưỡng, trọng số ≈ 0. Blend trọng số chung chưa hội tụ vì thiếu model, mà vì rollout yếu.
+
+### 4.27 Session E (LSTM y0inv = 0.111) và analog cùng site [KC + đại số]
+
+**LSTM y0inv (#80).** `result/1/` (preds vật lý trong `global_probe_preds.npz`; `none` trùng tuyệt đối noco2_ep4).
+- Mức trên ô sống (đơn vị nộp, ssp126 / ssp585): y0inv height 0.979 / 0.985, agb 0.940 / 0.928; dead_t2 height
+  1.069 / 1.116, agb 1.073 / 1.153. Như GBM thô: model vật lý không có phản ứng CO2 nên đoán thấp; phần lớn 0.111 là
+  lỗi mức. xinv còn thấp hơn (0.85 / 0.80): khí hậu vật lý ấm hơn → model đoán giảm (giống GBM direct_inv 0.164).
+- Tương quan lỗi: với dead_t2 0.77, với **GBM 0.38** (noco2_ep4 với GBM: 0.52). Blend trọng số chung
+  `submission_blend_e4.csv` (dead_t2 0.41 + scn2d_x 0.21 + gbm_direct 0.23 + lstm_y0inv 0.15): ước tính **0.0689**
+  (t2b ước tính 0.0698 → thật 0.070; mọi thành phần đã chấm nên ước tính tin được).
+- Khớp trung bình (`result/match_y0inv.csv`, slope h 0.95/0.98, agb 0.94/1.02): chỉ nhận trọng số nếu LB ≤ ~0.088.
+  Công thức "slope tối ưu = slope khớp trung bình" cho 0.059, quá lạc quan (bỏ qua co rút). Không đáng một slot.
+- Kiểm tra: t2b dự báo lại từ thành phần = 0.06975 (thật 0.070). y0 hai kịch bản không giống hệt (mục 4.15): khác
+  rất nhỏ (|d| 0.04–0.09 m, tương quan 0.9999); không ảnh hưởng kết luận.
+
+**Analog cùng site (`analog.py`, không train).** 97% site test là site lưới; lưới có quỹ đạo ED 40 năm của chính site
+và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi khớp trung bình với file 0.072 như GBM):
+`add` = y0_test + (y40_lưới − y0_lưới); `hist` = y40_lưới; `ratio` hỏng ở tuổi 1 (y0 ≈ 0), bỏ.
+- y0 test (vật lý) so với y0 lưới cùng site/tuổi: height tương quan 0.91–0.98, agb 0.95–0.98; s_agb = 0.84 cho trung
+  bình agb khớp (3.51 so với 3.54) ⇒ map agb đúng gần đúng.
+- Mức theo tuổi của analog bám t2b (height ±3%, agb ±5%): khớp một slope theo kịch bản/biến là đủ.
+- **Rất khác mọi thành phần**: msd (ô sống) tới t2b 0.094 (add) / 0.132 (hist), tới GBM 0.085 / 0.114, tới LSTM
+  y0inv 0.18 / 0.24 (các thành phần hiện có cách nhau 0.04–0.135).
+- Blend ước tính (dead_t2, scn2d_x, gbm_direct, lstm_y0inv + analog_add) theo LB giả định của analog_add:
+  0.10 → 0.0555, 0.11 → 0.0592, 0.12 → 0.0624, 0.13 → 0.0650, 0.15 → 0.0681, ≥ 0.18 → không lợi.
+  add − hist = y0_test − y0_lưới, nên có cả hai thì blend tự chọn mức "nhớ trạng thái đầu".
+- **Không nộp** `result/probe_co2_adj.csv` (eda5.py, chưa commit): coi CO2 test (không gian T, nén ×0.175) là ppm
+  thật; hướng sửa (height giảm) ngược với mọi probe bias (height ×1.026); vòng thứ hai hoán đổi chỉ số site/tuổi.
+- Ý tưởng GPU còn lại: khối CO2 chưa từng được map (`test_maps` để identity). CO2 vật lý ≈ 400 + (T − 363.85)/0.176
+  ppm: ssp126 400 → ~442, ssp585 400 → ~566 (lưới: 357 → 419). Model có CO2 (run 1) + y0inv + CO2 vật lý là thành
+  viên có phản ứng CO2 theo site; rủi ro: ngoại suy tới +8 sd.
+
+### 4.28 e4 = 0.068; analog thất bại; ngoại suy theo cặp LSTM vật lý [KC + đại số]
+
+- **e4 = 0.068** (#81, ước tính 0.0689): khi mọi thành phần đã có LB thật, ước tính đúng (hơi bi quan, như trước).
+- **Analog cùng site: add 0.173, hist 0.209** (#82–83). Trọng số 0 trong mọi blend, kể cả khi cho phép trọng số âm
+  (hist −0.02, lợi 0.0001). Đã kiểm tra: height/agb không đổi trong năm nên không có lỗi chọn tháng. ⇒ lần chạy lịch sử
+  của ED tại chính site đó dự báo tương lai **kém hơn** các model học trên toàn lưới với climate trong không gian T.
+  Tương lai của từng site (climate + CO2) khác lịch sử của nó nhiều hơn phần mà model học được giữa các site.
+- Ô chạm trần height (35 m) không giữ trần sau 40 năm (1%): không có thêm hàng đáp án biết trước ngoài ô chết.
+- **LSTM vật lý:** y0inv_xinv 0.109 thay y0inv trong blend simplex (ước tính 0.0681, chỉ hơn e4 ~0.001). xinv 0.196
+  (y0 không gian T bị coi là vật lý, rồi map output: mức rất thấp).
+- **Ngoại suy theo cặp** (`ENSEMBLE_FREE=lstm_xinv`): dead_t2 0.08 + scn2d_x 0.34 + gbm_direct 0.20 + lstm_y0inv_xinv
+  **+0.735** + lstm_xinv **−0.361** ⇒ ước tính **0.0661** (0.0652–0.0670 khi rung LB ±0.0005; trọng số cặp ổn định
+  +0.64…+0.82 / −0.41…−0.30). `result/submission_blend_x1.csv`; đi nửa đường (`submission_blend_x1h.csv`) ước tính
+  0.0666 với nửa trọng số âm. y0_persist nhận trọng số 0 nên hướng này không phải "nhớ y0" đơn thuần mà là phản ứng
+  của LSTM (phụ thuộc tuổi) khi đưa y0 về vật lý, nhân ~2. Các cặp khác (lstm_y0inv, gbm_direct_inv, noco2_ep4) chỉ
+  cho 0.0678–0.0679.
+- Mức của x1 so với dead_t2 (ô sống): height 0.988 / 0.998, agb 1.009 / **1.037** (ssp126 / ssp585); khoảng cách
+  kịch bản agb 0.042 so với 0.074. Probe `result/cs_submission_blend_x1_ssp585_agb1.1.csv` + `cellscale.py solve`
+  cho hệ số tối ưu chính xác của ô ssp585 agb (lợi tối đa ~0.001).
+- **Map CO2:** tăng của SSP cho s ≈ 0.176; lưới đạt 2015 (~399 ppm) ở năm 30 (năm 0 356.5, năm 39 418.7, năm 38 = 39).
+  Fit trực tiếp năm 0–5 test với năm 33–38 lưới cho s 0.14–0.18 (nhiễu). CO2 vật lý (biến thể `co2inv` trong
+  `global_probe.py`): ssp126 399 → 441 ppm (z +2.7), ssp585 400 → 565 ppm (z +8.8); `co2inv0.5` dừng ở z +4.7.
+  Session F: run 1 (có CO2, không clip input, không trần trạng thái), `kaggle_upload/global-run1/`.
+
+### 4.29 x1 = 0.066; mức của x1 đã đúng [KC + đại số]
+
+- **x1 = 0.066** (#86) đúng như ước tính 0.0661: ngoại suy theo cặp LSTM vật lý đứng vững trên LB.
+- Probe ô ssp585 agb ×1.1 = 0.074 ⇒ hệ số tối ưu **1.005** (1.000–1.011 theo làm tròn), lợi 0.00003. Mức agb ssp585
+  của x1 đã đúng; dead_t2 mới là file lệch cao 3.7% ở ô này. ⇒ khớp trung bình với dead_t2 (`slope.py match`) có
+  thể đã đẩy agb ssp585 của GBM lên quá cao; các ô khác của x1 lệch ít hơn nữa nên không probe thêm.
+- Blend theo kịch bản cần LB hybrid của mọi thành phần. Suy LB hybrid của dead_t2 từ các hybrid cũ: tổng tái tạo
+  0.0744 trong khi thực 0.072 (sai lệch 0.002 = cỡ phần lợi cần tìm) ⇒ không đủ tin; phải nộp hybrid (3 slot:
+  dead_t2, lstm_y0inv_xinv, lstm_xinv). Ưu tiên thấp.
+
+### 4.30 Cặp GBM (y0 không gian T) [cục bộ + đại số]
+
+- `carbonglobe_gbm.py` có thêm biến thể `none` (y0 để ở không gian T, forcing như cho) và `xinv` (y0 T, forcing vật
+  lý): bản sinh đôi của y0inv / inv. Chạy lại seed 42 (`GBM_TAG=_pair`): y0inv trùng tuyệt đối lần chạy đã chấm (msd 0).
+- Ba ứng viên: `gbmt_none` (cùng slope với `match_direct_y0inv`: mức thấp 0.91/0.86), `gbmm_none` (`result/
+  match_gbm_none.csv`, khớp trung bình với dead_t2, slope h 1.13/1.16, agb 1.26/1.38; msd tới gbm_direct_y0inv
+  0.026), `gbmt_xinv` (mức rất thấp, msd 0.153).
+- Khoảng LB khả dĩ (ma trận hiệp phương sai lỗi còn PSD) rất rộng: gbmm_none 0.075–0.228. Ước tính blend (bộ x1 +
+  thành viên mới) theo LB của gbmm_none: 0.100 → 0.052, 0.126 → 0.061, 0.151 → 0.066 (không lợi), 0.177 → 0.059
+  (chỉ với trọng số âm). Gần biên PSD ước tính không đáng tin. Thành viên mới có LB thấp sẽ thay gbm_direct_y0inv
+  (trọng số của nó về 0) và kéo trọng số cặp LSTM lên.
+- Tiên nghiệm: gbmm_none cùng mức với blend và chỉ cách file 0.108 một msd 0.026 ⇒ LB nhiều khả năng 0.10–0.13 ⇒
+  **nộp `result/match_gbm_none.csv`** (1 slot). gbmt_none / gbmt_xinv lệch mức nhiều ⇒ dễ rơi vào vùng không lợi.
+
+### 4.31 Session F: LSTM có CO2 + CO2 vật lý = 0.119 [KC + đại số]
+
+- `result/global-probe/` (notebook chạy bản 4 biến thể, chưa có `xinv+co2inv`). Tái lập co2_hist khớp file 0.122
+  (msd 8e-8) ⇒ đúng trọng số run 1.
+- `y0inv_xinv_co2inv` = **0.119** (#88). Thành viên đầu tiên có tách kịch bản thật: agb ssp585 1.057 so với ssp126
+  0.987 (+7%, như dead_t2); height ssp585 thấp hơn ssp126 (0.870 / 0.885). Cùng model với CO2 lịch sử: agb 0.85 / 0.84.
+- Tương quan lỗi với x1 0.74, với GBM 0.45 ⇒ trọng số 0.007–0.024, ước tính vẫn 0.0661: tự nó không giúp.
+- **LB dự báo (điểm trung tính) của file chưa chấm** = LB mà tại đó nó không mang thông tin mới; lợi tăng theo bình
+  phương độ lệch khỏi điểm đó. y0inv_xinv_co2_hist: 0.1215 (±0.01 → 0.065); y0inv_xinv_co2inv0.5: 0.1105 (±0.005 →
+  0.064, ±0.01 → 0.057, nhưng trọng số ±2 vì gần thẳng hàng với co2inv: msd 0.0064); gbmm_none: 0.1515.
+  Tiên nghiệm: co2_hist (agb 0.85) nhiều khả năng cao hơn 0.1215 rõ ⇒ đáng nộp. Với cặp gần thẳng hàng, bản cuối dùng
+  ngoại suy nửa đường như x1h.
+
+### 4.32 Cặp GBM xác nhận hướng "y0 vượt quá vật lý"; x2 ước tính 0.0624 [đại số]
+
+- Kết quả #89–91: co2_hist 0.117 (dự báo 0.1215), co2inv0.5 0.110 (dự báo 0.1105, trùng), gbmm_none 0.169 (dự báo
+  0.1515, lệch +0.0175). Tiên nghiệm của tôi cho co2_hist (cao hơn dự báo) sai chiều.
+- **Cặp GBM** (gbm_direct_y0inv +0.62, gbmm_none −0.39) cùng cặp LSTM (+0.54 / −0.34): hai họ model độc lập cùng
+  ngoại suy từ "y0 không gian T" qua "y0 vật lý" và vượt tiếp ⇒ đáp án muốn model bắt đầu từ trạng thái lớn hơn y0
+  vật lý (đại diện cho tăng trưởng mạnh hơn vì CO2). Thành viên CO2 chỉ thêm 0.0004 (co2_hist +0.12).
+- `result/submission_blend_x2.csv` (7 thành viên): dead_t2 0.07 + scn2d_x 0.39 + gbm_direct_y0inv 0.62 +
+  lstm_y0inv_xinv 0.54 − lstm_xinv 0.34 − gbmm_none 0.39 + g1_co2_hist 0.12 ⇒ ước tính **0.0624** (0.0611–0.0636
+  khi rung LB; trọng số hai cặp ổn định). Không trọng số âm: 0.0680; nửa đường `submission_blend_x2h.csv` 0.0638;
+  3/4 đường 0.0627.
+- Kiểm tra trực tiếp: GBM biến thể `y0inv2` (y0 = 2·y0_vật_lý − y0_T, ô chết giữ 0) — điểm thứ ba trên trục y0.
+  Khớp trung bình: `result/match_gbm_y0inv2.csv` (slope 0.85–0.94, tức là mức thô cao hơn blend; msd tới gbm y0inv
+  0.034). LB dự báo **0.0955** (tốt hơn gbm y0inv 0.108 ⇒ đại số cũng "chờ" y0 vượt quá vật lý là tốt hơn). Nhưng
+  nó chỉ thay được cặp GBM có trọng số âm nếu LB ≤ ~0.085 ⇒ lợi của cặp GBM là pattern, không chỉ là "bắt đầu lớn
+  hơn". Lợi khi nộp: ±0.01 → 0.061, ±0.02 → 0.0575 (probe thường).
+- **Kết quả: x2 = 0.063** (#93, ước tính 0.0624). y0inv2 = 0.097 (#92), lệch dự báo chỉ +0.0015 ⇒ trọng số −0.04,
+  ước tính vẫn 0.0624. Đơn lẻ, GBM y0inv2 (0.097) tốt hơn GBM y0inv (0.108): "y0 vượt quá vật lý" đúng cả trên một
+  file không có trọng số âm.

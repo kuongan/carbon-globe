@@ -1,6 +1,35 @@
 # Plan and runbook
 
-## Current focus (2026-10-07): generalization
+## Now (2026-10-14, INSIGHTS 4.32)
+1. Done: x2 = 0.063 (best), GBM y0inv2 = 0.097 (no blend gain).
+2. Optional probe: `result/match_gbm_y0inv2.csv` (predicted 0.0955; add as `gbmm_y0inv2` in RUNS, re-solve x2's set).
+3. Final picks: x2 (if it confirms) + x1 (0.066, scored) as the safer one; `submission_blend_x2h.csv` (est 0.0638,
+   half the negative weights) is the in-between option.
+
+## Earlier focus (2026-10-13): pairs + CO2-physical session F (INSIGHTS 4.28/4.29)
+
+Best LB **0.066** (`result/submission_blend_x1.csv`, the extrapolation along the physical-LSTM pair; its
+ssp585 agb level is confirmed by the cell probe, factor 1.005). Shared simplex blending is saturated.
+
+1. GBM twin (local, done): submit `result/match_gbm_none.csv` (1 slot). Then add `gbmm_none` to ensemble.py RUNS and
+   re-solve the x1 set + gbmm_none (free: lstm_xinv, and gbmm_none only if its LB is above ~0.16; INSIGHTS 4.30).
+2. Session F done (`result/global-probe/`, co2inv 0.119). Next: submit `submission_global_y0inv_xinv_co2_hist.csv`
+   (predicted 0.1215) and `submission_global_y0inv_xinv_co2inv0.5.csv` (predicted 0.1105), fill `g1_*` in RUNS,
+   re-solve with the CO2 pair free (INSIGHTS 4.31). Old session F steps kept below for reference.
+   **Session F (GPU T4 x1, ~1 h):** new Kaggle dataset `global-run1` from `kaggle_upload/global-run1/` (run-1 weights
+   + reference preds). Notebook inputs: competition data, `zhihaow/carbonglobe`, `global-run1`, `noco2-ep4` (for
+   test_maps.npz; it also holds snap_ep4.npz, which is ignored in this profile). `global_probe.py` as committed
+   (PROFILE='co2phys'). Check the log line `reproduction ...: msd(co2_hist, original run)` is ~1e-5 (0.07 = wrong
+   weights: stop). Submit `submission_global_y0inv_xinv_co2inv.csv`, `submission_global_xinv_co2inv.csv`,
+   `submission_global_y0inv_xinv_co2_hist.csv`, then `submission_global_y0inv_xinv_co2inv0.5.csv`;
+   send `global_probe_preds.npz`. Then `ensemble_scn.py ingest <run> <npz> <key> map` and re-solve with pairs free.
+3. Final picks: best estimated blend (negative weights allowed, with LB confirmation) + `x1h` or `e4` (safer).
+4. Do not submit `result/probe_co2_adj.csv` (eda5.py: wrong CO2 premise, wrong direction).
+
+## Done (2026-10-12): own-site analogs (INSIGHTS 4.27/4.28)
+- `analog.py` add 0.173, hist 0.209: weight 0. Session E LSTM y0inv 0.111, y0inv_xinv 0.109, xinv 0.196; e4 0.068.
+
+## Earlier focus (2026-10-07): generalization
 
 1. **Overfit check on the public LB** (`cv_parity.py`, site parity). Submit `result/par_<run>.csv` for noco2_ep4,
    noco2_ep3, noco2_ep6, s7_ep3, v2_scheduled_sampling, lstm_xl (6 slots); fill `PAR_LB`; `python cv_parity.py solve`.

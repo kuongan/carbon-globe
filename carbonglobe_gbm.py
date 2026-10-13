@@ -164,14 +164,21 @@ for scn in SCENARIOS:
     y0_t = np.transpose(d['test_y0'].astype(np.float32), (1, 0, 2))     # (15, N, 7), test space
     y0_p = np.maximum((y0_t - MAP_YB) / MAP_YS, 0.0).astype(np.float32)  # physical; dead stands -> exactly 0
     A, M = {}, {}
-    assert set(VARIANTS) <= {'inv', 'y0inv'}, VARIANTS
-    if 'y0inv' in VARIANTS:                                               # forcing as given
-        A['y0inv'] = tx.mean(axis=2); M['y0inv'] = np.ascontiguousarray(tx[..., MON])
-    if 'inv' in VARIANTS:                                                 # forcing mapped back, in place (RAM)
+    # 'none' / 'xinv' (INSIGHTS 4.29): y0 left in the test space (as if physical), forcing as given / mapped back;
+    # the twins of y0inv / inv, so the blend can extrapolate along the y0 inversion like the LSTM pair (x1, LB 0.066)
+    # 'y0inv2' (INSIGHTS 4.32): y0 pushed past physical by the same step, y0_p + (y0_p - y0_t), dead stands stay dead;
+    # both blend pairs (LSTM, GBM) extrapolate in that direction
+    assert set(VARIANTS) <= {'inv', 'y0inv', 'none', 'xinv', 'y0inv2'}, VARIANTS
+    for v in set(VARIANTS) & {'y0inv', 'none', 'y0inv2'}:                 # forcing as given
+        A[v] = tx.mean(axis=2); M[v] = np.ascontiguousarray(tx[..., MON])
+    if set(VARIANTS) & {'inv', 'xinv'}:                                   # forcing mapped back, in place (RAM)
         for j in np.flatnonzero(X_KEEP):
             tx[..., j] -= MAP_XB[j]; tx[..., j] /= MAP_XS[j]
-        A['inv'] = tx.mean(axis=2); M['inv'] = np.ascontiguousarray(tx[..., MON])
-    TEST[scn] = dict(A=A, M=M, y0=y0_p)
+        for v in set(VARIANTS) & {'inv', 'xinv'}:
+            A[v] = tx.mean(axis=2); M[v] = np.ascontiguousarray(tx[..., MON])
+    y0_x = np.where(y0_p[..., :1] > 0, np.maximum(2 * y0_p - y0_t, 0.0), 0.0).astype(np.float32)
+    Y0 = {v: (y0_t if v in ('none', 'xinv') else y0_x if v == 'y0inv2' else y0_p) for v in VARIANTS}
+    TEST[scn] = dict(A=A, M=M, y0=Y0)
     stamp(f'{scn}: test {tx.shape} | dead (y0 at the mapped zero) {np.mean(y0_p[..., 0] == 0):.4f} | '
           f'non-finite test inputs {int((~np.isfinite(tx)).sum())}')
     del tx, d; gc.collect()
@@ -272,7 +279,7 @@ if RUN_DIRECT:
     stamp(f'direct holdout metric {metric(hp, hold_y40):.4f} (persistence {SUMMARY["hold_persistence"]:.4f})')
     for v in VARIANTS:
         key = f'direct_{v}'
-        PREDS[key] = {scn: direct_predict(dmodels, T['y0'], direct_clim(T['A'][v], T['M'][v])) for scn, T in TEST.items()}
+        PREDS[key] = {scn: direct_predict(dmodels, T['y0'][v], direct_clim(T['A'][v], T['M'][v])) for scn, T in TEST.items()}
         write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}{TAG}.csv')
         report(key)
     save_outputs()
@@ -343,7 +350,7 @@ if RUN_ROLLOUT:
         key = f'rollout_{v}'
         PREDS[key] = {}
         for scn, T in TEST.items():
-            PREDS[key][scn] = rollout(rmodels, T['y0'], T['A'][v], T['M'][v])
+            PREDS[key][scn] = rollout(rmodels, T['y0'][v], T['A'][v], T['M'][v])
             stamp(f'rollout {key} {scn} done')
         write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}{TAG}.csv')
         report(key)

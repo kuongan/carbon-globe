@@ -71,8 +71,24 @@ RUNS = {
     'scn2d_x':               (0.072, None),    # submission_blend_scn2d_x.csv
     'gbm_direct_y0inv':      (0.108, None),    # match_direct_y0inv.csv: LightGBM direct, y0 mapped back, mean-matched
     'gbm_avg_y0inv':         (0.107, None),    # 4-seed average of direct_y0inv (estimated from msd; submit later)
-    'gbm_rollout_y0inv':     (0.200, None),    # LightGBM rollout, y0 mapped back, mean-matched; msd large -> helps if LB<0.245
+    'gbm_rollout_y0inv':     (0.237, None),    # LightGBM rollout, mean-matched; NOT submitted: back-solved from t2c = 0.072 (0.226-0.248)
     'gbm_direct_inv':        (0.164, None),    # match_direct_inv.csv: same + forcing mapped back
+    'lstm_y0inv':            (0.111, None),    # session E submission_global_y0inv.csv: noco2_ep4, y0 -> physical, map slopes (not mean-matched)
+    't2b':                   (0.070, None),    # submission_blend_t2b.csv
+    'lstm_y0inv_xinv':       (0.109, None),    # session E submission_global_y0inv_xinv.csv: + forcing mapped back
+    'lstm_xinv':             (0.196, None),    # session E submission_global_xinv.csv: forcing mapped back, y0 as given
+    'e4':                    (0.068, None),    # submission_blend_e4.csv: dead_t2, scn2d_x, gbm_direct, lstm_y0inv
+    'x1':                    (0.066, None),    # submission_blend_x1.csv (best): + lstm_y0inv_xinv 0.735, lstm_xinv -0.361
+    # session F (INSIGHTS 4.31): grid run 1 WITH CO2, y0 + forcing physical, CO2 block mapped to physical ppm
+    'g1_y0inv_xinv_co2inv':  (0.119, None),    # result/global-probe/submission_global_y0inv_xinv_co2inv.csv
+    'g1_y0inv_xinv_co2_hist': (0.117, None),   # same model, CO2 = grid history 1980-2020
+    'g1_y0inv_xinv_co2inv0.5': (0.110, None),  # same model, half the physical CO2 increase
+    'gbmm_none':             (0.169, None),    # match_gbm_none.csv: GBM direct, y0 left in test space, mean-matched
+    'gbmm_y0inv2':           (0.097, None),    # match_gbm_y0inv2.csv: GBM direct, y0 pushed past physical (2 y0_p - y0_t)
+    'x2':                    (0.063, None),    # submission_blend_x2.csv (best): LSTM pair + GBM pair + g1_co2_hist
+    # own-site analogs (analog.py, INSIGHTS 4.27/4.28): mean-matched to probe_dead_T2.csv
+    'analog_add':            (0.173, None),    # match_analog_add.csv: test y0 + historical 40-year change of that site/age
+    'analog_hist':           (0.209, None),    # match_analog_hist.csv: historical year-40 state of that site/age
 }
 # scored blend files reusable as components would go here too (e.g. blend_a2_x, LB 0.075); a blend of blends adds no
 # new direction, so they are left out

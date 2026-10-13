@@ -33,6 +33,7 @@ Variant grammar: parts joined by '+', applied in order to the raw test forcing o
   y0inv      initial state back to physical units: y0 = max((test_y0 - y_b) / y_s, 0) (height exact; dead -> 0)
   xinv       forcing back to physical units: x = (test_x - x_b) / x_s per feature (static exact, climate fitted on
              2015-2020 at the matched grid sites); the CO2 block stays as it is (held at 0 for no-CO2 weights)
+  co2inv<f>  CO2 block back to physical ppm (SSP path, compression CO2_S); f scales the increase since 2015 (default 1)
   Maps from test_maps.npz (kaggle_upload/noco2-ep4/, written by test_transform.py). For variants with 'inv' the
   submission CSV is mapped back: pred = y_s * physical + y_b (so dead stands land on the mapped zero); the npz keeps
   the PHYSICAL predictions so the output slope (agb) can be re-tuned locally.
@@ -50,12 +51,16 @@ COMP = f'{ROOT_IN}/competitions/ieee-bigdata-cup-2026-ai-emulation-challenge/pub
 BASE = f'{ROOT_IN}/datasets/zhihaow/carbonglobe'
 OUT = '/kaggle/working'
 
-# Default target: the best single model, no-CO2 seed 42 epoch 4 (LB 0.091). Attach a dataset with its snapshot
-# `global_noco2_ckpt/snap_ep4.npz` (result/globel-train/third-run/global_noco2_ckpt/snap_ep4.npz).
-CO2_CONST = True                   # weights trained with CO2_MODE='const': the CO2 block is 0 after standardization
-WEIGHTS_GLOB = 'snap_ep4.npz'      # file name searched under /kaggle/input when WEIGHTS_FILE is empty
-                                   # ('global_lstmxl.weights.h5' for grid run 1/2, CO2_CONST=False)
-Z_CLIP = 10.0                      # standardized inputs clipped like in training (None for grid run 1)
+# PROFILE picks the weights and the variants:
+#   'co2phys' (session F, INSIGHTS 4.28): grid run 1 WITH CO2 (global_lstmxl.weights.h5, LB 0.134 / co2_hist 0.122),
+#             physical y0 + forcing, and the CO2 block mapped back to physical ppm (the test block is the SSP path
+#             compressed ~0.176x). Attach a dataset with ONLY run 1's weights (kaggle_upload/global-run1/: weights +
+#             global_lstmxl_preds.npz for the reproduction check) and noco2-ep4 (for test_maps.npz).
+#   'noco2'   (session E, done): no-CO2 seed 42 epoch 4 (LB 0.091), snap_ep4.npz.
+PROFILE = 'co2phys'
+CO2_CONST = PROFILE == 'noco2'     # weights trained with CO2_MODE='const': the CO2 block is 0 after standardization
+WEIGHTS_GLOB = 'snap_ep4.npz' if CO2_CONST else 'global_lstmxl.weights.h5'   # searched under /kaggle/input
+Z_CLIP = 10.0 if CO2_CONST else None   # standardized inputs clipped like in training (run 1 had no clip)
 SCREEN, SCREEN_SITES = False, 1500    # done for no-CO2 ep4 (INSIGHTS 4.13): only v2 matters
 Y0_TEST, Y0_SITES = False, 1000      # done: year-40 keeps ~60% of a height / ~55% of an AGB shift in y0
 # 'none' reproduces the scored file (LB 0.091) and costs no slot; the others are one LB submission each
@@ -69,8 +74,14 @@ IMPORTANCE, IMP_SITES = False, 1000           # done (session D, INSIGHTS 4.19)
 FEAT_SCREEN, FEAT_SCREEN_SITES = (), 600      # done; was ('v2', 'v1', 'v3')
 # A2 variants (none, dsh_v2, y0fx1, y0bx1) are scored. Session E (transform-aware): 'none' reproduces the 0.091 file
 # (no slot, reference for the msd table); submit y0inv first, then y0inv+xinv; xinv alone only if slots are free
+# Session E scored: y0inv 0.111, y0inv+xinv 0.109, xinv 0.196. Session F: 'co2_hist' reproduces the 0.122 file (no
+# slot; checks that the attached weights are run 1's), the other four are one LB submission each. 'xinv+co2inv' is
+# the y0 twin of 'y0inv+xinv+co2inv' (the pair y0inv+xinv / xinv gave the 0.066 blend, INSIGHTS 4.28)
 FULL_VARIANTS = (['none', 'y0inv', 'y0inv+xinv', 'xinv'] if CO2_CONST else
-                 ['co2x2', 'co2x3', 'co2_cont', 'co2_end', 'co2_hist+f7_fix', 'co2_hist'])
+                 ['co2_hist', 'y0inv+xinv+co2inv', 'y0inv+xinv+co2_hist', 'xinv+co2inv', 'y0inv+xinv+co2inv0.5'])
+# CO2 block -> physical (INSIGHTS 4.28): ppm = grid level at 2015 (grid year 30, ~399 ppm, with the grid's mean
+# seasonal cycle) + (test block - its 2015 level) / CO2_S. ssp126 reaches ~441 ppm, ssp585 ~565 (grid max ~419)
+CO2_S, CO2_T0, CO2_GRID_YEAR_2015 = 0.176, 363.87, 30
 MAPS_GLOB = 'test_maps.npz'        # searched under /kaggle/input (add it to the noco2-ep4 dataset)
 # rollout state ceiling of carbonglobe-global.ipynb (2 x grid max, printed as 'state ceiling (physical)');
 # needed to reproduce runs 2-4 exactly; grid run 1 had none
@@ -306,6 +317,9 @@ def env_fn(scn, variant, sites=None):
                 e[..., CO2] = CO2_HIST[0]
             elif p == 'co2_cont':
                 e[..., CO2] = CO2_HIST[-1] + (tx[:, t][..., CO2] - tx[:, 0][..., CO2])
+            elif p.startswith('co2inv'):                     # physical ppm; co2inv<f>: f x the physical increase
+                f = float(p[6:]) if len(p) > 6 else 1.0
+                e[..., CO2] = CO2_HIST[CO2_GRID_YEAR_2015] + f * (tx[:, t][..., CO2] - CO2_T0) / CO2_S
             elif p == 'co2_up':
                 e[..., CO2] = 2 * CO2_HIST[t] - tx[:, t][..., CO2]
             elif p.startswith('co2x'):                       # test + f * (history - test); co2x1 = co2_hist
