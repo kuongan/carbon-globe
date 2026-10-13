@@ -126,6 +126,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 92 | `result/match_gbm_y0inv2.csv` (GBM direct, y0 = 2·y0_vật_lý − y0_T, khớp trung bình) | 0.097 | dự báo 0.0955 | gần dự báo ⇒ trọng số −0.04, không lợi |
 | 93 | `submission_blend_x2.csv` (cặp LSTM + cặp GBM + g1_co2_hist) | **0.063** | 0.0624 | **tốt nhất** |
 | 94 | `result/match_rf_y0inv.csv` (LightGBM chế độ random forest, y0 vật lý, khớp trung bình) | 0.110 | dự báo 0.104 | trọng số −0.17 nếu cho phép, 0.0619: không đáng |
+| 95 | `result/match_rf_none.csv` (RF, y0 để ở không gian T, khớp trung bình) | 0.155 | dự báo 0.1485 | cặp RF chỉ thêm 0.0004–0.0005: trùng thông tin với cặp GBM |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -843,4 +844,16 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - `global_probe.py` PROFILE `noco2_s7`: biến thể none (đối chiếu với `result/s7_ep3_preds`, không tốn slot),
   y0inv+xinv, xinv. `kaggle_upload/noco2-s7/` = `s7_ep3.npz` (snap_ep3 của run 4, trùng tuyệt đối best.npz = EMA
   epoch 3 đã chấm) + `test_maps.npz`.
+
+### 4.35 Cặp RF trùng cặp GBM; slope agb không giải thích "y0 vượt quá vật lý" [KC + cục bộ]
+
+- rf_none = 0.155 (#95, dự báo 0.1485). Cặp RF tự do: −0.125 trên rf_none, ước tính 0.0620 (x2: 0.0624); cả hai RF
+  tự do 0.0619. Dưới mức làm tròn, thêm trọng số âm ⇒ không nộp. Hai họ cây cùng feature mang cùng một hướng.
+- Giả thuyết: slope agb 0.84 (ước lượng) quá cao nên "agb vật lý" của test quá nhỏ, và "bắt đầu lớn hơn" chỉ là sửa
+  lỗi đó. Kiểm tra bằng allometry (agb theo height dọc quỹ đạo lưới của chính site, height vật lý của test là chính
+  xác, 3248 dòng đang lớn): slope ngụ ý 0.81 (tuổi 1–20), 1.07 (30–70), 1.04 (100–500), tương quan 0.90 ⇒ không ra
+  một slope chung, không ủng hộ "slope quá cao" đồng đều. "Bắt đầu lớn hơn" vẫn là đại diện cho tăng trưởng mà model
+  thiếu (CO2).
+- Tình trạng: blend hội tụ ~0.062–0.063 với các thành viên hiện có. Còn lại: session G (cặp LSTM seed 7, GPU, 2 slot)
+  và trọng số theo ô (kịch bản × tuổi: 5–6 probe hybrid, lợi chưa biết).
   thứ hai; đã tạo lại (khớp preds đã commit, 2e-6) và `slope.py` giờ từ chối ghi đè, nhận đường dẫn output.
