@@ -1,0 +1,37 @@
+lightgbm 4.6.0 | threads 10 | features kept 111
+[   0.0 min] glob_X 1024/54152
+[   0.1 min] glob_X 11264/54152
+[   0.1 min] glob_X 21504/54152
+[   0.2 min] glob_X 31744/54152
+[   0.4 min] glob_X 41984/54152
+[   0.5 min] glob_X 52224/54152
+[   0.8 min] grid loaded: usable sites 54152/54152 | state ceiling [ 70.    72.32 213.84  23.22  14.71   7.31  14.59]
+[   0.8 min] train sites 49982 | holdout sites 4170 (21/263 blocks) | holdout persistence (y40 = y0) metric 0.3675
+[   1.0 min] ssp126: test (6171, 40, 12, 136) | dead (y0 at the mapped zero) 0.0884 | non-finite test inputs 0
+[   1.2 min] ssp585: test (6171, 40, 12, 136) | dead (y0 at the mapped zero) 0.0883 | non-finite test inputs 0
+[500]	hold's l2: 4.49236
+[1000]	hold's l2: 4.37024
+[1500]	hold's l2: 4.31679
+[   3.0 min] direct height: best iter 1563 | gain by group {'state': 0.365, 'v1': 0.174, 'age': 0.163, 'f1': 0.1, 'f0': 0.036, 'f2': 0.03, 'v2': 0.023, 'f3': 0.02, 'f4': 0.018, 'v3': 0.016, 'f5': 0.016, 'f6': 0.015, 'static': 0.012, 'v4': 0.009, 'f7': 0.002}
+[500]	hold's l2: 0.346159
+[1000]	hold's l2: 0.321506
+[1500]	hold's l2: 0.311371
+[2000]	hold's l2: 0.306213
+[2500]	hold's l2: 0.30199
+[3000]	hold's l2: 0.299743
+[3500]	hold's l2: 0.297716
+[4000]	hold's l2: 0.296239
+[   6.9 min] direct agb: best iter 4131 | gain by group {'f1': 0.289, 'state': 0.222, 'age': 0.138, 'f2': 0.056, 'f3': 0.056, 'f4': 0.045, 'f0': 0.04, 'v3': 0.035, 'v1': 0.033, 'v2': 0.024, 'f5': 0.023, 'v4': 0.013, 'f6': 0.011, 'static': 0.011, 'f7': 0.003}
+[   7.1 min] direct holdout metric 0.0305 (persistence 0.3675)
+[   7.5 min] direct_y0inv: scaled means (height, agb) {'ssp126': (1.0819038152694702, 1.0490409135818481), 'ssp585': (1.0915464162826538, 1.0261566638946533)} | msd ssp126 vs ssp585 0.01185
+[   7.9 min] direct_none: scaled means (height, agb) {'ssp126': (0.9323388934135437, 0.8617438673973083), 'ssp585': (0.941010594367981, 0.8406343460083008)} | msd ssp126 vs ssp585 0.01026
+[   8.2 min] direct_inv: scaled means (height, agb) {'ssp126': (1.1156176328659058, 0.9782284498214722), 'ssp585': (1.1242384910583496, 0.949324369430542)} | msd ssp126 vs ssp585 0.01343
+[   8.6 min] direct_xinv: scaled means (height, agb) {'ssp126': (0.9630028009414673, 0.7976099252700806), 'ssp585': (0.9706405401229858, 0.7695338129997253)} | msd ssp126 vs ssp585 0.01218
+[   8.6 min] saved gbm_preds_pair.npz (['direct_inv', 'direct_none', 'direct_xinv', 'direct_y0inv']) + gbm_summary_pair.json
+[   8.6 min] msd direct_inv vs direct_none: 0.0742
+[   8.6 min] msd direct_inv vs direct_xinv: 0.0700
+[   8.6 min] msd direct_inv vs direct_y0inv: 0.0378
+[   8.6 min] msd direct_none vs direct_xinv: 0.0330
+[   8.6 min] msd direct_none vs direct_y0inv: 0.0711
+[   8.6 min] msd direct_xinv vs direct_y0inv: 0.1352
+[   8.6 min] saved gbm_preds_pair.npz (['direct_inv', 'direct_none', 'direct_xinv', 'direct_y0inv']) + gbm_summary_pair.json
