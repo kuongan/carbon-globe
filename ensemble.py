@@ -87,6 +87,8 @@ RUNS = {
     'gbmm_y0inv2':           (0.097, None),    # match_gbm_y0inv2.csv: GBM direct, y0 pushed past physical (2 y0_p - y0_t)
     'rfm_y0inv':             (0.110, None),    # match_rf_y0inv.csv: LightGBM random-forest mode, y0 physical, mean-matched
     'rfm_none':              (0.155, None),    # match_rf_none.csv: RF twin, y0 left in test space, mean-matched
+    's7_y0inv_xinv':         (0.192, None),    # session G: seed 7 ep3, y0 + forcing physical
+    's7_xinv':               (0.277, None),    # session G: seed 7 ep3, forcing physical, y0 as given
     'x2':                    (0.063, None),    # submission_blend_x2.csv (best): LSTM pair + GBM pair + g1_co2_hist
     # own-site analogs (analog.py, INSIGHTS 4.27/4.28): mean-matched to probe_dead_T2.csv
     'analog_add':            (0.173, None),    # match_analog_add.csv: test y0 + historical 40-year change of that site/age

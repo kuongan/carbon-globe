@@ -127,6 +127,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 93 | `submission_blend_x2.csv` (cặp LSTM + cặp GBM + g1_co2_hist) | **0.063** | 0.0624 | **tốt nhất** |
 | 94 | `result/match_rf_y0inv.csv` (LightGBM chế độ random forest, y0 vật lý, khớp trung bình) | 0.110 | dự báo 0.104 | trọng số −0.17 nếu cho phép, 0.0619: không đáng |
 | 95 | `result/match_rf_none.csv` (RF, y0 để ở không gian T, khớp trung bình) | 0.155 | dự báo 0.1485 | cặp RF chỉ thêm 0.0004–0.0005: trùng thông tin với cặp GBM |
+| 96 | `result/noco2-s7/submission_global_xinv.csv` (seed 7 ep3, forcing vật lý) | 0.277 | dự báo 0.271 | thành viên cặp seed 7 |
+| 97 | `result/noco2-s7/submission_global_y0inv_xinv.csv` (seed 7 ep3, y0 + forcing vật lý) | 0.192 | dự báo 0.189 | thành viên cặp seed 7 |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -878,4 +880,8 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - LB dự báo (`rank_members.py`, bộ x2): s7_y0inv_xinv **0.189** (khả dĩ 0.077–0.301), s7_xinv **0.271** (0.167–0.349).
   Lệch ±0.01 → 0.0618–0.0619, ±0.02 → 0.060. Khoảng khả dĩ rộng nên độ lệch thật có thể lớn; khi có cả hai thì thành
   cặp như ep4 ⇒ nộp cả hai.
+- **Kết quả:** xinv 0.277, y0inv_xinv 0.192 (#96–97), lệch dự báo nhỏ (+0.006 / +0.003). Cho cặp seed 7 tự do:
+  s7_y0inv_xinv +0.47, s7_xinv −0.55, cặp ep4 co lại (0.11 / +0.17) ⇒ ước tính **0.0615** (x2 0.0624); rung LB:
+  0.0609–0.0620 (x2: 0.0618–0.0628). Vẫn 2 trọng số âm, |w| lớn nhất ~0.6 như x2 ⇒ `result/submission_blend_x3.csv`.
+  Hướng "y0 vượt quá vật lý" giờ dựa trên hai seed LSTM thay vì một.
   thứ hai; đã tạo lại (khớp preds đã commit, 2e-6) và `slope.py` giờ từ chối ghi đè, nhận đường dẫn output.
