@@ -1,5 +1,13 @@
 # Plan and runbook
 
+## GPU plan (30 h T4, INSIGHTS 4.36): make many members, rank them locally, submit only the steep ones
+1. Upload `kaggle_upload/lstm-sweep/` as a Kaggle dataset (lstm-sweep).
+2. Run `kaggle_notebooks/kaggle_sweep_pairs_run1.ipynb` (~4.5 h), `..._run2.ipynb` (~3.5 h), and
+   `kaggle_notebooks/kaggle_direct_nn.ipynb` (~1-2 h). Send back `global_probe_preds.npz` of each run, `nn_preds.npz`,
+   `nn_summary.json`. Nothing is submitted directly.
+3. Locally: `ensemble_scn.py ingest <run> <npz> <key> map` (LSTM sweep) / `slope.py match` + `ingest_csv` (NN), then
+   `python rank_members.py <runs...>` -> submit the 2-4 steepest per day, re-solve after each batch.
+
 ## Now (2026-10-14, INSIGHTS 4.32)
 1. Done: x2 = 0.063 (best), GBM y0inv2 = 0.097 (no blend gain).
 2. Done: RF y0inv 0.110, RF twin 0.155: the RF pair adds 0.0005 at most (duplicates the GBM pair). x2 stays.

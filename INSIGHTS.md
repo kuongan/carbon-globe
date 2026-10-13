@@ -856,4 +856,18 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   thiếu (CO2).
 - Tình trạng: blend hội tụ ~0.062–0.063 với các thành viên hiện có. Còn lại: session G (cặp LSTM seed 7, GPU, 2 slot)
   và trọng số theo ô (kịch bản × tuổi: 5–6 probe hybrid, lợi chưa biết).
+
+### 4.36 Kế hoạch 30 h GPU: nhiều thành viên rẻ, xếp hạng trước khi nộp
+
+- Giới hạn thật là slot (5/ngày), không phải GPU. Nên GPU dùng để tạo nhiều ứng viên, rồi `rank_members.py` xếp hạng
+  theo độ dốc của lợi (LB dự báo + ước tính blend khi lệch ±0.01/±0.02) và chỉ nộp những file dốc nhất.
+- `kaggle_notebooks/` (sinh bởi `make_notebooks.py` từ các .py):
+  - `kaggle_sweep_pairs_run1/2.ipynb` = `global_probe.py` PROFILE `sweep`: 7 snapshot LSTM no-CO2 (s42 ep3/5/6, s7
+    ep3/5, bag ep6, swa ep4), mỗi cái y0inv+xinv và xinv. Kiểm tra tái lập 'none' trên 309 site (mỗi site thứ 20) với
+    `ref_<tag>.npz`, dừng nếu sai. Không chạy 'none' đầy đủ (đã có trong result/). ~16.5 phút mỗi rollout (session F:
+    2.2 h cho 8) ⇒ run 1 ~4.5 h, run 2 ~3.5 h. Dataset: `kaggle_upload/lstm-sweep/` (637 MB).
+  - `kaggle_direct_nn.ipynb` = `carbonglobe_direct_nn.py`: họ mới, NN direct (Conv1d + BiGRU trên 40 năm khí hậu
+    trung bình năm của 111 feature + khí hậu tháng f0–f6 + y0 + tuổi → thay đổi height/agb ở năm 10/20/30/40),
+    4 seed, 5 biến thể test như GBM. Pre-flight (20 bước + mọi biến thể trên 13 site) trước khi train thật. Đã chạy
+    thử pipeline dữ liệu ở local với model giả (không có PyTorch local); phần PyTorch chỉ kiểm tra được trên Kaggle.
   thứ hai; đã tạo lại (khớp preds đã commit, 2e-6) và `slope.py` giờ từ chối ghi đè, nhận đường dẫn output.

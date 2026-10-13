@@ -59,9 +59,12 @@ OUT = '/kaggle/working'
 #   'noco2'   (session E, done): no-CO2 seed 42 epoch 4 (LB 0.091), snap_ep4.npz.
 #   'noco2_s7' (session G, INSIGHTS 4.34): no-CO2 seed 7 epoch 3 (LB 0.118 in test space), a second physical-input
 #             pair (y0inv+xinv / xinv) like the one in x1/x2. Attach kaggle_upload/noco2-s7/ (s7_ep3.npz + test_maps.npz).
-PROFILE = 'noco2_s7'
-CO2_CONST = PROFILE.startswith('noco2')   # weights trained with CO2_MODE='const': the CO2 block is 0 after standardization
-WEIGHTS_GLOB = {'noco2': 'snap_ep4.npz', 'noco2_s7': 's7_ep3.npz', 'co2phys': 'global_lstmxl.weights.h5'}[PROFILE]
+#   'sweep'   (kaggle_sweep_pairs.ipynb, INSIGHTS 4.36): every attached `sweep_<tag>.npz` (no-CO2 snapshots of runs
+#             3/4/6 and bagging m1, kaggle_upload/lstm-sweep/) in turn, variants none / y0inv+xinv / xinv each.
+PROFILE = 'sweep'
+CO2_CONST = PROFILE.startswith('noco2') or PROFILE == 'sweep'   # CO2 block held at 0 after standardization
+WEIGHTS_GLOB = {'noco2': 'snap_ep4.npz', 'noco2_s7': 's7_ep3.npz', 'sweep': 'sweep_*.npz',
+                'co2phys': 'global_lstmxl.weights.h5'}[PROFILE]
 Z_CLIP = 10.0 if CO2_CONST else None   # standardized inputs clipped like in training (run 1 had no clip)
 SCREEN, SCREEN_SITES = False, 1500    # done for no-CO2 ep4 (INSIGHTS 4.13): only v2 matters
 Y0_TEST, Y0_SITES = False, 1000      # done: year-40 keeps ~60% of a height / ~55% of an AGB shift in y0
@@ -81,7 +84,7 @@ FEAT_SCREEN, FEAT_SCREEN_SITES = (), 600      # done; was ('v2', 'v1', 'v3')
 # the y0 twin of 'y0inv+xinv+co2inv' (the pair y0inv+xinv / xinv gave the 0.066 blend, INSIGHTS 4.28)
 # Session G: 'none' reproduces the scored s7_ep3 file (no slot; compared locally), the pair is 2 submissions
 FULL_VARIANTS = {'noco2': ['none', 'y0inv', 'y0inv+xinv', 'xinv'],
-                 'noco2_s7': ['none', 'y0inv+xinv', 'xinv'],
+                 'noco2_s7': ['none', 'y0inv+xinv', 'xinv'], 'sweep': ['y0inv+xinv', 'xinv'],
                  'co2phys': ['co2_hist', 'y0inv+xinv+co2inv', 'y0inv+xinv+co2_hist', 'xinv+co2inv',
                              'y0inv+xinv+co2inv0.5']}[PROFILE]
 # CO2 block -> physical (INSIGHTS 4.28): ppm = grid level at 2015 (grid year 30, ~399 ppm, with the grid's mean
@@ -116,9 +119,17 @@ if NEED_MAPS:
 
 _w = [WEIGHTS_FILE] if WEIGHTS_FILE else sorted(glob.glob(f'{ROOT_IN}/**/{WEIGHTS_GLOB}', recursive=True))
 assert _w, f'attach a dataset that contains {WEIGHTS_GLOB}'
-if len(_w) > 1:
+if len(_w) > 1 and PROFILE != 'sweep':
     print('WARNING: several weight files found, using the first; set WEIGHTS_FILE to choose:', _w)
 WEIGHTS = _w[0]
+# sweep: run 1 = SWEEP_ONLY ('s7ep3', 's42ep6', 'bagep6', 's42ep3'), run 2 = ('s7ep5', 'swaep4', 's42ep5'); () = all
+SWEEP_ONLY = ('s7ep3', 's42ep6', 'bagep6', 's42ep3')
+SWEEP = {os.path.basename(f)[6:-4]: f for f in _w} if PROFILE == 'sweep' else {'': WEIGHTS}
+if PROFILE == 'sweep' and SWEEP_ONLY:
+    assert set(SWEEP_ONLY) <= set(SWEEP), f'missing weights for {set(SWEEP_ONLY) - set(SWEEP)}'
+    SWEEP = {t: SWEEP[t] for t in SWEEP_ONLY}
+    WEIGHTS = next(iter(SWEEP.values()))
+print('weights:', SWEEP)
 
 # ------------------------------------------------------------------ constants (same as the notebooks)
 N_CONS, N_OUT, N_YEAR, N_T, N_AGE_FEA = 136, 7, 40, 12, 15
@@ -199,16 +210,20 @@ class LSTMXLBackbone(keras.Model):
 
 MODEL = LSTMXLBackbone()
 _ = MODEL(tf.zeros((2, N_T, N_FEA), tf.float32), training=False)
-if WEIGHTS.endswith('.npz'):                       # snapshot / best.npz of carbonglobe-global.ipynb: b0..bN
-    _z = np.load(WEIGHTS)
-    _tv = MODEL.trainable_variables
-    assert len([k for k in _z.files if k.startswith('b')]) == len(_tv), 'snapshot does not match the model'
-    for _k, _v in enumerate(_tv):
-        _v.assign(_z[f'b{_k}'])
-else:
-    MODEL.load_weights(WEIGHTS)
-assert sum(float(np.abs(b.head.kernel.numpy()).sum()) for b in MODEL.branches) > 0, 'weights did not load'
-print(f'loaded {WEIGHTS} | {MODEL.count_params() / 1e6:.2f}M params')
+
+def load_weights(path):
+    if path.endswith('.npz'):                      # snapshot / best.npz of carbonglobe-global.ipynb: b0..bN
+        z = np.load(path)
+        tv = MODEL.trainable_variables
+        assert len([k for k in z.files if k.startswith('b')]) == len(tv), 'snapshot does not match the model'
+        for k, v in enumerate(tv):
+            v.assign(z[f'b{k}'])
+    else:
+        MODEL.load_weights(path)
+    assert sum(float(np.abs(b.head.kernel.numpy()).sum()) for b in MODEL.branches) > 0, 'weights did not load'
+    print(f'loaded {path} | {MODEL.count_params() / 1e6:.2f}M params', flush=True)
+
+load_weights(WEIGHTS)
 
 @tf.function(reduce_retracing=True)
 def infer(x):
@@ -449,11 +464,16 @@ if FEAT_SCREEN:
               f'(compare with dsh_{g} of part A; much smaller sum = the effect needs several features together)')
 
 # ------------------------------------------------------------------ C. full-size submissions
-if FULL_VARIANTS:
+ALL_PREDS = {}
+
+def run_full(tag=''):
+    """FULL_VARIANTS with the loaded weights -> submission_global_[<tag>_]<variant>.csv; predictions kept in ALL_PREDS
+    under '<scn>_[<tag>_]<variant>' and saved to global_probe_preds.npz after every model (a timeout keeps them)."""
     sample_sub = pd.read_csv(f'{COMP}/sample_submission.csv')
+    pre = f'{tag}_' if tag else ''
     preds = {}
     for v in FULL_VARIANTS:
-        preds[v] = {scn: rollout(env_fn(scn, v), TEST[scn]['x'].shape[0], y0_fn(scn, v), desc=f'{scn} {v}')
+        preds[v] = {scn: rollout(env_fn(scn, v), TEST[scn]['x'].shape[0], y0_fn(scn, v), desc=f'{tag} {scn} {v}')
                     for scn in SCENARIOS}
         parts = []
         for scn in SCENARIOS:
@@ -465,9 +485,9 @@ if FULL_VARIANTS:
                                        'agb': (p[:, :, 1] / Y_MEAN[1]).reshape(-1)}))
         sub = sample_sub[['id']].join(pd.concat(parts).set_index('id'), on='id')
         assert len(sub) == len(sample_sub) and not sub[['height', 'agb']].isna().any().any()
-        path = f'{OUT}/submission_global_{v.replace("+", "_")}.csv'
+        path = f'{OUT}/submission_global_{pre}{v.replace("+", "_")}.csv'
         sub.to_csv(path, index=False)
-        print(f'wrote {path} | height {sub.height.mean():.3f} agb {sub.agb.mean():.3f}')
+        print(f'wrote {path} | height {sub.height.mean():.3f} agb {sub.agb.mean():.3f}', flush=True)
     old = glob.glob(f'{ROOT_IN}/**/global_lstmxl_preds.npz', recursive=True)
     if old and 'co2_hist' in preds:
         z = np.load(old[0])
@@ -475,7 +495,7 @@ if FULL_VARIANTS:
             print(f'reproduction {scn}: msd(co2_hist, original run) = {msd(preds["co2_hist"][scn], z[scn + "_co2_hist"]):.2e} '
                   f'(~1e-5 or less: the grid reference here is a {GRID_STRIDE}-site-stride subsample)')
     ref_np = glob.glob(f'{ROOT_IN}/**/global_noco2_preds.npz', recursive=True)   # optional: run 3 output
-    if ref_np and 'none' in preds and CO2_CONST:
+    if ref_np and 'none' in preds and CO2_CONST and not tag:
         z = np.load(ref_np[0])
         if 'ssp126_ep4_none' in z.files:
             for scn in SCENARIOS:
@@ -484,7 +504,29 @@ if FULL_VARIANTS:
     if 'none' in preds:
         for v in preds:
             if v != 'none':
-                print(f'{v:12s} msd vs none: ' + ' '.join(f'{scn} {msd(preds[v][scn], preds["none"][scn]):.4f}' for scn in SCENARIOS))
-    np.savez_compressed(f'{OUT}/global_probe_preds.npz',
-                        **{f'{s}_{v.replace("+", "_")}': p for v, d in preds.items() for s, p in d.items()})
-    print('wrote', f'{OUT}/global_probe_preds.npz')
+                print(f'{pre}{v:12s} msd vs none: ' + ' '.join(f'{scn} {msd(preds[v][scn], preds["none"][scn]):.4f}' for scn in SCENARIOS))
+    ALL_PREDS.update({f'{s}_{pre}{v.replace("+", "_")}': p for v, d in preds.items() for s, p in d.items()})
+    np.savez_compressed(f'{OUT}/global_probe_preds.npz', **ALL_PREDS)
+    print('wrote', f'{OUT}/global_probe_preds.npz', sorted(ALL_PREDS), flush=True)
+
+def check_none(tag):
+    """Sweep: 'none' on every 20th ssp126 site vs ref_<tag>.npz (the scored test-space predictions of these
+    weights, written locally) -> catches a wrong or mislabelled snapshot in ~1 minute."""
+    ref = glob.glob(f'{ROOT_IN}/**/ref_{tag}.npz', recursive=True)
+    if not ref:
+        print(f'no ref_{tag}.npz attached: reproduction not checked'); return
+    sites = np.arange(0, TEST['ssp126']['x'].shape[0], 20)
+    p = rollout(env_fn('ssp126', 'none', sites), len(sites), y0_fn('ssp126', 'none', sites))
+    d = msd(p, np.load(ref[0])['ssp126'])
+    print(f'reproduction {tag}: msd(none, scored file) on {len(sites)} sites = {d:.2e} (~1e-6 or less: right weights)', flush=True)
+    assert d < 1e-3, f'{tag}: weights do not reproduce the scored predictions'
+
+if FULL_VARIANTS:
+    for _i, (_tag, _path) in enumerate(SWEEP.items()):
+        if _i:                                           # the first weights are already loaded
+            load_weights(_path)
+        t1 = time.time()
+        if _tag:
+            check_none(_tag)
+        run_full(_tag)
+        print(f'== {_tag or WEIGHTS}: {(time.time() - t1) / 60:.1f} min', flush=True)
