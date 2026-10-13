@@ -85,6 +85,7 @@ RUNS = {
     'g1_y0inv_xinv_co2inv0.5': (0.110, None),  # same model, half the physical CO2 increase
     'gbmm_none':             (0.169, None),    # match_gbm_none.csv: GBM direct, y0 left in test space, mean-matched
     'gbmm_y0inv2':           (0.097, None),    # match_gbm_y0inv2.csv: GBM direct, y0 pushed past physical (2 y0_p - y0_t)
+    'rfm_y0inv':             (0.110, None),    # match_rf_y0inv.csv: LightGBM random-forest mode, y0 physical, mean-matched
     'x2':                    (0.063, None),    # submission_blend_x2.csv (best): LSTM pair + GBM pair + g1_co2_hist
     # own-site analogs (analog.py, INSIGHTS 4.27/4.28): mean-matched to probe_dead_T2.csv
     'analog_add':            (0.173, None),    # match_analog_add.csv: test y0 + historical 40-year change of that site/age

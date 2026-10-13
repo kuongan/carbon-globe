@@ -57,9 +57,11 @@ OUT = '/kaggle/working'
 #             compressed ~0.176x). Attach a dataset with ONLY run 1's weights (kaggle_upload/global-run1/: weights +
 #             global_lstmxl_preds.npz for the reproduction check) and noco2-ep4 (for test_maps.npz).
 #   'noco2'   (session E, done): no-CO2 seed 42 epoch 4 (LB 0.091), snap_ep4.npz.
-PROFILE = 'co2phys'
-CO2_CONST = PROFILE == 'noco2'     # weights trained with CO2_MODE='const': the CO2 block is 0 after standardization
-WEIGHTS_GLOB = 'snap_ep4.npz' if CO2_CONST else 'global_lstmxl.weights.h5'   # searched under /kaggle/input
+#   'noco2_s7' (session G, INSIGHTS 4.34): no-CO2 seed 7 epoch 3 (LB 0.118 in test space), a second physical-input
+#             pair (y0inv+xinv / xinv) like the one in x1/x2. Attach kaggle_upload/noco2-s7/ (s7_ep3.npz + test_maps.npz).
+PROFILE = 'noco2_s7'
+CO2_CONST = PROFILE.startswith('noco2')   # weights trained with CO2_MODE='const': the CO2 block is 0 after standardization
+WEIGHTS_GLOB = {'noco2': 'snap_ep4.npz', 'noco2_s7': 's7_ep3.npz', 'co2phys': 'global_lstmxl.weights.h5'}[PROFILE]
 Z_CLIP = 10.0 if CO2_CONST else None   # standardized inputs clipped like in training (run 1 had no clip)
 SCREEN, SCREEN_SITES = False, 1500    # done for no-CO2 ep4 (INSIGHTS 4.13): only v2 matters
 Y0_TEST, Y0_SITES = False, 1000      # done: year-40 keeps ~60% of a height / ~55% of an AGB shift in y0
@@ -77,8 +79,11 @@ FEAT_SCREEN, FEAT_SCREEN_SITES = (), 600      # done; was ('v2', 'v1', 'v3')
 # Session E scored: y0inv 0.111, y0inv+xinv 0.109, xinv 0.196. Session F: 'co2_hist' reproduces the 0.122 file (no
 # slot; checks that the attached weights are run 1's), the other four are one LB submission each. 'xinv+co2inv' is
 # the y0 twin of 'y0inv+xinv+co2inv' (the pair y0inv+xinv / xinv gave the 0.066 blend, INSIGHTS 4.28)
-FULL_VARIANTS = (['none', 'y0inv', 'y0inv+xinv', 'xinv'] if CO2_CONST else
-                 ['co2_hist', 'y0inv+xinv+co2inv', 'y0inv+xinv+co2_hist', 'xinv+co2inv', 'y0inv+xinv+co2inv0.5'])
+# Session G: 'none' reproduces the scored s7_ep3 file (no slot; compared locally), the pair is 2 submissions
+FULL_VARIANTS = {'noco2': ['none', 'y0inv', 'y0inv+xinv', 'xinv'],
+                 'noco2_s7': ['none', 'y0inv+xinv', 'xinv'],
+                 'co2phys': ['co2_hist', 'y0inv+xinv+co2inv', 'y0inv+xinv+co2_hist', 'xinv+co2inv',
+                             'y0inv+xinv+co2inv0.5']}[PROFILE]
 # CO2 block -> physical (INSIGHTS 4.28): ppm = grid level at 2015 (grid year 30, ~399 ppm, with the grid's mean
 # seasonal cycle) + (test block - its 2015 level) / CO2_S. ssp126 reaches ~441 ppm, ssp585 ~565 (grid max ~419)
 CO2_S, CO2_T0, CO2_GRID_YEAR_2015 = 0.176, 363.87, 30

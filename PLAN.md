@@ -2,7 +2,11 @@
 
 ## Now (2026-10-14, INSIGHTS 4.32)
 1. Done: x2 = 0.063 (best), GBM y0inv2 = 0.097 (no blend gain).
-2. Next probe: `result/match_rf_y0inv.csv` (random forest, predicted 0.104; INSIGHTS 4.33), then re-solve x2 + rfm_y0inv.
+2. Done: RF y0inv 0.110 (no blend gain). Next probe: `result/match_rf_none.csv` (RF twin, predicted 0.1485; add as
+   `rfm_none`, re-solve x2's set + rfm_y0inv + rfm_none with the RF pair free; use the halfway blend if weights > 0.6).
+2b. Optional GPU, session G (INSIGHTS 4.34): new Kaggle dataset from `kaggle_upload/noco2-s7/`; notebook inputs =
+   competition data, `zhihaow/carbonglobe`, that dataset; `global_probe.py` as committed (PROFILE noco2_s7). Submit
+   `submission_global_y0inv_xinv.csv` and `submission_global_xinv.csv`, send `global_probe_preds.npz`.
 3. Final picks: x2 (if it confirms) + x1 (0.066, scored) as the safer one; `submission_blend_x2h.csv` (est 0.0638,
    half the negative weights) is the in-between option.
 

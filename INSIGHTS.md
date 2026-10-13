@@ -125,6 +125,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 91 | `result/match_gbm_none.csv` (GBM direct, y0 để ở không gian T, khớp trung bình) | 0.169 | dự báo 0.1515 | lệch lớn ⇒ cặp GBM: trọng số −0.39 |
 | 92 | `result/match_gbm_y0inv2.csv` (GBM direct, y0 = 2·y0_vật_lý − y0_T, khớp trung bình) | 0.097 | dự báo 0.0955 | gần dự báo ⇒ trọng số −0.04, không lợi |
 | 93 | `submission_blend_x2.csv` (cặp LSTM + cặp GBM + g1_co2_hist) | **0.063** | 0.0624 | **tốt nhất** |
+| 94 | `result/match_rf_y0inv.csv` (LightGBM chế độ random forest, y0 vật lý, khớp trung bình) | 0.110 | dự báo 0.104 | trọng số −0.17 nếu cho phép, 0.0619: không đáng |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -830,5 +831,16 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - RF direct: holdout lịch sử 0.054 (GBM 0.031; holdout không xếp hạng được LB). Khớp trung bình:
   `result/match_rf_y0inv.csv` (msd tới GBM y0inv **0.023**, gấp ~13 lần nhiễu giữa seed), `result/match_rf_none.csv`.
 - LB dự báo: rf_y0inv **0.104** (lệch ±0.01 → blend 0.061, ±0.02 → 0.0565); rf_none 0.1485 (±0.02 → 0.0585).
-- Sự cố: `slope.py match` đặt tên output theo key nên đã ghi đè `result/match_direct_y0inv.csv` (file đã chấm) lần
+- **Kết quả: rf_y0inv = 0.110** (#94, dự báo 0.104). Cho phép trọng số âm: −0.17, ước tính 0.0619 so với 0.0624 của x2
+  (dưới mức làm tròn LB, thêm một trọng số âm ⇒ rủi ro private) ⇒ không nộp blend mới.
+- Bản sinh đôi `result/match_rf_none.csv`: LB dự báo 0.1485; lệch ±0.01 → 0.061, +0.0175 (như GBM) → 0.058. Ở độ
+  lệch lớn trọng số lên ±0.6–1.3 ⇒ khi dùng thì lấy nửa đường.
+
+### 4.34 Session G (tùy chọn, GPU): cặp LSTM thứ hai, seed 7
+
+- Lợi lớn gần đây đều từ cặp "y0 vật lý / y0 không gian T" của cùng một model (LSTM ep4: 0.068 → 0.066; GBM:
+  0.066 → 0.063). Seed 7 ep3 (LB 0.118, msd 0.055–0.073 tới ep4 ở không gian T) cho một bản độc lập của hướng đó.
+- `global_probe.py` PROFILE `noco2_s7`: biến thể none (đối chiếu với `result/s7_ep3_preds`, không tốn slot),
+  y0inv+xinv, xinv. `kaggle_upload/noco2-s7/` = `s7_ep3.npz` (snap_ep3 của run 4, trùng tuyệt đối best.npz = EMA
+  epoch 3 đã chấm) + `test_maps.npz`.
   thứ hai; đã tạo lại (khớp preds đã commit, 2e-6) và `slope.py` giờ từ chối ghi đè, nhận đường dẫn output.
