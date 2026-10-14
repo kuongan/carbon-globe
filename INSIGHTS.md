@@ -130,6 +130,11 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 96 | `result/noco2-s7/submission_global_xinv.csv` (seed 7 ep3, forcing vật lý) | 0.277 | dự báo 0.271 | thành viên cặp seed 7 |
 | 97 | `result/noco2-s7/submission_global_y0inv_xinv.csv` (seed 7 ep3, y0 + forcing vật lý) | 0.192 | dự báo 0.189 | thành viên cặp seed 7 |
 | 98 | `submission_blend_x3.csv` (x2 + cặp seed 7) | **0.062** | 0.0615 | **tốt nhất** |
+| 99 | `kaggle_run1/submission_global_s42ep3_xinv.csv` | 0.254 | dự báo 0.2514 | |
+| 100 | `kaggle_run1/submission_global_s42ep6_xinv.csv` | 0.192 | dự báo 0.1966 | |
+| 101 | `kaggle_run1/submission_global_s42ep3_y0inv_xinv.csv` | 0.164 | dự báo 0.1627 | |
+| 102 | `result/match_nn_y0inv2.csv` (NN direct, y0 vượt quá vật lý) | 0.113 | dự báo 0.1192 | NN đơn tốt hơn GBM y0inv (0.108 là GBM; NN y0inv2 0.113 vs GBM y0inv2 0.097) |
+| 103 | `kaggle_run1/submission_global_s42ep6_y0inv_xinv.csv` | 0.112 | dự báo 0.1161 | |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -896,3 +901,6 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   rồi bagep6 (0.0601 / 0.056), NN y0inv2 / y0inv (0.0604–0.0605 / 0.057). LB dự báo: s42ep6 y0inv_xinv 0.116, xinv
   0.197; s42ep3 0.163 / 0.251; bagep6 0.185 / 0.263; NN y0inv2 0.119, y0inv 0.141, none 0.179.
 - Nộp đợt 1: cặp s42ep6, cặp s42ep3, NN y0inv2.
+- **Kết quả đợt 1** (#99–103): mọi file lệch dự báo ≤ 0.006. Blend: `submission_blend_x4.csv` (vẫn 2 trọng số âm như
+  x3; NN y0inv2 +0.16, s42ep6_xinv +0.20) ước tính **0.0606** (rung 0.0600–0.0609); `submission_blend_x4f.csv` (thêm
+  trọng số âm trên s42ep3_xinv; hai cặp LSTM chia nhau phần âm) ước tính **0.0600** (0.0594–0.0604).
