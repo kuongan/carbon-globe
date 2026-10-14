@@ -910,3 +910,15 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   trọng số âm trên s42ep3_xinv; hai cặp LSTM chia nhau phần âm) ước tính **0.0600** (0.0594–0.0604).
 - Cặp bagging (#104–105): x4f 0.0600 → 0.0599, x4 không đổi ⇒ không làm file mới. Các cặp LSTM đã phủ cùng một hướng;
   blend hội tụ ~0.060. Còn lại: sweep run 2 (s7ep5, swaep4, s42ep5), NN y0inv / none.
+
+### 4.39 EDA y0 hai kịch bản; trọng số riêng cho ssp585 bằng probe theo hướng [KC + đại số]
+
+- y0 hai kịch bản khác nhau ở mọi dòng sống (dòng giống hệt = đúng 8.9% ô chết). Nguyên nhân: forcing năm 0 đã khác
+  (|diff| f0–f7 trung bình 4.65) ⇒ khác biệt y0 là phản ứng một năm với thời tiết khác, gần đối xứng (GPP trung vị 0,
+  10–90%: −8%…+15%; height/agb dấu 50/50), có cấu trúc theo site (tương quan giữa tuổi 0.44–0.73). Không mang thông
+  tin phản ứng CO2 40 năm ⇒ bỏ.
+- Mọi blend dùng một vector trọng số chung cho hai kịch bản; "bắt đầu lớn hơn" là đại diện cho tăng trưởng CO2 nên có
+  thể cần mạnh hơn ở ssp585. `dirprobe.py`: chỉ trên ssp585, x4f + t·d_j với 4 hướng (cặp GBM, cặp LSTM seed 7,
+  NN y0inv2 − x4f, dead_t2 − x4f; tương quan giữa hướng ≤ 0.59). LB bậc hai theo t với độ cong biết trước ⇒ mỗi
+  probe (bước làm LB đổi +0.003 nếu b = 0) cho đúng một hệ số b_j; 4 probe ⇒ bước tối ưu t* = −Q⁻¹b và lợi chính xác
+  (sai số làm tròn ~1e-4). ssp126 giữ nguyên x4f (không cần giả định nào).

@@ -1,5 +1,9 @@
 # Plan and runbook
 
+## Now (2026-10-15): ssp585-specific weights (INSIGHTS 4.39)
+Final picks so far: x4f (0.061) + x3 (0.062). Submit `result/dp_gbm_pair.csv`, `dp_lstm_pair.csv`, `dp_nn.csv`,
+`dp_dead_t2.csv`, then `python dirprobe.py solve 0.061 <4 LBs in that order>` -> `submission_blend_x4f_s585.csv`.
+
 ## GPU plan (30 h T4, INSIGHTS 4.36): make many members, rank them locally, submit only the steep ones
 1. Upload `kaggle_upload/lstm-sweep/` as a Kaggle dataset (lstm-sweep).
 2. Run `kaggle_notebooks/kaggle_sweep_pairs_run1.ipynb` (~4.5 h), `..._run2.ipynb` (~3.5 h), and
