@@ -95,7 +95,9 @@ RUNS = {
     'sw_s42ep3_y0inv_xinv':  (0.164, None),
     'sw_s42ep6_xinv':        (0.192, None),    # seed 42 ep6 (best.npz)
     'sw_s42ep6_y0inv_xinv':  (0.112, None),
-    'nnm_y0inv2':            (0.113, None),    # match_nn_y0inv2.csv: neural direct model, y0 past physical, mean-matched    # submission_blend_x3.csv (best): x2 + seed-7 pair    # submission_blend_x2.csv (best): LSTM pair + GBM pair + g1_co2_hist
+    'nnm_y0inv2':            (0.113, None),
+    'sw_bagep6_xinv':        (0.260, None),    # sweep run 1: bagging m1 ep6, forcing physical
+    'sw_bagep6_y0inv_xinv':  (0.182, None),    # match_nn_y0inv2.csv: neural direct model, y0 past physical, mean-matched    # submission_blend_x3.csv (best): x2 + seed-7 pair    # submission_blend_x2.csv (best): LSTM pair + GBM pair + g1_co2_hist
     # own-site analogs (analog.py, INSIGHTS 4.27/4.28): mean-matched to probe_dead_T2.csv
     'analog_add':            (0.173, None),    # match_analog_add.csv: test y0 + historical 40-year change of that site/age
     'analog_hist':           (0.209, None),    # match_analog_hist.csv: historical year-40 state of that site/age

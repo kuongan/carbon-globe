@@ -135,6 +135,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 101 | `kaggle_run1/submission_global_s42ep3_y0inv_xinv.csv` | 0.164 | dự báo 0.1627 | |
 | 102 | `result/match_nn_y0inv2.csv` (NN direct, y0 vượt quá vật lý) | 0.113 | dự báo 0.1192 | đơn lẻ kém GBM y0inv2 (0.097), nhưng khác GBM nên nhận trọng số +0.16 |
 | 103 | `kaggle_run1/submission_global_s42ep6_y0inv_xinv.csv` | 0.112 | dự báo 0.1161 | |
+| 104 | `kaggle_run1/submission_global_bagep6_xinv.csv` | 0.260 | dự báo 0.2631 | |
+| 105 | `kaggle_run1/submission_global_bagep6_y0inv_xinv.csv` | 0.182 | dự báo 0.1853 | cặp bagging: lợi 0.0001, trùng các cặp LSTM khác |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -904,3 +906,5 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - **Kết quả đợt 1** (#99–103): mọi file lệch dự báo ≤ 0.006. Blend: `submission_blend_x4.csv` (vẫn 2 trọng số âm như
   x3; NN y0inv2 +0.16, s42ep6_xinv +0.20) ước tính **0.0606** (rung 0.0600–0.0609); `submission_blend_x4f.csv` (thêm
   trọng số âm trên s42ep3_xinv; hai cặp LSTM chia nhau phần âm) ước tính **0.0600** (0.0594–0.0604).
+- Cặp bagging (#104–105): x4f 0.0600 → 0.0599, x4 không đổi ⇒ không làm file mới. Các cặp LSTM đã phủ cùng một hướng;
+  blend hội tụ ~0.060. Còn lại: sweep run 2 (s7ep5, swaep4, s42ep5), NN y0inv / none.
