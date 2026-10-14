@@ -129,6 +129,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 95 | `result/match_rf_none.csv` (RF, y0 để ở không gian T, khớp trung bình) | 0.155 | dự báo 0.1485 | cặp RF chỉ thêm 0.0004–0.0005: trùng thông tin với cặp GBM |
 | 96 | `result/noco2-s7/submission_global_xinv.csv` (seed 7 ep3, forcing vật lý) | 0.277 | dự báo 0.271 | thành viên cặp seed 7 |
 | 97 | `result/noco2-s7/submission_global_y0inv_xinv.csv` (seed 7 ep3, y0 + forcing vật lý) | 0.192 | dự báo 0.189 | thành viên cặp seed 7 |
+| 98 | `submission_blend_x3.csv` (x2 + cặp seed 7) | **0.062** | 0.0615 | **tốt nhất** |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -885,3 +886,13 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   0.0609–0.0620 (x2: 0.0618–0.0628). Vẫn 2 trọng số âm, |w| lớn nhất ~0.6 như x2 ⇒ `result/submission_blend_x3.csv`.
   Hướng "y0 vượt quá vật lý" giờ dựa trên hai seed LSTM thay vì một.
   thứ hai; đã tạo lại (khớp preds đã commit, 2e-6) và `slope.py` giờ từ chối ghi đè, nhận đường dẫn output.
+
+### 4.38 Sweep run 1 + NN direct: xếp hạng ứng viên [cục bộ + đại số]
+
+- `result/kaggle_run1/` (bagep6, s42ep3, s42ep6, s7ep3; s7ep3 trùng session G, msd 3e-11). `result/kaggle_direct_nn/`:
+  NN holdout lịch sử 0.029–0.030 (GBM 0.0305, persistence 0.37), msd giữa seed 0.008; NN y0inv cách GBM y0inv msd
+  0.032. Bản khớp trung bình: `result/match_nn_<variant>.csv`.
+- `rank_members.py` (bộ x3, ước tính 0.0615): dốc nhất là cặp s42ep3 và s42ep6 (lệch ±0.01 → 0.0597, ±0.02 → 0.054);
+  rồi bagep6 (0.0601 / 0.056), NN y0inv2 / y0inv (0.0604–0.0605 / 0.057). LB dự báo: s42ep6 y0inv_xinv 0.116, xinv
+  0.197; s42ep3 0.163 / 0.251; bagep6 0.185 / 0.263; NN y0inv2 0.119, y0inv 0.141, none 0.179.
+- Nộp đợt 1: cặp s42ep6, cặp s42ep3, NN y0inv2.

@@ -89,7 +89,8 @@ RUNS = {
     'rfm_none':              (0.155, None),    # match_rf_none.csv: RF twin, y0 left in test space, mean-matched
     's7_y0inv_xinv':         (0.192, None),    # session G: seed 7 ep3, y0 + forcing physical
     's7_xinv':               (0.277, None),    # session G: seed 7 ep3, forcing physical, y0 as given
-    'x2':                    (0.063, None),    # submission_blend_x2.csv (best): LSTM pair + GBM pair + g1_co2_hist
+    'x2':                    (0.063, None),
+    'x3':                    (0.062, None),    # submission_blend_x3.csv (best): x2 + seed-7 pair    # submission_blend_x2.csv (best): LSTM pair + GBM pair + g1_co2_hist
     # own-site analogs (analog.py, INSIGHTS 4.27/4.28): mean-matched to probe_dead_T2.csv
     'analog_add':            (0.173, None),    # match_analog_add.csv: test y0 + historical 40-year change of that site/age
     'analog_hist':           (0.209, None),    # match_analog_hist.csv: historical year-40 state of that site/age
