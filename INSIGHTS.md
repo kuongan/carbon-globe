@@ -20,7 +20,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
   Test = lưới CarbonGlobe sau phép biến đổi affine; đáp án nằm trong không gian đó (T2). Blend đã hội tụ tại 0.072
   sau khi thêm GBM rollout và seed-avg (mục 4.26). Đòn bẩy còn lại: LSTM `y0inv` trên Kaggle (session E).
 - **LB tốt nhất: 0.066** (`submission_blend_x1.csv`, #86). Analog cùng site thất bại (0.173 / 0.209, mục 4.28).
-- **LB tốt nhất: 0.063** (`submission_blend_x2.csv`, #93: cặp LSTM + cặp GBM + CO2 lịch sử, mục 4.32).
+- **LB tốt nhất: 0.061** (`submission_blend_x4f.csv`, #106). Trước đó 0.063 (`submission_blend_x2.csv`, #93: cặp LSTM + cặp GBM + CO2 lịch sử, mục 4.32).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -137,6 +137,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 103 | `kaggle_run1/submission_global_s42ep6_y0inv_xinv.csv` | 0.112 | dự báo 0.1161 | |
 | 104 | `kaggle_run1/submission_global_bagep6_xinv.csv` | 0.260 | dự báo 0.2631 | |
 | 105 | `kaggle_run1/submission_global_bagep6_y0inv_xinv.csv` | 0.182 | dự báo 0.1853 | cặp bagging: lợi 0.0001, trùng các cặp LSTM khác |
+| 106 | `submission_blend_x4f.csv` (x3 + NN y0inv2 + cặp s42ep6/ep3, 3 trọng số âm) | **0.061** | 0.0600 | **tốt nhất** |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
