@@ -91,6 +91,7 @@ RUNS = {
     's7_xinv':               (0.277, None),    # session G: seed 7 ep3, forcing physical, y0 as given
     'x2':                    (0.063, None),
     'x3':                    (0.062, None),
+    'x4':                    (0.062, None),    # submission_blend_x4.csv: x4f's members, only x3's two negative weights
     'x4f':                   (0.061, None),    # submission_blend_x4f.csv (best): + NN y0inv2, s42ep6/ep3 pairs
     'sw_s42ep3_xinv':        (0.254, None),    # sweep run 1 (kaggle_run1): seed 42 ep3, forcing physical
     'sw_s42ep3_y0inv_xinv':  (0.164, None),
