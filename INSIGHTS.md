@@ -139,6 +139,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 105 | `kaggle_run1/submission_global_bagep6_y0inv_xinv.csv` | 0.182 | dự báo 0.1853 | cặp bagging: lợi 0.0001, trùng các cặp LSTM khác |
 | 106 | `submission_blend_x4f.csv` (x3 + NN y0inv2 + cặp s42ep6/ep3, 3 trọng số âm) | **0.061** | 0.0600 | **tốt nhất** |
 | 107 | `submission_blend_x4.csv` (cùng thành viên, chỉ 2 trọng số âm như x3) | 0.062 | 0.0606 | lựa chọn cuối: x4f + x3 |
+| 112 | `kaggle_sweep_pairs_run2/submission_global_s7ep5_xinv.csv` | 0.247 | | |
+| 113 | `kaggle_sweep_pairs_run2/submission_global_s7ep5_y0inv_xinv.csv` | 0.140 | | cặp s7ep5: x4f ước tính 0.0600 → 0.0599, không làm file mới |
 | 108–111 | `dp_gbm_pair` / `dp_lstm_pair` / `dp_nn` / `dp_dead_t2` (x4f, chỉ ssp585 bước theo một hướng, +0.003 nếu không lợi) | 0.064 / 0.063 / 0.064 / 0.064 | 0.064 mỗi file | lợi tối ưu ~0.0002 ⇒ không nộp |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
