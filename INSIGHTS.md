@@ -139,6 +139,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 105 | `kaggle_run1/submission_global_bagep6_y0inv_xinv.csv` | 0.182 | dự báo 0.1853 | cặp bagging: lợi 0.0001, trùng các cặp LSTM khác |
 | 106 | `submission_blend_x4f.csv` (x3 + NN y0inv2 + cặp s42ep6/ep3, 3 trọng số âm) | **0.061** | 0.0600 | **tốt nhất** |
 | 107 | `submission_blend_x4.csv` (cùng thành viên, chỉ 2 trọng số âm như x3) | 0.062 | 0.0606 | lựa chọn cuối: x4f + x3 |
+| 108–111 | `dp_gbm_pair` / `dp_lstm_pair` / `dp_nn` / `dp_dead_t2` (x4f, chỉ ssp585 bước theo một hướng, +0.003 nếu không lợi) | 0.064 / 0.063 / 0.064 / 0.064 | 0.064 mỗi file | lợi tối ưu ~0.0002 ⇒ không nộp |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -922,3 +923,8 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   NN y0inv2 − x4f, dead_t2 − x4f; tương quan giữa hướng ≤ 0.59). LB bậc hai theo t với độ cong biết trước ⇒ mỗi
   probe (bước làm LB đổi +0.003 nếu b = 0) cho đúng một hệ số b_j; 4 probe ⇒ bước tối ưu t* = −Q⁻¹b và lợi chính xác
   (sai số làm tròn ~1e-4). ssp126 giữ nguyên x4f (không cần giả định nào).
+- **Kết quả** (#108–111): ba hướng đúng mức "không tác dụng" (0.064), cặp LSTM thấp hơn ~0.001. Giải: bước tối ưu chỉ
+  có cặp LSTM (+0.08), lợi **0.0002** (0.0001–0.0004 theo làm tròn) ⇒ x4f đã gần tối ưu riêng cho từng kịch bản; không
+  nộp file điều chỉnh. Giả thuyết "ssp585 cần ngoại suy mạnh hơn" bị bác ở mức đo được.
+- Tổng kết: blend ở ~0.060–0.061 đã khai thác hết thông tin từ LB với các thành viên hiện có; phản ứng CO2 tương lai
+  không học được từ lưới (mọi site cùng một quỹ đạo CO2, chênh không gian ~5 ppm). Lựa chọn cuối: x4f (0.061) + x3 (0.062).
