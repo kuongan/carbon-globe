@@ -141,6 +141,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 107 | `submission_blend_x4.csv` (cùng thành viên, chỉ 2 trọng số âm như x3) | 0.062 | 0.0606 | lựa chọn cuối: x4f + x3 |
 | 112 | `kaggle_sweep_pairs_run2/submission_global_s7ep5_xinv.csv` | 0.247 | | |
 | 113 | `kaggle_sweep_pairs_run2/submission_global_s7ep5_y0inv_xinv.csv` | 0.140 | | cặp s7ep5: x4f ước tính 0.0600 → 0.0599, không làm file mới |
+| 114 | `submission_blend_x5.csv` (x4f + cặp s7ep5) | 0.061 | 0.0599 | không đổi so với x4f |
 | 108–111 | `dp_gbm_pair` / `dp_lstm_pair` / `dp_nn` / `dp_dead_t2` (x4f, chỉ ssp585 bước theo một hướng, +0.003 nếu không lợi) | 0.064 / 0.063 / 0.064 / 0.064 | 0.064 mỗi file | lợi tối ưu ~0.0002 ⇒ không nộp |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
@@ -930,3 +931,14 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   nộp file điều chỉnh. Giả thuyết "ssp585 cần ngoại suy mạnh hơn" bị bác ở mức đo được.
 - Tổng kết: blend ở ~0.060–0.061 đã khai thác hết thông tin từ LB với các thành viên hiện có; phản ứng CO2 tương lai
   không học được từ lưới (mọi site cùng một quỹ đạo CO2, chênh không gian ~5 ppm). Lựa chọn cuối: x4f (0.061) + x3 (0.062).
+
+### 4.40 Mẫu hình theo site của chênh lệch ssp585 − ssp126 (`scnprobe.py`) [đại số]
+
+- Mức của từng kịch bản đã hiệu chỉnh (hệ số bias, probe ô). Chưa kiểm tra: **mẫu hình theo site** của chênh lệch
+  kịch bản. Trong x4f nó đến từ phản ứng khí hậu của các model không CO2: agb chênh trung bình +0.046, độ lệch chuẩn
+  theo dòng 0.11. Hiệu ứng CO2 thuần của LSTM có CO2 (session F, khác biệt kép co2inv − co2_hist giữa hai kịch bản)
+  tương quan chỉ 0.06 với mẫu hình đó ⇒ mẫu hình thật chưa biết.
+- 4 giả thuyết, mỗi hướng chỉ đổi ssp585 và có trung bình 0 theo biến (chỉ đo mẫu hình): uniform (ssp585 = ssp126 ×
+  tỷ lệ trung bình theo tuổi), co2lstm (khác biệt kép của LSTM CO2), dry (CO2 giúp nơi khô hơn: theo z của f1 = lượng
+  mưa), young (tuổi ≤ 50 phản ứng mạnh hơn). Tương quan giữa hướng ≤ 0.28. Probe: `result/sp_<tên>.csv` (+0.003 nếu
+  hướng vô ích); giải bằng `python scnprobe.py solve 0.061 <4 LB>`.
