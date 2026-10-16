@@ -142,6 +142,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 112 | `kaggle_sweep_pairs_run2/submission_global_s7ep5_xinv.csv` | 0.247 | | |
 | 113 | `kaggle_sweep_pairs_run2/submission_global_s7ep5_y0inv_xinv.csv` | 0.140 | | cặp s7ep5: x4f ước tính 0.0600 → 0.0599, không làm file mới |
 | 114 | `submission_blend_x5.csv` (x4f + cặp s7ep5) | 0.061 | 0.0599 | không đổi so với x4f |
+| 115–118 | `sp_uniform` / `sp_co2lstm` / `sp_dry` / `sp_young` (x4f, mẫu hình ssp585, +0.003 nếu vô ích) | 0.064 / 0.064 / 0.063 / **0.061** | 0.064 mỗi file | **young xác nhận** |
 | 108–111 | `dp_gbm_pair` / `dp_lstm_pair` / `dp_nn` / `dp_dead_t2` (x4f, chỉ ssp585 bước theo một hướng, +0.003 nếu không lợi) | 0.064 / 0.063 / 0.064 / 0.064 | 0.064 mỗi file | lợi tối ưu ~0.0002 ⇒ không nộp |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
@@ -942,3 +943,9 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   tỷ lệ trung bình theo tuổi), co2lstm (khác biệt kép của LSTM CO2), dry (CO2 giúp nơi khô hơn: theo z của f1 = lượng
   mưa), young (tuổi ≤ 50 phản ứng mạnh hơn). Tương quan giữa hướng ≤ 0.28. Probe: `result/sp_<tên>.csv` (+0.003 nếu
   hướng vô ích); giải bằng `python scnprobe.py solve 0.061 <4 LB>`.
+- **Kết quả** (#115–118): uniform và co2lstm không tác dụng; dry hơi giúp; **young = 0.061** (tốt hơn mức trung tính
+  0.003). Giải: ssp585 tuổi ≤ 50 tăng ~7% phần trên số 0 đã map (bước young +0.072, 0.056–0.088 theo làm tròn), tuổi
+  già giảm nhẹ; dry +0.008. Lợi **0.0011** (0.0007–0.0017) ⇒ `result/submission_blend_x6.csv` ước tính 0.0599.
+  Ý nghĩa: rừng non mọc nhanh hưởng lợi CO2 nhiều nhất, điều các model không CO2 không biết. Mẫu hình CO2 của LSTM
+  có CO2 sai (không tác dụng).
+- Probe tiếp: cùng hướng young trên ssp126 (`result/sp126_young.csv`, gốc x4f, bước +0.121; 0.064 = không tác dụng).
