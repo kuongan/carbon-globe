@@ -147,6 +147,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 119 | `submission_blend_x6.csv` (x4f + bước young ssp585 +0.072, dry +0.008) | **0.060** | 0.0599 | **tốt nhất**; lựa chọn cuối: x6 + x4f |
 | 120 | `sp126_young.csv` (x4f, hướng young trên ssp126, bước +0.121; 0.064 = vô ích) | 0.063 | 0.064 | bước tối ưu ssp126 ~+0.02 (0…+0.03), lợi ≤ 0.0002 ⇒ không làm x7 |
 | 121–122 | `ap_young_lo` / `ap_old_lo` (x6, hình dạng tuổi trong ssp585; 0.063 = vô ích) | 0.062 / 0.062 | 0.063 mỗi file | bước tối ưu +0.015 mỗi hướng, lợi 0.0002 ⇒ không nộp |
+| 123–126 | `st_warm` / `st_npp` / `st_incr` / `st_h_only` (x6, mẫu hình site ssp585, trực giao; 0.063 = vô ích) | 0.063 / 0.064 / 0.063 / 0.064 | 0.063 mỗi file | lợi tối ưu 0.0002 ⇒ không nộp |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -981,3 +982,9 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - Probe `result/st_<tên>.csv` (bước 0.084 / 0.051 / 0.266 / 0.226), 0.063 = vô ích. Giải:
   `python siteprobe.py solve 0.060 <warm> <npp> <incr> <h_only>` ⇒ `result/submission_blend_x6_s585.csv`.
   Meta: `result/st_meta.json` (= dp_meta.json hiện tại); ageprobe: `result/ap_meta.json`.
+- **Kết quả** (#123–126): warm 0.063, incr 0.063 (đúng mức vô ích), npp 0.064, h_only 0.064 (hơi tệ hơn ⇒ hướng
+  ngược lại có lợi rất nhỏ: rừng năng suất cao lợi ít hơn một chút, height nên tăng ít hơn agb). Bước tối ưu: npp
+  −0.009, h_only −0.038; lợi **0.0002** (0–0.0008 theo làm tròn) ⇒ không nộp.
+- Tổng kết 4.39–4.42: 14 probe theo hướng trên ssp585/ssp126; chỉ `young` ở ssp585 cho lợi đo được (0.0011, x6).
+  Mọi mẫu hình còn lại (tuổi chi tiết, nhiệt độ, năng suất, tăng trưởng, height/agb, scenario uniform, CO2 LSTM)
+  ≤ 0.0002 mỗi nhóm. Hiệu chỉnh hậu kỳ x6 đã cạn. **Lựa chọn cuối: x6 + x4f.**
