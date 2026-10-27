@@ -1007,3 +1007,21 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - **Kết quả: co2_dir = 0.063** (#127) = đúng mức vô ích (b = 0, lợi 0). Hiệu ứng năm lịch trên lưới là thật, nhưng
   phần mẫu hình theo site/tuổi của nó ngoài young/dry không giúp. Cùng với 4.40–4.42: mọi mẫu hình mượt (tuổi, kịch
   bản, khí hậu, năng suất, CO2 của ED) đã được hiệu chỉnh hết. Lỗi còn lại 0.060 là lỗi riêng từng site của model nền.
+
+### 4.44 Hai nhóm thông tin model direct chưa từng có: chuỗi tuổi của site + sự kiện sụt sinh khối [cục bộ]
+
+- Lỗi holdout của GBM direct (lưới, 40 năm) dồn vào rừng già: tuổi gieo 1–20 ~0.02, 150–500 0.036–0.048.
+- **Chuỗi tuổi của chính site** (`chrono.py`): 15 trạng thái năm 0 của một site là đường tăng trưởng ED của site đó;
+  y0 nội suy tại tuổi a+40 dự báo năm 40 của tuổi a không cần train (tuổi 1: 0.037, persistence 0.926; tuổi 10:
+  0.051; tuổi 20: 0.064; tuổi già không giúp). Test cho đủ 15 trạng thái mỗi site, cùng không gian T với đáp án.
+- **Sự kiện sụt** (`fireprobe.py`): ~22% site rừng già mất > 30% agb trong một năm; cùng năm ở mọi tuổi (P(tuổi 300
+  sụt | tuổi 500 sụt cùng năm) 0.82, nền 0.013) ⇒ sự kiện site × năm (cháy/khô hạn của ED). Site có sự kiện: agb
+  năm 40 / năm 0 trung vị 0.33 (không có: 0.90). Dự báo từ khí hậu tháng của năm đó + năm trước + trạng thái:
+  **AUC 0.985** (holdout khối 10°), p trung bình 0.375 trên sự kiện, 0.003 ngoài. Model direct chỉ thấy khí hậu
+  trung bình 40 năm / thập kỷ nên không thấy sự kiện.
+- Holdout GBM direct (20k site, cùng split): gốc **0.0336**, + chuỗi tuổi **0.0299**, + rủi ro sự kiện (bộ phân loại
+  trên lưới, tổng / đỉnh / thời điểm của p theo 40 năm, tính ở trạng thái y0) **0.0270** (−20%); tuổi 500 0.0476 →
+  0.0427, tuổi 1–20 giảm một nửa.
+- `carbonglobe_gbm.py` env `GBM_CHRONO=1`: thêm cả hai nhóm vào model direct đầy đủ (54k site), biến thể y0inv /
+  y0inv2 / none ⇒ `result/gbm/gbm_preds_chrono.npz`. So sánh LB với GBM y0inv2 (0.097) sau khi khớp trung bình với
+  `result/probe_dead_T2.csv` như cũ.
