@@ -148,6 +148,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 120 | `sp126_young.csv` (x4f, hướng young trên ssp126, bước +0.121; 0.064 = vô ích) | 0.063 | 0.064 | bước tối ưu ssp126 ~+0.02 (0…+0.03), lợi ≤ 0.0002 ⇒ không làm x7 |
 | 121–122 | `ap_young_lo` / `ap_old_lo` (x6, hình dạng tuổi trong ssp585; 0.063 = vô ích) | 0.062 / 0.062 | 0.063 mỗi file | bước tối ưu +0.015 mỗi hướng, lợi 0.0002 ⇒ không nộp |
 | 123–126 | `st_warm` / `st_npp` / `st_incr` / `st_h_only` (x6, mẫu hình site ssp585, trực giao; 0.063 = vô ích) | 0.063 / 0.064 / 0.063 / 0.064 | 0.063 mỗi file | lợi tối ưu 0.0002 ⇒ không nộp |
+| 127 | `co2_dir.csv` (x6 + mẫu hình CO2 theo dòng từ hiệu ứng năm lịch của ED, ssp585, trực giao young/dry; 0.063 = vô ích) | 0.063 | 0.063 | vô ích: mẫu hình CO2 theo site của ED không thêm gì ngoài trục tuổi |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -1003,3 +1004,6 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   đường y0 vật lý → năm 40 của x6, khí hậu test vật lý. Trực giao với young/dry của x6: còn lại **93%**; tương quan
   với warm/npp/incr/h_only ≤ 0.17 ⇒ gần như hoàn toàn mới. Probe `result/co2_dir.csv` (x6, chỉ ssp585, bước 0.331;
   0.063 = vô ích). Giải: `python co2dir.py solve 0.060 <LB>` (meta: `result/co2dir_dpmeta.json` = dp_meta.json).
+- **Kết quả: co2_dir = 0.063** (#127) = đúng mức vô ích (b = 0, lợi 0). Hiệu ứng năm lịch trên lưới là thật, nhưng
+  phần mẫu hình theo site/tuổi của nó ngoài young/dry không giúp. Cùng với 4.40–4.42: mọi mẫu hình mượt (tuổi, kịch
+  bản, khí hậu, năng suất, CO2 của ED) đã được hiệu chỉnh hết. Lỗi còn lại 0.060 là lỗi riêng từng site của model nền.
