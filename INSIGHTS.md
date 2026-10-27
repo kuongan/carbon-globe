@@ -968,3 +968,16 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   làm tròn) ⇒ dưới ngưỡng 0.0005, không nộp `submission_blend_x6_s585.csv`. Hình dạng theo tuổi bên trong mỗi nửa đã
   gần đúng; một bước young/già là đủ. Trục tuổi × kịch bản đã khai thác hết.
 - Lựa chọn cuối: **x6 (0.060) + x4f (0.061)**.
+
+### 4.42 Site nào hưởng CO2 nhiều nhất ở ssp585 (`siteprobe.py`, gốc x6) [đại số, chờ LB]
+
+- Vĩ độ: site lưới i = ô khác 0 thứ i của `mask2d.npy` theo thứ tự hàng (f0 tương quan 0.93 với |vĩ độ|, theo cột
+  0.04) ⇒ **f0 = nhiệt độ**. Map affine của test giữ nguyên z-score nên dùng z(f0) của test trực tiếp.
+- 4 hướng, chỉ ssp585, trực giao hoàn toàn (Gram–Schmidt) với young, dry (đã có trong x6) và với nhau:
+  `warm` (nơi ấm lợi nhiều hơn: quang hô hấp giảm), `npp` (năng suất y0 theo tuổi, phần ngoài nhiệt độ; bản thô
+  tương quan 0.79 với warm), `incr` (lợi tỷ lệ với tăng trưởng 40 năm x6 − y0, phần ngoài young), `h_only` (bước
+  young chỉ trên height: CO2 đẩy height khác agb?). Bản chưa trực giao: incr/h_only tương quan 0.72–0.74 với young,
+  warm −0.75 với dry ⇒ sẽ đo lại thông tin cũ.
+- Probe `result/st_<tên>.csv` (bước 0.084 / 0.051 / 0.266 / 0.226), 0.063 = vô ích. Giải:
+  `python siteprobe.py solve 0.060 <warm> <npp> <incr> <h_only>` ⇒ `result/submission_blend_x6_s585.csv`.
+  Meta: `result/st_meta.json` (= dp_meta.json hiện tại); ageprobe: `result/ap_meta.json`.
