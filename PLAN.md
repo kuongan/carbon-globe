@@ -1,9 +1,11 @@
 # Plan and runbook
 
 ## Now (2026-10-28): stronger base model (INSIGHTS 4.44), co2_dir done (0.063, no gain)
-1. Submit `result/match_gbmc_y0inv2.csv` (GBM direct + chronosequence + collapse-event risk; predicted 0.0936 if it adds
-   nothing; old GBM y0inv2 0.097). Then, if it beats the prediction: its twin `match_gbmc_none.csv` for the pair.
-2. Same features into the NN direct model / LSTM if the GBM gain is real.
+Done: gbmc_y0inv2 = 0.073 (best single model ever). Next:
+1. Submit `result/submission_blend_x7f.csv` (est 0.0532) and `result/submission_blend_x7.csv` (est 0.0566, no
+   negative weight).
+2. Make the base model stronger along the same line: event risk along the trajectory (not only at y0), more GBM
+   seeds, the same features in the NN direct model; twin `match_gbmc_none.csv` for a pair.
 
 ## Now (2026-10-28): gap to top is 0.022 -> ED's own CO2 response (INSIGHTS 4.43)
 1. Submit `result/co2_dir.csv` (x6 + CO2 pattern from the grid's calendar effect, ssp585 only; 0.063 = useless).
