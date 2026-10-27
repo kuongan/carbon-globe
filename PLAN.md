@@ -1,5 +1,9 @@
 # Plan and runbook
 
+## Now (2026-10-28): gap to top is 0.022 -> ED's own CO2 response (INSIGHTS 4.43)
+1. Submit `result/co2_dir.csv` (x6 + CO2 pattern from the grid's calendar effect, ssp585 only; 0.063 = useless).
+2. `python co2dir.py solve 0.060 <LB>`. If it helps: same direction on ssp126, then a CO2-aware member.
+
 ## Now (2026-10-27): which sites gain most from CO2 under ssp585 (INSIGHTS 4.42)
 Done: warm 0.063, npp 0.064, incr 0.063, h_only 0.064 -> solved gain 0.0002: not submitted. Post-hoc adjustment of
 x6 is exhausted (INSIGHTS 4.42). **Final picks: x6 + x4f.**

@@ -988,3 +988,18 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - Tổng kết 4.39–4.42: 14 probe theo hướng trên ssp585/ssp126; chỉ `young` ở ssp585 cho lợi đo được (0.0011, x6).
   Mọi mẫu hình còn lại (tuổi chi tiết, nhiệt độ, năng suất, tăng trưởng, height/agb, scenario uniform, CO2 LSTM)
   ≤ 0.0002 mỗi nhóm. Hiệu chỉnh hậu kỳ x6 đã cạn. **Lựa chọn cuối: x6 + x4f.**
+
+### 4.43 Phản ứng CO2 của chính ED đo trên lưới (`co2est.py`, `co2dir.py`) [cục bộ, chờ LB]
+
+- Bối cảnh (2026-10-27): LB top 0.038, top 3 0.042, mình 0.060 (hạng 23). Khoảng cách 0.022 không thể lấp bằng
+  chỉnh blend ⇒ cần thông tin mới về phản ứng dưới tương lai. Repo công khai tốt nhất tự nhận 0.072.
+- test_y0 không phải trạng thái lưới ở năm sau (chạy tiếp lịch sử): chỉ ô chết trùng chính xác, gần nhất là năm 0.
+- **Hiệu ứng năm lịch** (model tăng trưởng từng năm LightGBM, 4000 site, giữ trạng thái + tuổi + khí hậu của năm cố
+  định, partial dependence theo năm t): agb rừng non (≤ 50) tăng ~100% mức trung bình ở t 12–21 (CO2 374–383) lên
+  ~125–134% ở t 33–39 (408–420), tức là ~+30% tăng trưởng cho +12% CO2. Height non +10%. Rừng già: agb giảm về cuối.
+  Năm t giúp holdout agb (mse 1.75e-2 → 1.58e-2). Đầu kỳ (t < 10) lẫn với sự hồi phục từ trạng thái gieo (thời gian
+  từ lúc gieo = t cho mọi tuổi). Theo nhóm: trong rừng non hiệu ứng tương đối tăng mạnh theo tuổi (3% → 66%).
+- **Hướng CO2 theo dòng test** (`co2dir.py`): cùng model, tổng 40 năm của (tăng trưởng ở năm muộn − năm giữa) trên
+  đường y0 vật lý → năm 40 của x6, khí hậu test vật lý. Trực giao với young/dry của x6: còn lại **93%**; tương quan
+  với warm/npp/incr/h_only ≤ 0.17 ⇒ gần như hoàn toàn mới. Probe `result/co2_dir.csv` (x6, chỉ ssp585, bước 0.331;
+  0.063 = vô ích). Giải: `python co2dir.py solve 0.060 <LB>` (meta: `result/co2dir_dpmeta.json` = dp_meta.json).
