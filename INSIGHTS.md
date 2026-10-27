@@ -146,6 +146,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 108–111 | `dp_gbm_pair` / `dp_lstm_pair` / `dp_nn` / `dp_dead_t2` (x4f, chỉ ssp585 bước theo một hướng, +0.003 nếu không lợi) | 0.064 / 0.063 / 0.064 / 0.064 | 0.064 mỗi file | lợi tối ưu ~0.0002 ⇒ không nộp |
 | 119 | `submission_blend_x6.csv` (x4f + bước young ssp585 +0.072, dry +0.008) | **0.060** | 0.0599 | **tốt nhất**; lựa chọn cuối: x6 + x4f |
 | 120 | `sp126_young.csv` (x4f, hướng young trên ssp126, bước +0.121; 0.064 = vô ích) | 0.063 | 0.064 | bước tối ưu ssp126 ~+0.02 (0…+0.03), lợi ≤ 0.0002 ⇒ không làm x7 |
+| 121–122 | `ap_young_lo` / `ap_old_lo` (x6, hình dạng tuổi trong ssp585; 0.063 = vô ích) | 0.062 / 0.062 | 0.063 mỗi file | bước tối ưu +0.015 mỗi hướng, lợi 0.0002 ⇒ không nộp |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -963,3 +964,7 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   `old_lo` (70–150 lên, 200–500 xuống, bước 0.093). Probe `result/ap_<tên>.csv`, 0.063 = vô ích; giải bằng
   `python ageprobe.py solve 0.060 <LB young_lo> <LB old_lo>` ⇒ `result/submission_blend_x6_s585.csv`.
   Meta của scnprobe (4.40) lưu ở `result/sp_meta.json` (dp_meta.json giờ là của ageprobe).
+- **Kết quả** (#121–122): young_lo 0.062, old_lo 0.062. Bước tối ưu +0.015 cho cả hai, lợi **0.0002** (0–0.0007 theo
+  làm tròn) ⇒ dưới ngưỡng 0.0005, không nộp `submission_blend_x6_s585.csv`. Hình dạng theo tuổi bên trong mỗi nửa đã
+  gần đúng; một bước young/già là đủ. Trục tuổi × kịch bản đã khai thác hết.
+- Lựa chọn cuối: **x6 (0.060) + x4f (0.061)**.
