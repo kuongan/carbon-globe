@@ -1,6 +1,12 @@
 # Plan and runbook
 
-## Now (2026-10-15): ssp585-specific weights (INSIGHTS 4.39)
+## Now (2026-10-27): age shape of the ssp585 CO2 response (INSIGHTS 4.41)
+Best LB 0.060 = `result/submission_blend_x6.csv`. Final picks: **x6 + x4f** (0.061). ssp126 young: no gain, no x7.
+1. Submit `result/ap_young_lo.csv` and `result/ap_old_lo.csv` (0.063 each if useless).
+2. `python ageprobe.py solve 0.060 <LB young_lo> <LB old_lo>` -> `result/submission_blend_x6_s585.csv`; submit it only
+   if the predicted gain is >= ~0.0005 (LB rounding). Then final picks = that file + x6.
+
+## Done (2026-10-15): ssp585-specific weights (INSIGHTS 4.39)
 Final picks so far: x4f (0.061) + x3 (0.062). Submit `result/dp_gbm_pair.csv`, `dp_lstm_pair.csv`, `dp_nn.csv`,
 `dp_dead_t2.csv`, then `python dirprobe.py solve 0.061 <4 LBs in that order>` -> `submission_blend_x4f_s585.csv`.
 

@@ -20,7 +20,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
   Test = lưới CarbonGlobe sau phép biến đổi affine; đáp án nằm trong không gian đó (T2). Blend đã hội tụ tại 0.072
   sau khi thêm GBM rollout và seed-avg (mục 4.26). Đòn bẩy còn lại: LSTM `y0inv` trên Kaggle (session E).
 - **LB tốt nhất: 0.066** (`submission_blend_x1.csv`, #86). Analog cùng site thất bại (0.173 / 0.209, mục 4.28).
-- **LB tốt nhất: 0.061** (`submission_blend_x4f.csv`, #106). Trước đó 0.063 (`submission_blend_x2.csv`, #93: cặp LSTM + cặp GBM + CO2 lịch sử, mục 4.32).
+- **LB tốt nhất: 0.060** (`submission_blend_x6.csv`, #119; mục 4.40–4.41). Trước đó 0.061 (`submission_blend_x4f.csv`, #106). Trước đó 0.063 (`submission_blend_x2.csv`, #93: cặp LSTM + cặp GBM + CO2 lịch sử, mục 4.32).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -144,6 +144,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 114 | `submission_blend_x5.csv` (x4f + cặp s7ep5) | 0.061 | 0.0599 | không đổi so với x4f |
 | 115–118 | `sp_uniform` / `sp_co2lstm` / `sp_dry` / `sp_young` (x4f, mẫu hình ssp585, +0.003 nếu vô ích) | 0.064 / 0.064 / 0.063 / **0.061** | 0.064 mỗi file | **young xác nhận** |
 | 108–111 | `dp_gbm_pair` / `dp_lstm_pair` / `dp_nn` / `dp_dead_t2` (x4f, chỉ ssp585 bước theo một hướng, +0.003 nếu không lợi) | 0.064 / 0.063 / 0.064 / 0.064 | 0.064 mỗi file | lợi tối ưu ~0.0002 ⇒ không nộp |
+| 119 | `submission_blend_x6.csv` (x4f + bước young ssp585 +0.072, dry +0.008) | **0.060** | 0.0599 | **tốt nhất**; lựa chọn cuối: x6 + x4f |
+| 120 | `sp126_young.csv` (x4f, hướng young trên ssp126, bước +0.121; 0.064 = vô ích) | 0.063 | 0.064 | bước tối ưu ssp126 ~+0.02 (0…+0.03), lợi ≤ 0.0002 ⇒ không làm x7 |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -949,3 +951,15 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   Ý nghĩa: rừng non mọc nhanh hưởng lợi CO2 nhiều nhất, điều các model không CO2 không biết. Mẫu hình CO2 của LSTM
   có CO2 sai (không tác dụng).
 - Probe tiếp: cùng hướng young trên ssp126 (`result/sp126_young.csv`, gốc x4f, bước +0.121; 0.064 = không tác dụng).
+
+### 4.41 x6 = 0.060; hướng young chỉ đúng cho ssp585; hình dạng theo tuổi (`ageprobe.py`) [KC + đại số]
+
+- **x6 = 0.060** (#119, ước tính 0.0599) ⇒ hiệu ứng "rừng non hưởng lợi CO2" xác nhận trên file thật.
+- sp126_young = 0.063 (#120): b = (0.063 − 0.061 − 0.003)/(2·0.121) ⇒ bước tối ưu ssp126 ~+0.02 (0 … +0.03 theo làm
+  tròn, so với +0.072 ở ssp585), lợi ≤ 0.0002 ⇒ không làm x7. Hướng young gần như chỉ ở kịch bản CO2 cao: đúng với
+  cách hiểu đây là phản ứng CO2, không phải lỗi chung theo tuổi của các model.
+- Tiếp: hình dạng theo tuổi trong ssp585, gốc x6. `ageprobe.py`, 2 hướng tương phản bên trong từng nửa (tổng 0 trong
+  nửa, trực giao với young, tương quan giữa hai hướng 0): `young_lo` (tuổi 1–20 lên, 30–50 xuống, bước 0.088) và
+  `old_lo` (70–150 lên, 200–500 xuống, bước 0.093). Probe `result/ap_<tên>.csv`, 0.063 = vô ích; giải bằng
+  `python ageprobe.py solve 0.060 <LB young_lo> <LB old_lo>` ⇒ `result/submission_blend_x6_s585.csv`.
+  Meta của scnprobe (4.40) lưu ở `result/sp_meta.json` (dp_meta.json giờ là của ageprobe).
