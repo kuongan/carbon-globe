@@ -1,5 +1,10 @@
 # Plan and runbook
 
+## Now (2026-10-28): stronger base model (INSIGHTS 4.44), co2_dir done (0.063, no gain)
+1. Submit `result/match_gbmc_y0inv2.csv` (GBM direct + chronosequence + collapse-event risk; predicted 0.0936 if it adds
+   nothing; old GBM y0inv2 0.097). Then, if it beats the prediction: its twin `match_gbmc_none.csv` for the pair.
+2. Same features into the NN direct model / LSTM if the GBM gain is real.
+
 ## Now (2026-10-28): gap to top is 0.022 -> ED's own CO2 response (INSIGHTS 4.43)
 1. Submit `result/co2_dir.csv` (x6 + CO2 pattern from the grid's calendar effect, ssp585 only; 0.063 = useless).
 2. `python co2dir.py solve 0.060 <LB>`. If it helps: same direction on ssp126, then a CO2-aware member.

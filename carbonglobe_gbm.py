@@ -73,6 +73,12 @@ if os.environ.get('GBM_BOOSTING', 'gbdt') == 'rf':
     DIRECT_ROUNDS, ROLL_ROUNDS, ES_ROUNDS = 300, 300, 50
 
 CO2 = list(range(8, 32))
+# env GBM_CHRONO=1 (INSIGHTS 4.44): two feature groups the direct model never had (grid holdout 0.0336 -> 0.0270)
+#   chrono: the site's own chronosequence = y0 height/agb of all 15 seed ages + y0 interpolated at age a+40
+#   risk  : site-year collapse events (>30% agb lost in a year, same year across ages, AUC 0.985 from that year's
+#           monthly climate + state) -> event classifier on the grid, summed / timed probabilities over the 40 years
+CHRONO = os.environ.get('GBM_CHRONO', '0') == '1'
+EV_SEEDS, EV_ROWS, EV_ROUNDS = (6, 10, 14), 2_000_000, 600      # seed ages 100 / 300 / 500 label the events
 KEEP = [j for j in range(N_CONS) if j not in CO2 and j != 32]   # 111 features: no CO2 block, no constant
 MON = list(range(7))      # f0-f6 also kept monthly; f7's test seasonal amplitude is ~20x the grid's -> annual mean only
 V2 = list(range(34, 129, 4))
@@ -244,15 +250,54 @@ def direct_clim(A, M):
                            M.mean(1).reshape(n, N_T * len(MON))], 1).astype(np.float32)   # monthly climatology f0-f6
 
 
-def direct_X(y0, clim):
-    """y0 (15, n, 7), clim (n, F) -> (15 n, 8 + F), rows ordered (age, site)."""
+def direct_X(y0, clim, extra=None):
+    """y0 (15, n, 7), clim (n, F), extra (15, n, E) or None -> (15 n, 8 + F [+ E]), rows ordered (age, site)."""
     n = clim.shape[0]
-    return np.concatenate([np.concatenate([y0[a], np.full((n, 1), SEED_AGES[a], np.float32), clim], 1)
+    return np.concatenate([np.concatenate([y0[a], np.full((n, 1), SEED_AGES[a], np.float32), clim]
+                                          + ([extra[a]] if extra is not None else []), 1)
                            for a in range(N_AGES)], 0)
 
 
-def direct_predict(models, y0, clim):
-    X = direct_X(y0, clim)
+AG_F = np.asarray(SEED_AGES, np.float64)
+
+
+def chrono_feats(y0):
+    """y0 (15, n, 7) -> (15, n, 34): all ages' height/agb (30), y0 interpolated at age a+40 (2), its gap to y0 (2)"""
+    n = y0.shape[1]
+    allages = np.broadcast_to(y0[:, :, :2].transpose(1, 0, 2).reshape(1, n, 30), (N_AGES, n, 30))
+    ana = np.empty((N_AGES, n, 2), np.float32)
+    for i, a in enumerate(np.minimum(AG_F + 40, 500)):
+        j = min(max(int(np.searchsorted(AG_F, a)), 1), N_AGES - 1); w = (a - AG_F[j - 1]) / (AG_F[j] - AG_F[j - 1])
+        ana[i] = (1 - w) * y0[j - 1, :, :2] + w * y0[j, :, :2]
+    return np.concatenate([allages, ana, ana - y0[:, :, :2]], 2).astype(np.float32)
+
+
+def ev_X(state, t, A_t, A_p, M_t, M_p):
+    """event features: state (b, 7), year t, annual means (b, 136) and monthly f0-f6 (b, 12, 7) of year t and t-1"""
+    b = len(state)
+    return np.concatenate([M_t.reshape(b, -1), M_p.reshape(b, -1), A_t[:, KEEP], state,
+                           np.full((b, 1), t, np.float32)], 1).astype(np.float32)
+
+
+def risk_feats(clf, y0, A, M):
+    """(15, n, 5) from the event classifier at the y0 state: sum, max, time-weighted sum, last-decade sum, peak year"""
+    n = y0.shape[1]; out = np.zeros((N_AGES, n, 5), np.float32); w = np.arange(N_YEAR) / N_YEAR
+    for s0 in range(0, n, 4096):
+        sl = slice(s0, min(s0 + 4096, n))
+        for a in range(N_AGES):
+            P = np.stack([clf.predict(ev_X(y0[a, sl], t, A[sl, t], A[sl, max(t - 1, 0)], M[sl, t], M[sl, max(t - 1, 0)]))
+                          for t in range(N_YEAR)], 1)
+            out[a, sl] = np.stack([P.sum(1), P.max(1), (P * w).sum(1), P[:, 30:].sum(1), P.argmax(1) / N_YEAR], 1)
+    return out
+
+
+if CHRONO:
+    DNAMES += ([f'chr_{v}{a}' for a in SEED_AGES for v in ('h', 'a')] + ['chr_ana_h', 'chr_ana_a', 'chr_gap_h',
+               'chr_gap_a', 'risk_sum', 'risk_max', 'risk_tw', 'risk_last10', 'risk_peak'])
+
+
+def direct_predict(models, y0, clim, extra=None):
+    X = direct_X(y0, clim, extra)
     p = y0.copy()                                     # channels 2-6 are not predicted: left at y0 (not scored)
     dead = (y0[..., 0] == 0) & (y0[..., 1] == 0)      # on the grid a dead stand stays dead for 40 years (100%)
     for k, m in models.items():
@@ -264,8 +309,32 @@ if RUN_DIRECT:
     def clim_of(idx):
         return np.concatenate([direct_clim(A_all[idx[i:i + 4096]], M_all[idx[i:i + 4096]])
                                for i in range(0, len(idx), 4096)], 0)
-    Xtr = direct_X(y_all[:, TRAIN, 0], clim_of(TRAIN))
-    Xva = direct_X(hold_y0, clim_of(HOLD))
+    EXTRA, CLF = {}, None
+    if CHRONO:
+        s_ = rng.choice(TRAIN, EV_ROWS); a_ = rng.choice(EV_SEEDS, EV_ROWS); t_ = rng.integers(0, N_YEAR, EV_ROWS)
+        st_ = y_all[a_, s_, t_]; nx_ = y_all[a_, s_, t_ + 1]
+        keep_ = st_[:, 1] > 0
+        lab_ = (nx_[:, 1] < 0.7 * st_[:, 1])[keep_]
+        s_, t_, st_ = s_[keep_], t_[keep_], st_[keep_]
+        tp_ = np.maximum(t_ - 1, 0)
+        Xe = np.concatenate([M_all[s_, t_].reshape(len(s_), -1), M_all[s_, tp_].reshape(len(s_), -1),
+                             A_all[s_, t_][:, KEEP], st_, t_[:, None].astype(np.float32)], 1).astype(np.float32)
+        CLF = lgb.train(dict(objective='binary', learning_rate=0.05, num_leaves=63, min_data_in_leaf=100,
+                             feature_fraction=0.7, bagging_fraction=0.7, bagging_freq=1, verbose=-1, seed=SEED,
+                             num_threads=PARAMS['num_threads']), lgb.Dataset(Xe, lab_.astype(np.float32)), EV_ROUNDS)
+        del Xe; gc.collect()
+        stamp(f'event classifier: {len(lab_):,} site-years, event rate {lab_.mean():.4f}')
+
+        def extra_of(idx):
+            parts = []
+            for i in range(0, len(idx), 4096):
+                j = idx[i:i + 4096]; y0_ = y_all[:, j, 0]
+                parts.append(np.concatenate([chrono_feats(y0_), risk_feats(CLF, y0_, A_all[j], M_all[j])], 2))
+            return np.concatenate(parts, 1)
+        EXTRA['train'], EXTRA['hold'] = extra_of(TRAIN), extra_of(HOLD)
+        stamp('chrono + risk features done (grid)')
+    Xtr = direct_X(y_all[:, TRAIN, 0], clim_of(TRAIN), EXTRA.get('train'))
+    Xva = direct_X(hold_y0, clim_of(HOLD), EXTRA.get('hold'))
     assert Xtr.shape[1] == len(DNAMES), (Xtr.shape, len(DNAMES))
     dmodels = {}
     for k in (0, 1):
@@ -280,12 +349,16 @@ if RUN_DIRECT:
         stamp(f'direct {STATE_NAMES[k]}: best iter {dmodels[k].best_iteration} | gain by group {gi}')
         del dtr, dva; gc.collect()
     del Xtr, Xva; gc.collect()
-    hp = direct_predict(dmodels, hold_y0, clim_of(HOLD))
+    hp = direct_predict(dmodels, hold_y0, clim_of(HOLD), EXTRA.get('hold'))
     SUMMARY['direct']['hold_metric'] = float(metric(hp, hold_y40))
     stamp(f'direct holdout metric {metric(hp, hold_y40):.4f} (persistence {SUMMARY["hold_persistence"]:.4f})')
     for v in VARIANTS:
         key = f'direct_{v}'
-        PREDS[key] = {scn: direct_predict(dmodels, T['y0'][v], direct_clim(T['A'][v], T['M'][v])) for scn, T in TEST.items()}
+        PREDS[key] = {}
+        for scn, T in TEST.items():
+            ex = (np.concatenate([chrono_feats(T['y0'][v]), risk_feats(CLF, T['y0'][v], T['A'][v], T['M'][v])], 2)
+                  if CHRONO else None)
+            PREDS[key][scn] = direct_predict(dmodels, T['y0'][v], direct_clim(T['A'][v], T['M'][v]), ex)
         write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}{TAG}.csv')
         report(key)
     save_outputs()

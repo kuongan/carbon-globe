@@ -1025,3 +1025,8 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - `carbonglobe_gbm.py` env `GBM_CHRONO=1`: thêm cả hai nhóm vào model direct đầy đủ (54k site), biến thể y0inv /
   y0inv2 / none ⇒ `result/gbm/gbm_preds_chrono.npz`. So sánh LB với GBM y0inv2 (0.097) sau khi khớp trung bình với
   `result/probe_dead_T2.csv` như cũ.
+- **Model đầy đủ** (`GBM_CHRONO=1`, 54k site, `result/gbm/gbm_preds_chrono.npz`, log `gbm_chrono.log`): holdout
+  **0.0245** (GBM cũ 0.0305, −20%). Khớp trung bình với probe_dead_T2: `result/match_gbmc_{y0inv,y0inv2,none}.csv`
+  (ingest: `gbmc_*`). msd tới GBM cũ cùng biến thể 0.015–0.03 ⇒ khác thật.
+- `rank_members.py` (gốc x6 + cặp GBM cũ): LB dự báo gbmc_y0inv2 **0.0936** (GBM cũ 0.097), gbmc_y0inv 0.1107,
+  gbmc_none 0.168. Nếu thật tốt hơn dự báo 0.01 → blend 0.059, 0.02 → 0.057. Nộp `match_gbmc_y0inv2.csv` trước.
