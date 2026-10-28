@@ -1,21 +1,86 @@
 # Plan and runbook
 
-## Now (2026-10-28): stronger base model (INSIGHTS 4.44), co2_dir done (0.063, no gain)
+## MASTER PLAN (2026-10-28) — goal: win (top 1 = 0.038, top 3 = 0.042; we are at 0.054)
+
+**Where we are.** Best LB **0.054** (`submission_blend_x7f.csv`); best single model **0.073** (`match_gbmc_y0inv2.csv`,
+GBM direct + own-site chronosequence + collapse-event risk). Final picks right now: **x7f + x7 (0.057)**.
+
+**The one lever that works now: a better base model.** Grid holdout 0.0305 -> 0.0245 (-20%) gave LB 0.097 -> 0.073
+(-25%): grid accuracy carries over to the future. Post-hoc blend probes are exhausted (each round ~0.0002).
+Slots are plentiful: submit every real candidate, but only after a local check.
+
+**Protocol for every model idea** (no slot until step 2 passes):
+1. Subset test, `chrono.py`-style: 20k sites, 10-degree block holdout (same split every time), compare with the
+   current best feature set. Keep only if the holdout drops clearly (> ~3%).
+2. Full run (`carbonglobe_gbm.py`, all 54k sites), variants y0inv / y0inv2 / none, full holdout logged.
+3. `slope.py match <npz> direct_y0inv2 result/probe_dead_T2.csv result/match_<tag>_y0inv2.csv`, ingest, rank with
+   `rank_members.py` against x7f; submit the y0inv2 file (1 slot), then re-blend (`ensemble_scn.py shared`, base x7f
+   + new member, old-vs-new model pair free) and submit the blend if the estimate gains >= 0.001.
+4. Record in INSIGHTS (LB ledger + section) and commit.
+
+### Track A — stronger GBM direct (local CPU; highest priority)
+- [ ] A1 every year's event probability (40 features) instead of 5 summaries (`chrono.py` fire vs fire40; running).
+- [ ] A2 full 15-age profile with all **7** state variables (now height/agb only) + profile interpolated at
+      log(age+20) and log(age+40) for all 7 + profile slope in log-age around the own age (public notebooks).
+- [ ] A3 ecophysiological ratios of the own state: CUE = npp/gpp, NEP = npp - rh, agb/height, lai/height,
+      historical accumulation rate y0/(age+5).
+- [ ] A4 climate trajectory fingerprint for the drivers the model uses (f0-f7, v1-v4 groups): 40-year slope, year-to-
+      year std, first-5 / last-5 year means, warming (last decade - first decade) (ForestCast, 0.142->0.060 notebook).
+- [ ] A5 event risk along the trajectory, not only at y0: two-stage (stage-1 predicted y20/y40 -> recompute risk at
+      the interpolated state), and "years since the last high-risk year" at year 40.
+- [ ] A6 event magnitude: regress the one-year agb loss (not only P(drop > 30%)); expected cumulative loss feature.
+- [ ] A7 stage-2 stacking: out-of-fold stage-1 predictions of all 15 ages of the site as features (cross-age
+      consistency; EcoPhysNet reports 0.0115 -> 0.0100 OOF).
+- [ ] A8 age-regime models (1-30 / 50-150 / 200-500) vs one model; per-variable target transforms (agb log-ratio).
+- [ ] A9 3-5 seeds averaged (bagging), larger trees / lower learning rate once the feature set is fixed.
+- [ ] A10 twin `match_gbmc_none.csv` (y0 left in T space) for an extrapolation pair, as the old GBM pair gave
+      0.066 -> 0.063; also for every later GBM version.
+
+### Track B — neural direct model with the same information (Kaggle GPU; diversity for the blend)
+- [ ] B1 `carbonglobe_direct_nn.py` + chronosequence (15x7 profile, +20/+40 interpolation) + event-risk inputs;
+      cross-age attention over the 15 ages of a site (both public neural notebooks use it). Same variants and
+      mean matching as the GBM; submit y0inv2.
+- [ ] B2 multi-seed NN average once B1 helps.
+
+### Track C — annual neural emulator (GRU over 40 years, monthly climate; Kaggle GPU; lower priority)
+- [ ] C1 state(t) + 12 months of climate(t) -> state(t+1), site context + 15-age profile, loss on all years with weight
+      on year 40, no teacher forcing (the 0.060 team: 0.0078 local, 0.144 LB alone, but improved their blend).
+      Only as a different-error member; expect weak alone.
+
+### Track D — blend and calibration after each new member (slots)
+- [ ] D1 re-blend with base x7f after each scored member; free pairs: (new GBM, old GBM), (y0inv2, none) twins.
+- [ ] D2 re-run the age x scenario probe (`scnprobe.py` young direction) on the new best blend: a better model may
+      need a different correction (1-2 slots).
+- [ ] D3 per-scenario weights (`ensemble_scn.py` hybrids) for the strongest new members once there are 2-3 of them.
+
+### Track E — settle open questions (1 slot each, cheap with many slots)
+- [ ] E1 output space: the 0.142->0.060 notebook claims the answer key is in raw units; our dead-row probe (#73) and
+      bias probes say T space. One decisive probe on x7f: dead rows set to raw 0 instead of the mapped zero
+      (predicted ~+0.001 if we are right). Keep T space unless it improves.
+- [ ] E2 Kaggle API token expired (401): renew `~/.kaggle/kaggle.json` to read public notebooks / discussions.
+
+### Dead ends (do not repeat; INSIGHTS 4.19-4.43)
+More LSTM snapshots/pairs (~0.0001 each), own-site historical analogs (0.173), site-pattern probes on the blend
+(warm / npp / incr / height-only / finer age bands, ~0.0002), ED's CO2 calendar-effect pattern (co2_dir 0.063),
+correcting the test climate (always worse), bagging LSTMs, fine-tuning/SWA, feature dropping, RF members.
+
+
+## Done (2026-10-28): stronger base model (INSIGHTS 4.44), co2_dir done (0.063, no gain)
 Done: gbmc_y0inv2 = 0.073 (best single model ever). Next:
 1. Submit `result/submission_blend_x7f.csv` (est 0.0532) and `result/submission_blend_x7.csv` (est 0.0566, no
    negative weight).
 2. Make the base model stronger along the same line: event risk along the trajectory (not only at y0), more GBM
    seeds, the same features in the NN direct model; twin `match_gbmc_none.csv` for a pair.
 
-## Now (2026-10-28): gap to top is 0.022 -> ED's own CO2 response (INSIGHTS 4.43)
+## Done (2026-10-28): gap to top is 0.022 -> ED's own CO2 response (INSIGHTS 4.43)
 1. Submit `result/co2_dir.csv` (x6 + CO2 pattern from the grid's calendar effect, ssp585 only; 0.063 = useless).
 2. `python co2dir.py solve 0.060 <LB>`. If it helps: same direction on ssp126, then a CO2-aware member.
 
-## Now (2026-10-27): which sites gain most from CO2 under ssp585 (INSIGHTS 4.42)
+## Done (2026-10-27): which sites gain most from CO2 under ssp585 (INSIGHTS 4.42)
 Done: warm 0.063, npp 0.064, incr 0.063, h_only 0.064 -> solved gain 0.0002: not submitted. Post-hoc adjustment of
 x6 is exhausted (INSIGHTS 4.42). **Final picks: x6 + x4f.**
 
-## Now (2026-10-27): age shape of the ssp585 CO2 response (INSIGHTS 4.41)
+## Done (2026-10-27): age shape of the ssp585 CO2 response (INSIGHTS 4.41)
 Best LB 0.060 = `result/submission_blend_x6.csv`. Final picks: **x6 + x4f** (0.061). ssp126 young: no gain, no x7.
 Done: ap_young_lo 0.062, ap_old_lo 0.062 -> solved gain 0.0002 (< 0.0005 rounding threshold): not submitted.
 Age x scenario axis exhausted. **Final picks locked: x6 + x4f.**

@@ -76,11 +76,13 @@ clf = lgb.train(PE, lgb.Dataset(np.concatenate(rows), np.concatenate(labs).astyp
 del rows, labs
 stamp('event classifier trained')
 RISK = np.zeros((15, N, 5), np.float32)                              # sum, max, sum*(t/40), sum last decade, peak year/40
+P40 = np.zeros((15, N, 40), np.float32)                              # every year's event probability
 for i in range(15):
     for s0 in range(0, N, 4000):
         ss = np.arange(s0, min(s0 + 4000, N))
         P_ = np.stack([clf.predict(ev_X(ss, np.full(len(ss), t), y0[i, ss])) for t in range(40)], 1)   # (b, 40)
         w = np.arange(40) / 40
+        P40[i, ss] = P_
         RISK[i, ss] = np.stack([P_.sum(1), P_.max(1), (P_ * w).sum(1), P_[:, 30:].sum(1), P_.argmax(1) / 40], 1)
 stamp('risk features done')
 
@@ -91,8 +93,10 @@ def feats(sites, chrono):
         f = [y0[i, sites], np.full((len(sites), 1), AG[i], np.float32), clim[sites]]
         if chrono:
             f += [allages[sites], ana[i, sites], ana[i, sites] - y0[i, sites, :2]]
-        if chrono == 'fire':
+        if chrono in ('fire', 'fire40'):
             f += [RISK[i, sites]]
+        if chrono == 'fire40':
+            f += [P40[i, sites]]
         rows.append(np.concatenate(f, 1))
     return np.concatenate(rows, 0)
 
@@ -101,7 +105,7 @@ tr, ho = np.flatnonzero(train), np.flatnonzero(hold)
 P = dict(objective='l2', learning_rate=0.05, num_leaves=127, min_data_in_leaf=200, feature_fraction=0.5,
          bagging_fraction=0.7, bagging_freq=1, lambda_l2=1.0, max_bin=127, verbose=-1, seed=42)
 res = {}
-for chrono in (True, 'fire'):
+for chrono in ('fire', 'fire40'):
     Xtr, Xho = feats(tr, chrono), feats(ho, chrono)
     pred = np.empty((15, len(ho), 2))
     for k in (0, 1):
@@ -115,7 +119,7 @@ for chrono in (True, 'fire'):
     e = 0.5 * (((pred[..., 0] - y40[:, ho, 0]) / H) ** 2 + ((pred[..., 1] - y40[:, ho, 1]) / A_) ** 2)
     res[chrono] = e.mean(1)
     stamp(f'chrono={chrono}: holdout metric {e.mean():.4f}')
-print('seed  chrono  +fire')
+print('seed   fire  fire40')
 for i, a in enumerate(AG):
-    print(f'{int(a):4d}  {res[True][i]:.4f}  {res["fire"][i]:.4f}')
-print(f' all  {res[True].mean():.4f}  {res["fire"].mean():.4f}')
+    print(f'{int(a):4d}  {res["fire"][i]:.4f}  {res["fire40"][i]:.4f}')
+print(f' all  {res["fire"].mean():.4f}  {res["fire40"].mean():.4f}')
