@@ -20,7 +20,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
   Test = lưới CarbonGlobe sau phép biến đổi affine; đáp án nằm trong không gian đó (T2). Blend đã hội tụ tại 0.072
   sau khi thêm GBM rollout và seed-avg (mục 4.26). Đòn bẩy còn lại: LSTM `y0inv` trên Kaggle (session E).
 - **LB tốt nhất: 0.066** (`submission_blend_x1.csv`, #86). Analog cùng site thất bại (0.173 / 0.209, mục 4.28).
-- **Model đơn tốt nhất: 0.073** (`match_gbmc_y0inv2.csv`, #128, mục 4.44). **LB tốt nhất: 0.060** (`submission_blend_x6.csv`, #119; mục 4.40–4.41). Trước đó 0.061 (`submission_blend_x4f.csv`, #106). Trước đó 0.063 (`submission_blend_x2.csv`, #93: cặp LSTM + cặp GBM + CO2 lịch sử, mục 4.32).
+- **Model đơn tốt nhất: 0.073** (`match_gbmc_y0inv2.csv`, #128, mục 4.44). **LB tốt nhất: 0.054** (`submission_blend_x7f.csv`, #129). Trước đó 0.060 (`submission_blend_x6.csv`, #119; mục 4.40–4.41). Trước đó 0.061 (`submission_blend_x4f.csv`, #106). Trước đó 0.063 (`submission_blend_x2.csv`, #93: cặp LSTM + cặp GBM + CO2 lịch sử, mục 4.32).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -150,6 +150,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 123–126 | `st_warm` / `st_npp` / `st_incr` / `st_h_only` (x6, mẫu hình site ssp585, trực giao; 0.063 = vô ích) | 0.063 / 0.064 / 0.063 / 0.064 | 0.063 mỗi file | lợi tối ưu 0.0002 ⇒ không nộp |
 | 127 | `co2_dir.csv` (x6 + mẫu hình CO2 theo dòng từ hiệu ứng năm lịch của ED, ssp585, trực giao young/dry; 0.063 = vô ích) | 0.063 | 0.063 | vô ích: mẫu hình CO2 theo site của ED không thêm gì ngoài trục tuổi |
 | 128 | `match_gbmc_y0inv2.csv` (GBM direct + chuỗi tuổi + rủi ro sự kiện, y0 vượt quá vật lý, khớp trung bình) | **0.073** | dự báo 0.0936 | **model đơn tốt nhất** (trước: 0.089); GBM cũ cùng biến thể 0.097 |
+| 129 | `submission_blend_x7f.csv` (x6 0.80 + gbmc_y0inv2 0.63 − GBM cũ y0inv2 0.43) | **0.054** | 0.0532 | **tốt nhất** |
+| 130 | `submission_blend_x7.csv` (x6 0.69 + gbmc_y0inv2 0.31) | 0.057 | 0.0566 | không trọng số âm; lựa chọn cuối: x7f + x7 |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
