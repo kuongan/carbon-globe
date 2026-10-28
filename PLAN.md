@@ -19,12 +19,12 @@ Slots are plentiful: submit every real candidate, but only after a local check.
 4. Record in INSIGHTS (LB ledger + section) and commit.
 
 ### Track A — stronger GBM direct (local CPU; highest priority)
-- [ ] A1 every year's event probability (40 features) instead of 5 summaries (`chrono.py` fire vs fire40; running).
-- [ ] A2 full 15-age profile with all **7** state variables (now height/agb only) + profile interpolated at
+- [x] A1 (0.0270 -> 0.0264, kept) every year's event probability (40 features) instead of 5 summaries (`chrono.py` fire vs fire40; running).
+- [x] A2 (worse, 0.0276) full 15-age profile with all **7** state variables (now height/agb only) + profile interpolated at
       log(age+20) and log(age+40) for all 7 + profile slope in log-age around the own age (public notebooks).
-- [ ] A3 ecophysiological ratios of the own state: CUE = npp/gpp, NEP = npp - rh, agb/height, lai/height,
+- [x] A3 (worse, 0.0274) ecophysiological ratios of the own state: CUE = npp/gpp, NEP = npp - rh, agb/height, lai/height,
       historical accumulation rate y0/(age+5).
-- [ ] A4 climate trajectory fingerprint for the drivers the model uses (f0-f7, v1-v4 groups): 40-year slope, year-to-
+- [x] A4 (worse, 0.0285) climate trajectory fingerprint for the drivers the model uses (f0-f7, v1-v4 groups): 40-year slope, year-to-
       year std, first-5 / last-5 year means, warming (last decade - first decade) (ForestCast, 0.142->0.060 notebook).
 - [ ] A5 event risk along the trajectory, not only at y0: two-stage (stage-1 predicted y20/y40 -> recompute risk at
       the interpolated state), and "years since the last high-risk year" at year 40.

@@ -1,0 +1,21 @@
+[  0.6 min] climate loaded
+[  1.6 min] sites train 17292 hold 2708
+[  7.4 min] event risk done
+[ 14.1 min] base+chrono+fire+fire40+climfp: 758 features | holdout 0.0285
+seed  +fire40+climfp
+   1          0.0094
+  10          0.0095
+  20          0.0109
+  30          0.0146
+  50          0.0193
+  70          0.0229
+ 100          0.0242
+ 150          0.0331
+ 200          0.0359
+ 250          0.0369
+ 300          0.0392
+ 350          0.0407
+ 400          0.0428
+ 450          0.0438
+ 500          0.0443
+ all          0.0285

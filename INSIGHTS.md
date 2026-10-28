@@ -1039,3 +1039,10 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - Blend (`ensemble_scn.py shared`): `submission_blend_x7.csv` = x6 0.69 + gbmc_y0inv2 0.31, ước tính **0.0566**
   (0.0561–0.0571 khi rung LB); `submission_blend_x7f.csv` = x6 0.80 + gbmc 0.63 − GBM cũ y0inv2 0.43 (ngoại suy theo
   hướng "thêm đặc trưng mới"), ước tính **0.0532** (0.0523–0.0542; trọng số ổn định).
+
+### 4.45 Feature lab (`featlab.py`, 20k site, cùng split) [cục bộ]
+
+- chrono + fire **0.0270** → + fire40 (40 xác suất sự kiện theo năm) **0.0264** (giữ).
+- + prof7 (đủ 7 biến của 15 tuổi, nội suy log(tuổi+20/+40), độ dốc) 0.0276; + ratio (CUE, NEP, agb/height…) 0.0274;
+  + climfp (độ dốc / std / 5 năm đầu-cuối của 111 driver) 0.0285 ⇒ cả ba làm tệ hơn (thêm nhiễu). Bỏ A2–A4.
+- Model đầy đủ tiếp theo: `GBM_CHRONO=1 GBM_FIRE40=1` (tag `_fire40`).

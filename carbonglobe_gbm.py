@@ -78,6 +78,7 @@ CO2 = list(range(8, 32))
 #   risk  : site-year collapse events (>30% agb lost in a year, same year across ages, AUC 0.985 from that year's
 #           monthly climate + state) -> event classifier on the grid, summed / timed probabilities over the 40 years
 CHRONO = os.environ.get('GBM_CHRONO', '0') == '1'
+FIRE40 = os.environ.get('GBM_FIRE40', '0') == '1'    # + every year's event probability (featlab: 0.0270 -> 0.0264)
 EV_SEEDS, EV_ROWS, EV_ROUNDS = (6, 10, 14), 2_000_000, 600      # seed ages 100 / 300 / 500 label the events
 KEEP = [j for j in range(N_CONS) if j not in CO2 and j != 32]   # 111 features: no CO2 block, no constant
 MON = list(range(7))      # f0-f6 also kept monthly; f7's test seasonal amplitude is ~20x the grid's -> annual mean only
@@ -280,20 +281,25 @@ def ev_X(state, t, A_t, A_p, M_t, M_p):
 
 
 def risk_feats(clf, y0, A, M):
-    """(15, n, 5) from the event classifier at the y0 state: sum, max, time-weighted sum, last-decade sum, peak year"""
-    n = y0.shape[1]; out = np.zeros((N_AGES, n, 5), np.float32); w = np.arange(N_YEAR) / N_YEAR
+    """(15, n, 5 [+40]) from the event classifier at the y0 state: sum, max, time-weighted sum, last-decade sum, peak
+    year [, every year's probability with GBM_FIRE40=1]"""
+    n = y0.shape[1]; out = np.zeros((N_AGES, n, 45 if FIRE40 else 5), np.float32); w = np.arange(N_YEAR) / N_YEAR
     for s0 in range(0, n, 4096):
         sl = slice(s0, min(s0 + 4096, n))
         for a in range(N_AGES):
             P = np.stack([clf.predict(ev_X(y0[a, sl], t, A[sl, t], A[sl, max(t - 1, 0)], M[sl, t], M[sl, max(t - 1, 0)]))
                           for t in range(N_YEAR)], 1)
-            out[a, sl] = np.stack([P.sum(1), P.max(1), (P * w).sum(1), P[:, 30:].sum(1), P.argmax(1) / N_YEAR], 1)
+            out[a, sl, :5] = np.stack([P.sum(1), P.max(1), (P * w).sum(1), P[:, 30:].sum(1), P.argmax(1) / N_YEAR], 1)
+            if FIRE40:
+                out[a, sl, 5:] = P
     return out
 
 
 if CHRONO:
     DNAMES += ([f'chr_{v}{a}' for a in SEED_AGES for v in ('h', 'a')] + ['chr_ana_h', 'chr_ana_a', 'chr_gap_h',
                'chr_gap_a', 'risk_sum', 'risk_max', 'risk_tw', 'risk_last10', 'risk_peak'])
+    if FIRE40:
+        DNAMES += [f'risk_y{t}' for t in range(N_YEAR)]
 
 
 def direct_predict(models, y0, clim, extra=None):
