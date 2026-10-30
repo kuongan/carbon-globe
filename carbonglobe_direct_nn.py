@@ -128,9 +128,11 @@ def chrono_feats(y0):
     return np.concatenate([allages, ana, ana - y0[:, :, :2]], 2).astype(np.float32)
 
 
-def ev_X(state, t, seq, monz):
-    """event-classifier rows: state (b, 7), year t (scalar or (b,)), seq (b, 40, 111), monz (b, 40, 12, 7)"""
-    b = len(state); t = np.broadcast_to(np.asarray(t), (b,)); tp = np.maximum(t - 1, 0); r = np.arange(b)
+def ev_X(state, t, seq, monz, rows=None):
+    """event-classifier rows: state (b, 7), year t (scalar or (b,)), seq (n, 40, 111), monz (n, 40, 12, 7);
+    row i reads site rows[i] of seq / monz (default i): never copies whole 40-year blocks per row (RAM)"""
+    b = len(state); t = np.broadcast_to(np.asarray(t), (b,)); tp = np.maximum(t - 1, 0)
+    r = np.arange(b) if rows is None else rows
     return np.concatenate([monz[r, t].reshape(b, -1), monz[r, tp].reshape(b, -1), seq[r, t], state,
                            t[:, None].astype(np.float32)], 1).astype(np.float32)
 
@@ -206,7 +208,7 @@ if CHRONO:
         st_[m] = np.nan_to_num(EVP[age][s_[m], t_[m]]); nx_[m] = np.nan_to_num(EVP[age][s_[m], t_[m] + 1])
     keep = st_[:, 1] > 0
     lab = (nx_[:, 1] < 0.7 * st_[:, 1])[keep]
-    Xe = ev_X(st_[keep], t_[keep], SEQ[s_[keep]], MONZ[s_[keep]])
+    Xe = ev_X(st_[keep], t_[keep], SEQ, MONZ, rows=s_[keep])
     CLF = lgb.train(dict(objective='binary', learning_rate=0.1, num_leaves=63, min_data_in_leaf=100,
                          feature_fraction=0.7, bagging_fraction=0.7, bagging_freq=1, verbose=-1, seed=HOLD_SEED),
                     lgb.Dataset(Xe, lab.astype(np.float32)), EV_ROUNDS if not SMOKE else 50)
