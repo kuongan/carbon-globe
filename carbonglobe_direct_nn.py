@@ -16,6 +16,12 @@
 # Outputs (/kaggle/working): nn_preds.npz (PHYSICAL (15, N, 7); keys <scn>_<variant> = seed mean, <scn>_<variant>_s<k>),
 # nn_summary.json, submission_nn_<variant>.csv (mapped with the test_maps slopes, not mean-matched: done locally).
 # Locally without PyTorch, NN_SMOKE=1 runs the whole data pipeline with a dummy model (outputs in result/nn_smoke/).
+#
+# NN_CHRONO=1 (INSIGHTS 4.44; the GBM with the same information scored 0.073 vs 0.097): every (site, age) row also gets
+#   chrono: y0 height/agb of all 15 seed ages of the site + y0 interpolated at age a+40 + its gap to y0 (34)
+#   risk  : site-year collapse events (>30% agb lost in a year): a LightGBM classifier trained here on the grid
+#           (seed ages 100/300/500, that year's + last year's monthly f0-f6, annual drivers, state, year), applied
+#           at the y0 state over the 40 years -> sum / max / time-weighted / last decade / peak year (5)
 
 # %%
 import os, time, gc, json, glob, math
@@ -54,6 +60,11 @@ HOLD_FRAC, BLOCK_DEG, HOLD_SEED = 0.08, 10, 42       # same 10-degree block hold
 STATE_CEIL = 2.0                                     # predictions capped at 2x the grid maximum
 PREFLIGHT = not SMOKE                                # a few steps + every test variant on a few sites, before the long run
 SMOKE_SITES = 3000
+CHRONO = os.environ.get('NN_CHRONO', '0') == '1'
+EV_AGES, EV_ROWS, EV_ROUNDS = (100, 300, 500), 2_000_000, 300      # event labels: seed ages 100 / 300 / 500
+if CHRONO:
+    import lightgbm as lgb
+    VARIANTS = ['y0inv2', 'none', 'y0inv']                       # the GBM's useful ones (time: risk per variant)
 
 SEED_AGES = [1, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 350, 400, 450, 500]
 SCENARIOS = ['ssp126', 'ssp585']
@@ -63,6 +74,7 @@ CO2 = list(range(8, 32))
 KEEP = [j for j in range(N_CONS) if j not in CO2 and j != 32]   # 111 features
 MON = list(range(7))                                             # f0-f6 monthly climatology (f7: annual mean only)
 N_SEQ, N_CLIM, N_AGEF = len(KEEP), N_T * len(MON), N_AGES + 1
+N_EXTRA = 39 if CHRONO else 0
 DEV = torch.device('cuda' if torch.cuda.is_available() else 'cpu') if HAVE_TORCH else None
 
 
@@ -97,6 +109,43 @@ def y0_norm(y0):
     return ((y0 - Y_MEAN) / Y_STD).astype(np.float32)
 
 
+def mon_feats(M):
+    """monthly f0-f6 (n, 40, 12, 7) raw -> standardized per month and year (event classifier input)"""
+    return np.clip((M - X_MEAN[MON]) / (X_STD[MON] + 1e-10), -10, 10).astype(np.float32)
+
+
+AG_F = np.asarray(SEED_AGES, np.float64)
+
+
+def chrono_feats(y0):
+    """y0 (15, n, 7) as fed -> (15, n, 34): all ages' height/agb, y0 interpolated at age a+40, its gap to y0"""
+    n = y0.shape[1]
+    allages = np.broadcast_to(y0[:, :, :2].transpose(1, 0, 2).reshape(1, n, 30), (N_AGES, n, 30))
+    ana = np.empty((N_AGES, n, 2), np.float32)
+    for i, a in enumerate(np.minimum(AG_F + 40, 500)):
+        j = min(max(int(np.searchsorted(AG_F, a)), 1), N_AGES - 1); w = (a - AG_F[j - 1]) / (AG_F[j] - AG_F[j - 1])
+        ana[i] = (1 - w) * y0[j - 1, :, :2] + w * y0[j, :, :2]
+    return np.concatenate([allages, ana, ana - y0[:, :, :2]], 2).astype(np.float32)
+
+
+def ev_X(state, t, seq, monz):
+    """event-classifier rows: state (b, 7), year t (scalar or (b,)), seq (b, 40, 111), monz (b, 40, 12, 7)"""
+    b = len(state); t = np.broadcast_to(np.asarray(t), (b,)); tp = np.maximum(t - 1, 0); r = np.arange(b)
+    return np.concatenate([monz[r, t].reshape(b, -1), monz[r, tp].reshape(b, -1), seq[r, t], state,
+                           t[:, None].astype(np.float32)], 1).astype(np.float32)
+
+
+def risk_feats(clf, y0, seq, monz):
+    """(15, n, 5): event probability over the 40 years at the y0 state -> sum, max, time-weighted, last decade, peak"""
+    n = y0.shape[1]; out = np.zeros((N_AGES, n, 5), np.float32); w = np.arange(N_YEAR) / N_YEAR
+    for s0 in range(0, n, 4096):
+        sl = slice(s0, min(s0 + 4096, n))
+        for a in range(N_AGES):
+            P = np.stack([clf.predict(ev_X(y0[a, sl], t, seq[sl], monz[sl])) for t in range(N_YEAR)], 1)
+            out[a, sl] = np.stack([P.sum(1), P.max(1), (P * w).sum(1), P[:, 30:].sum(1), P.argmax(1) / N_YEAR], 1)
+    return out
+
+
 # %% Load the grid (as carbonglobe_gbm.py): annual means, monthly f0-f6, annual states (month 11) of the 15 ages
 D = f'{BASE}/data_global'
 gx = np.load(f'{D}/glob_X_fea.npy', mmap_mode='r')
@@ -104,6 +153,7 @@ SITES = np.arange(0, gx.shape[0], max(1, gx.shape[0] // SMOKE_SITES)) if SMOKE e
 N_G = len(SITES)
 SEQ = np.empty((N_G, N_YEAR, N_SEQ), np.float32)
 CLIM = np.empty((N_G, N_CLIM), np.float32)
+MONZ = np.empty((N_G, N_YEAR, N_T, len(MON)), np.float32) if CHRONO else None
 X_BAD = np.zeros(N_G, bool)
 FULL = not SMOKE                                     # all sites: contiguous slices read faster than index arrays
 for s in range(0, N_G, 1024):
@@ -112,16 +162,21 @@ for s in range(0, N_G, 1024):
     c = np.nan_to_num(c)
     SEQ[s:s + 1024] = seq_feats(c.mean(axis=2))
     CLIM[s:s + 1024] = clim_feats(c[..., MON])
+    if CHRONO:
+        MONZ[s:s + 1024] = mon_feats(c[..., MON])
     del c
     if (s // 1024) % 10 == 0:
         stamp(f'glob_X {s + 1024}/{N_G}')
 del gx; gc.collect()
 Y = np.empty((N_AGES, N_G, len(HORIZONS) + 1, N_OUT), np.float32)          # years 0, 10, 20, 30, 40
+EVP = {a: np.empty((N_G, N_YEAR + 1, N_OUT), np.float32) for a in EV_AGES} if CHRONO else {}
 for ai, age in enumerate(SEED_AGES):
     g = np.load(f'{D}/glob_Y{age:03d}.npy', mmap_mode='r')
     for s in range(0, N_G, 8192):
         blk = g[s:s + 8192] if FULL else g[SITES[s:s + 8192]]
         Y[ai, s:s + 8192] = blk[:, [0] + HORIZONS, 11, :]
+        if age in EVP:
+            EVP[age][s:s + 8192] = blk[:, :, 11, :]
     del g
 SITE_OK = ~X_BAD & np.isfinite(Y).all(axis=(0, 2, 3))
 CEIL = (STATE_CEIL * np.nanmax(Y[:, SITE_OK], axis=(0, 1, 2))).astype(np.float32)
@@ -140,6 +195,33 @@ IS_HOLD = np.isin(BLOCK, _hb)
 TRAIN, HOLD = np.flatnonzero(SITE_OK & ~IS_HOLD), np.flatnonzero(SITE_OK & IS_HOLD)
 stamp(f'grid: sites {N_G} (usable {SITE_OK.sum()}) | train {len(TRAIN)} | holdout {len(HOLD)} | ceiling {np.round(CEIL[:2], 2)}')
 
+CLF, EXG, EX_MU, EX_SD = None, None, None, None
+if CHRONO:
+    _rng = np.random.default_rng(HOLD_SEED)
+    n_ev = min(EV_ROWS, len(TRAIN) * len(EV_AGES) * N_YEAR)
+    s_ = _rng.choice(TRAIN, n_ev); a_ = _rng.choice(len(EV_AGES), n_ev); t_ = _rng.integers(0, N_YEAR, n_ev)
+    st_ = np.empty((n_ev, N_OUT), np.float32); nx_ = np.empty((n_ev, N_OUT), np.float32)
+    for k, age in enumerate(EV_AGES):
+        m = a_ == k
+        st_[m] = np.nan_to_num(EVP[age][s_[m], t_[m]]); nx_[m] = np.nan_to_num(EVP[age][s_[m], t_[m] + 1])
+    keep = st_[:, 1] > 0
+    lab = (nx_[:, 1] < 0.7 * st_[:, 1])[keep]
+    Xe = ev_X(st_[keep], t_[keep], SEQ[s_[keep]], MONZ[s_[keep]])
+    CLF = lgb.train(dict(objective='binary', learning_rate=0.1, num_leaves=63, min_data_in_leaf=100,
+                         feature_fraction=0.7, bagging_fraction=0.7, bagging_freq=1, verbose=-1, seed=HOLD_SEED),
+                    lgb.Dataset(Xe, lab.astype(np.float32)), EV_ROUNDS if not SMOKE else 50)
+    del Xe, st_, nx_, EVP; gc.collect()
+    stamp(f'event classifier: {int(keep.sum()):,} site-years, event rate {lab.mean():.4f}')
+    EXG = np.zeros((N_AGES, N_G, N_EXTRA), np.float32)
+    OKI = np.flatnonzero(SITE_OK)
+    for i in range(0, len(OKI), 8192):
+        j = OKI[i:i + 8192]
+        y0_ = np.nan_to_num(Y0[:, j])
+        EXG[:, j] = np.concatenate([chrono_feats(y0_), risk_feats(CLF, y0_, SEQ[j], MONZ[j])], 2)
+        stamp(f'chrono + risk features (grid) {min(i + 8192, len(OKI))}/{len(OKI)}')
+    EX_MU = EXG[:, TRAIN].reshape(-1, N_EXTRA).mean(0); EX_SD = EXG[:, TRAIN].reshape(-1, N_EXTRA).std(0) + 1e-6
+    EXG = ((EXG - EX_MU) / EX_SD).astype(np.float32)
+
 
 def metric(p, t):
     return 0.5 * (np.mean(((p[..., 0] - t[..., 0]) / H_SCALE) ** 2) + np.mean(((p[..., 1] - t[..., 1]) / A_SCALE) ** 2))
@@ -155,12 +237,21 @@ for scn in SCENARIOS:
     y0_p = np.maximum((y0_t - MAP_YB) / MAP_YS, 0.0).astype(np.float32)          # physical; dead -> exactly 0
     y0_x = np.where(y0_p[..., :1] > 0, np.maximum(2 * y0_p - y0_t, 0.0), 0.0).astype(np.float32)
     F = {'T': (seq_feats(tx.mean(axis=2)), clim_feats(tx[..., MON]))}
+    MZ = {'T': mon_feats(tx[..., MON])} if CHRONO else {}
     for j in np.flatnonzero(X_KEEP):                                              # forcing mapped back, in place
         tx[..., j] -= MAP_XB[j]; tx[..., j] /= MAP_XS[j]
     F['P'] = (seq_feats(tx.mean(axis=2)), clim_feats(tx[..., MON]))
+    if CHRONO:
+        MZ['P'] = mon_feats(tx[..., MON])
     Y0V = {'y0inv': y0_p, 'none': y0_t, 'y0inv2': y0_x, 'inv': y0_p, 'xinv': y0_t}
     FV = {'y0inv': 'T', 'none': 'T', 'y0inv2': 'T', 'inv': 'P', 'xinv': 'P'}
-    TEST[scn] = dict(F=F, Y0=Y0V, FV=FV)
+    EXV = {}
+    if CHRONO:
+        for v in VARIANTS:
+            ex = np.concatenate([chrono_feats(Y0V[v]), risk_feats(CLF, Y0V[v], F[FV[v]][0], MZ[FV[v]])], 2)
+            EXV[v] = ((ex - EX_MU) / EX_SD).astype(np.float32)
+            stamp(f'{scn} {v}: chrono + risk features done')
+    TEST[scn] = dict(F=F, Y0=Y0V, FV=FV, EX=EXV)
     del tx, d; gc.collect()
     stamp(f'{scn}: test inputs ready | dead share {np.mean(y0_p[..., 0] == 0):.4f}')
 
@@ -176,15 +267,16 @@ if HAVE_TORCH:
             self.gru = nn.GRU(d, d, batch_first=True, bidirectional=True)
             self.site = nn.Sequential(nn.Linear(4 * d, 256), nn.GELU(), nn.LayerNorm(256))
             self.clim = nn.Sequential(nn.Linear(N_CLIM, 64), nn.GELU())
-            self.head = nn.Sequential(nn.Linear(256 + 64 + N_OUT + N_AGEF, HIDDEN), nn.GELU(), nn.Dropout(DROPOUT),
+            self.head = nn.Sequential(nn.Linear(256 + 64 + N_OUT + N_AGEF + N_EXTRA, HIDDEN), nn.GELU(),
+                                      nn.Dropout(DROPOUT),
                                       nn.Linear(HIDDEN, HIDDEN), nn.GELU(), nn.Dropout(DROPOUT),
                                       nn.Linear(HIDDEN, 2 * len(HORIZONS)))
 
-        def forward(self, seq, clim, y0, age):                      # seq (B, 40, N_SEQ)
+        def forward(self, seq, clim, y0, age, ex=None):             # seq (B, 40, N_SEQ), ex (B, N_EXTRA)
             h = self.conv(seq.transpose(1, 2)).transpose(1, 2)
             g, _ = self.gru(h)
             s = self.site(torch.cat([g.mean(1), g[:, -1]], -1))
-            return self.head(torch.cat([s, self.clim(clim), y0, age], -1))
+            return self.head(torch.cat([s, self.clim(clim), y0, age] + ([ex] if ex is not None else []), -1))
 
 
 def batches(n, bs):
@@ -192,8 +284,8 @@ def batches(n, bs):
         yield slice(i, min(i + bs, n))
 
 
-def predict_delta(net, seq, clim, y0n):
-    """seq (n, 40, F), clim (n, 84) per site; y0n (15, n, 7) -> change at year 40, metric units (15, n, 2)"""
+def predict_delta(net, seq, clim, y0n, ex=None):
+    """seq (n, 40, F), clim (n, 84) per site; y0n (15, n, 7); ex (15, n, E) -> change at year 40, metric units"""
     n = seq.shape[0]
     out = np.zeros((N_AGES, n, 2), np.float32)
     if net is None:                                                 # smoke test without PyTorch: dummy model
@@ -204,8 +296,9 @@ def predict_delta(net, seq, clim, y0n):
         for a in range(N_AGES):
             Y0a = torch.from_numpy(y0n[a]).to(DEV)
             Aa = torch.from_numpy(AGE_F[a]).to(DEV)
+            Ea = torch.from_numpy(np.ascontiguousarray(ex[a])).to(DEV) if ex is not None else None
             for b in batches(n, 8192):
-                o = net(S[b], Cl[b], Y0a[b], Aa.expand(b.stop - b.start, -1)).float()
+                o = net(S[b], Cl[b], Y0a[b], Aa.expand(b.stop - b.start, -1), Ea[b] if Ea is not None else None).float()
                 out[a, b] = o[:, -2:].cpu().numpy()
     return out
 
@@ -225,9 +318,11 @@ def test_predict(net, sites=None):
         for v in VARIANTS:
             seq, clim = T['F'][T['FV'][v]]
             y0 = T['Y0'][v]
+            ex = T['EX'].get(v)
             if sites is not None:
                 seq, clim, y0 = seq[sites], clim[sites], y0[:, sites]
-            res[f'{scn}_{v}'] = to_state(y0, predict_delta(net, seq, clim, y0_norm(y0)))
+                ex = ex[:, sites] if ex is not None else None
+            res[f'{scn}_{v}'] = to_state(y0, predict_delta(net, seq, clim, y0_norm(y0), ex))
     return res
 
 
@@ -237,6 +332,7 @@ def train_one(seed, max_steps=None):
     S, Cl = torch.from_numpy(SEQ).to(DEV), torch.from_numpy(CLIM).to(DEV)
     Y0T, TG = torch.from_numpy(Y0N).to(DEV), torch.from_numpy(TGT).to(DEV)
     AG = torch.from_numpy(AGE_F).to(DEV)
+    EXT = torch.from_numpy(EXG).to(DEV) if CHRONO else None
     W = torch.tensor([w for w in H_WEIGHT for _ in (0, 1)], device=DEV)
     tr = torch.from_numpy(np.stack(np.meshgrid(np.arange(N_AGES), TRAIN, indexing='ij'), -1).reshape(-1, 2)).to(DEV)
     n_tr = tr.shape[0]
@@ -254,7 +350,7 @@ def train_one(seed, max_steps=None):
             idx = tr[perm[b]]
             a, s = idx[:, 0], idx[:, 1]
             with torch.autocast(device_type=DEV.type, dtype=torch.float16, enabled=DEV.type == 'cuda'):
-                out = net(S[s], Cl[s], Y0T[a, s], AG[a])
+                out = net(S[s], Cl[s], Y0T[a, s], AG[a], EXT[a, s] if EXT is not None else None)
             loss = (W * (out.float() - TG[a, s]) ** 2).mean()
             opt.zero_grad(set_to_none=True)
             scaler.scale(loss).backward()
@@ -264,7 +360,8 @@ def train_one(seed, max_steps=None):
             tl += float(loss); step += 1
             if step >= total:
                 break
-        hp = to_state(Y0[:, HOLD], predict_delta(net, SEQ[HOLD], CLIM[HOLD], Y0N[:, HOLD]))
+        hp = to_state(Y0[:, HOLD], predict_delta(net, SEQ[HOLD], CLIM[HOLD], Y0N[:, HOLD],
+                                                 EXG[:, HOLD] if CHRONO else None))
         hm = float(metric(hp, Y40[:, HOLD]))
         hist.append(dict(epoch=ep + 1, train_loss=tl / max(1, step - ep * steps_ep), hold_metric=hm))
         stamp(f'seed {seed} epoch {ep + 1}/{EPOCHS}: train {hist[-1]["train_loss"]:.5f} | holdout year-40 metric {hm:.5f}')
@@ -277,7 +374,7 @@ def train_one(seed, max_steps=None):
 
 
 # %% Pre-flight (a few steps, every variant on a few test sites), then the seeds
-SUMMARY = dict(config=dict(seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
+SUMMARY = dict(config=dict(chrono=CHRONO, seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
                            horizons=HORIZONS, variants=VARIANTS, n_train=int(len(TRAIN)), n_hold=int(len(HOLD))),
                hold_persistence=float(metric(Y0[:, HOLD], Y40[:, HOLD])), seeds=[])
 if HAVE_TORCH and PREFLIGHT:

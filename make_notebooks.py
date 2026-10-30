@@ -36,6 +36,25 @@ model, but a neural net). 4 seeds, averaged; 5 test variants (y0inv, none, y0inv
 """
 
 
+NN_CHRONO_DOC = """# Neural direct model + chronosequence + collapse-event risk (training, INSIGHTS 4.44, PLAN track B1)
+
+Same neural direct model as `kaggle_direct_nn`, plus the two inputs that took the LightGBM direct model from LB 0.097
+to 0.073: the site's own chronosequence (y0 of all 15 seed ages + y0 at age a+40) and the risk of site-year biomass
+collapses (a LightGBM event classifier trained inside this notebook). 4 seeds, averaged; variants y0inv2, none, y0inv.
+
+- **Accelerator:** GPU T4 (one GPU is used). **Internet:** off is fine. Expected time: ~2.5-3.5 h
+  (data ~10 min, event classifier ~10 min, risk features for the grid and 6 test variants ~1 h on CPU, 4 seeds x 20
+  epochs ~1-1.5 h).
+- **Inputs:** competition data, `zhihaow/carbonglobe`, and a dataset holding `test_maps.npz` (`noco2-ep4` or the
+  lstm-sweep dataset), exactly as for `kaggle_direct_nn`.
+- **Check in the log:** `event classifier: ... event rate ~0.013`; `chrono + risk features (grid) .../...` lines;
+  `pre-flight ok`; then one `holdout year-40 metric` line per epoch. The old NN reached ~0.029; the LightGBM with
+  these features 0.0245: anything clearly below 0.029 is a success.
+- **Send back:** `nn_preds.npz` and `nn_summary.json` (saved after every seed: a timeout keeps the finished seeds).
+  Do not submit anything: mean-matched files are made locally.
+"""
+
+
 def notebook(markdown, code):
     cell = lambda kind, src, **kw: dict(cell_type=kind, metadata={}, source=src.splitlines(keepends=True), **kw)
     return dict(nbformat=4, nbformat_minor=4,
@@ -61,4 +80,8 @@ for run, only, hours in ((1, ('s7ep3', 's42ep6', 'bagep6', 's42ep3'), '~4.5 h (4
     code = probe.replace(DEFAULT_ONLY, f'SWEEP_ONLY = {only!r}')
     write(f'kaggle_sweep_pairs_run{run}.ipynb', notebook(SWEEP_DOC.format(run=run, only=only, hours=hours), code))
 
-write('kaggle_direct_nn.ipynb', notebook(NN_DOC, open('carbonglobe_direct_nn.py', encoding='utf-8').read()))
+nn_code = open('carbonglobe_direct_nn.py', encoding='utf-8').read()
+write('kaggle_direct_nn.ipynb', notebook(NN_DOC, nn_code))
+_chr = "CHRONO = os.environ.get('NN_CHRONO', '0') == '1'"
+assert _chr in nn_code
+write('kaggle_direct_nn_chrono.ipynb', notebook(NN_CHRONO_DOC, nn_code.replace(_chr, "CHRONO = os.environ.get('NN_CHRONO', '1') == '1'")))

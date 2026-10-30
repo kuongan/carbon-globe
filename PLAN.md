@@ -32,14 +32,15 @@ Slots are plentiful: submit every real candidate, but only after a local check.
 - [ ] A7 stage-2 stacking: out-of-fold stage-1 predictions of all 15 ages of the site as features (cross-age
       consistency; EcoPhysNet reports 0.0115 -> 0.0100 OOF).
 - [ ] A8 age-regime models (1-30 / 50-150 / 200-500) vs one model; per-variable target transforms (agb log-ratio).
-- [ ] A9 3-5 seeds averaged (bagging), larger trees / lower learning rate once the feature set is fixed.
+- [ ] A9 RUNNING seed 7 of gbmc (`GBM_SEED=7 GBM_CHRONO=1`, tag `_chrono_s7`). 3-5 seeds averaged (bagging), larger trees / lower learning rate once the feature set is fixed.
 - [x] A10 DONE 0.158 (pred 0.168), blend gain 0.0003 only. `result/match_gbmc_none.csv` twin (y0 left in T space) for an extrapolation pair, as the old GBM pair gave
       0.066 -> 0.063; also for every later GBM version.
 
 ### Track B — neural direct model with the same information (Kaggle GPU; diversity for the blend)
 GPU steps (B, C) ship as ready-to-run notebooks in `kaggle_notebooks/` (built by `make_notebooks.py` from the .py;
 inputs to attach + files to send back in the first cell); local artefacts go to `kaggle_upload/<name>/`.
-- [ ] B1 `carbonglobe_direct_nn.py` + chronosequence (15x7 profile, +20/+40 interpolation) + event-risk inputs;
+- [ ] B1 READY `kaggle_notebooks/kaggle_direct_nn_chrono.ipynb` (NN_CHRONO=1: chrono 34 + event risk 5, smoke-tested
+      locally; send back nn_preds.npz + nn_summary.json). `carbonglobe_direct_nn.py` + chronosequence (15x7 profile, +20/+40 interpolation) + event-risk inputs;
       cross-age attention over the 15 ages of a site (both public neural notebooks use it). Same variants and
       mean matching as the GBM; submit y0inv2.
 - [ ] B2 multi-seed NN average once B1 helps.
