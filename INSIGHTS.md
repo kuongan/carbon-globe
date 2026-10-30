@@ -1048,3 +1048,7 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - + prof7 (đủ 7 biến của 15 tuổi, nội suy log(tuổi+20/+40), độ dốc) 0.0276; + ratio (CUE, NEP, agb/height…) 0.0274;
   + climfp (độ dốc / std / 5 năm đầu-cuối của 111 driver) 0.0285 ⇒ cả ba làm tệ hơn (thêm nhiễu). Bỏ A2–A4.
 - Model đầy đủ tiếp theo: `GBM_CHRONO=1 GBM_FIRE40=1` (tag `_fire40`).
+- **Model đầy đủ + fire40** (`GBM_FIRE40=1`, `result/gbm/gbm_preds_fire40.npz`): holdout **0.0253**, tệ hơn gbmc
+  (0.0245); msd tới gbmc_y0inv2 0.0033 (cỡ khác biệt giữa seed); LB dự báo 0.0745 ≈ gbmc ⇒ không nộp.
+  **Bài học:** khác biệt < ~5% trên tập con 20k là nhiễu (fire40 −2% ở tập con, +3% ở đầy đủ). Ngưỡng giữ một khối
+  đặc trưng: −5% ở tập con, rồi phải xác nhận trên model đầy đủ.

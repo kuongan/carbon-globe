@@ -11,7 +11,7 @@ Slots are plentiful: submit every real candidate, but only after a local check.
 
 **Protocol for every model idea** (no slot until step 2 passes):
 1. Subset test, `chrono.py`-style: 20k sites, 10-degree block holdout (same split every time), compare with the
-   current best feature set. Keep only if the holdout drops clearly (> ~3%).
+   current best feature set. Keep only if the holdout drops clearly (> ~5%: subset noise is ~3%, INSIGHTS 4.45).
 2. Full run (`carbonglobe_gbm.py`, all 54k sites), variants y0inv / y0inv2 / none, full holdout logged.
 3. `slope.py match <npz> direct_y0inv2 result/probe_dead_T2.csv result/match_<tag>_y0inv2.csv`, ingest, rank with
    `rank_members.py` against x7f; submit the y0inv2 file (1 slot), then re-blend (`ensemble_scn.py shared`, base x7f
@@ -19,7 +19,7 @@ Slots are plentiful: submit every real candidate, but only after a local check.
 4. Record in INSIGHTS (LB ledger + section) and commit.
 
 ### Track A — stronger GBM direct (local CPU; highest priority)
-- [x] A1 (0.0270 -> 0.0264, kept) every year's event probability (40 features) instead of 5 summaries (`chrono.py` fire vs fire40; running).
+- [x] A1 (subset 0.0270 -> 0.0264, but FULL 0.0245 -> 0.0253: dropped) every year's event probability (40 features) instead of 5 summaries (`chrono.py` fire vs fire40; running).
 - [x] A2 (worse, 0.0276) full 15-age profile with all **7** state variables (now height/agb only) + profile interpolated at
       log(age+20) and log(age+40) for all 7 + profile slope in log-age around the own age (public notebooks).
 - [x] A3 (worse, 0.0274) ecophysiological ratios of the own state: CUE = npp/gpp, NEP = npp - rh, agb/height, lai/height,
