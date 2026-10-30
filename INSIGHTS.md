@@ -1052,3 +1052,12 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   (0.0245); msd tới gbmc_y0inv2 0.0033 (cỡ khác biệt giữa seed); LB dự báo 0.0745 ≈ gbmc ⇒ không nộp.
   **Bài học:** khác biệt < ~5% trên tập con 20k là nhiễu (fire40 −2% ở tập con, +3% ở đầy đủ). Ngưỡng giữ một khối
   đặc trưng: −5% ở tập con, rồi phải xác nhận trên model đầy đủ.
+
+### 4.46 Seed GBM thứ hai (A9) và NN + chuỗi tuổi (B1) [cục bộ]
+
+- GBM chrono seed 7 (`gbm_preds_chrono_s7.npz`; split holdout khác, khó hơn: persistence 0.3747): holdout 0.0290.
+  msd giữa hai seed (vật lý) y0inv2 0.0059, none 0.0045 ⇒ nhiễu seed đáng kể; trung bình 2 seed
+  (`gbm_preds_chrono_avg2.npz`) khớp trung bình → `result/match_gbmc2_y0inv2.csv` (msd tới gbmc_y0inv2 0.0011).
+  `rank_members`: LB dự báo 0.0731 (chỉ tính thông tin, không tính giảm nhiễu); kỳ vọng thật ~0.071–0.072.
+- B1: `kaggle_direct_nn_chrono.ipynb` lần 1 OOM trên Kaggle (sao chép khối 40 năm cho 2M dòng); đã sửa (đánh chỉ số
+  site), smoke 3000 site đỉnh 3.9 GB.

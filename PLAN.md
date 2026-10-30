@@ -32,7 +32,7 @@ Slots are plentiful: submit every real candidate, but only after a local check.
 - [ ] A7 stage-2 stacking: out-of-fold stage-1 predictions of all 15 ages of the site as features (cross-age
       consistency; EcoPhysNet reports 0.0115 -> 0.0100 OOF).
 - [ ] A8 age-regime models (1-30 / 50-150 / 200-500) vs one model; per-variable target transforms (agb log-ratio).
-- [ ] A9 RUNNING seed 7 of gbmc (`GBM_SEED=7 GBM_CHRONO=1`, tag `_chrono_s7`). 3-5 seeds averaged (bagging), larger trees / lower learning rate once the feature set is fixed.
+- [ ] A9 READY `result/match_gbmc2_y0inv2.csv` (2-seed average, expect ~0.071-0.072); more seeds if it helps. seed 7 of gbmc (`GBM_SEED=7 GBM_CHRONO=1`, tag `_chrono_s7`). 3-5 seeds averaged (bagging), larger trees / lower learning rate once the feature set is fixed.
 - [x] A10 DONE 0.158 (pred 0.168), blend gain 0.0003 only. `result/match_gbmc_none.csv` twin (y0 left in T space) for an extrapolation pair, as the old GBM pair gave
       0.066 -> 0.063; also for every later GBM version.
 
