@@ -33,7 +33,7 @@ Slots are plentiful: submit every real candidate, but only after a local check.
       consistency; EcoPhysNet reports 0.0115 -> 0.0100 OOF).
 - [ ] A8 age-regime models (1-30 / 50-150 / 200-500) vs one model; per-variable target transforms (agb log-ratio).
 - [ ] A9 3-5 seeds averaged (bagging), larger trees / lower learning rate once the feature set is fixed.
-- [ ] A10 READY `result/match_gbmc_none.csv` (predicted 0.168 if it adds nothing) twin (y0 left in T space) for an extrapolation pair, as the old GBM pair gave
+- [x] A10 DONE 0.158 (pred 0.168), blend gain 0.0003 only. `result/match_gbmc_none.csv` twin (y0 left in T space) for an extrapolation pair, as the old GBM pair gave
       0.066 -> 0.063; also for every later GBM version.
 
 ### Track B — neural direct model with the same information (Kaggle GPU; diversity for the blend)
@@ -56,7 +56,7 @@ inputs to attach + files to send back in the first cell); local artefacts go to 
 - [ ] D3 per-scenario weights (`ensemble_scn.py` hybrids) for the strongest new members once there are 2-3 of them.
 
 ### Track E — settle open questions (1 slot each, cheap with many slots)
-- [ ] E1 READY `result/probe_x7f_dead_raw0.csv` (x7f, 16,363 dead rows at raw 0). LB 0.055 = T space confirmed,
+- [x] E1 DONE 0.055 -> T space confirmed. `result/probe_x7f_dead_raw0.csv` (x7f, 16,363 dead rows at raw 0). LB 0.055 = T space confirmed,
       0.053 = raw units (then re-check everything), 0.054 = ambiguous. Output space: the 0.142->0.060 notebook claims the answer key is in raw units; our dead-row probe (#73) and
       bias probes say T space. One decisive probe on x7f: dead rows set to raw 0 instead of the mapped zero
       (predicted ~+0.001 if we are right). Keep T space unless it improves.

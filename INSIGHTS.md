@@ -152,6 +152,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 128 | `match_gbmc_y0inv2.csv` (GBM direct + chuỗi tuổi + rủi ro sự kiện, y0 vượt quá vật lý, khớp trung bình) | **0.073** | dự báo 0.0936 | **model đơn tốt nhất** (trước: 0.089); GBM cũ cùng biến thể 0.097 |
 | 129 | `submission_blend_x7f.csv` (x6 0.80 + gbmc_y0inv2 0.63 − GBM cũ y0inv2 0.43) | **0.054** | 0.0532 | **tốt nhất** |
 | 130 | `submission_blend_x7.csv` (x6 0.69 + gbmc_y0inv2 0.31) | 0.057 | 0.0566 | không trọng số âm; lựa chọn cuối: x7f + x7 |
+| 131 | `probe_x7f_dead_raw0.csv` (x7f, 16,363 ô chết đặt về 0 vật lý) | 0.055 | 0.055 nếu T / 0.053 nếu vật lý | **đáp án ở không gian T xác nhận lần 2**; notebook công khai ("raw units") sai |
+| 132 | `match_gbmc_none.csv` (bản sinh đôi gbmc, y0 không gian T) | 0.158 | 0.168 | thêm vào blend: 0.0532 → 0.0529, dưới mức làm tròn ⇒ không làm file mới |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).

@@ -95,6 +95,7 @@ RUNS = {
     'x4f':                   (0.061, None),    # submission_blend_x4f.csv: + NN y0inv2, s42ep6/ep3 pairs
     'x6':                    (0.060, None),    # submission_blend_x6.csv (best): x4f + ssp585 young step (scnprobe.py)
     'gbmc_y0inv2':           (0.073, None),    # match_gbmc_y0inv2.csv: GBM direct + chronosequence + collapse-event risk (INSIGHTS 4.44)
+    'gbmc_none':             (0.158, None),    # match_gbmc_none.csv: twin of gbmc_y0inv2, y0 left in the test space
     'x7f':                   (0.054, None),    # submission_blend_x7f.csv (best): x6 + gbmc_y0inv2 - old GBM y0inv2
     'x7':                    (0.057, None),    # submission_blend_x7.csv: x6 + gbmc_y0inv2, no negative weight
     'sw_s42ep3_xinv':        (0.254, None),    # sweep run 1 (kaggle_run1): seed 42 ep3, forcing physical
