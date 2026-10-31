@@ -1062,3 +1062,9 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   `rank_members`: LB dự báo 0.0731 (chỉ tính thông tin, không tính giảm nhiễu); kỳ vọng thật ~0.071–0.072.
 - B1: `kaggle_direct_nn_chrono.ipynb` lần 1 OOM trên Kaggle (sao chép khối 40 năm cho 2M dòng); đã sửa (đánh chỉ số
   site), smoke 3000 site đỉnh 3.9 GB.
+- **B1 NN chrono** (`result/nn_direct_chrono/`, Kaggle, 4 seed, cùng split holdout với gbmc): holdout từng seed
+  0.0243 / 0.0247 / 0.0257 / 0.0263 (NN cũ 0.029, GBM chrono 0.0245), msd giữa seed 0.0067 ⇒ trung bình 4 seed
+  còn tốt hơn. Khớp trung bình: `result/match_nnc_{y0inv2,y0inv,none}.csv` (ingest `nnc_*`). msd nnc_y0inv2 tới
+  gbmc3 0.028, tới NN cũ 0.034 ⇒ đa dạng thật. `rank_members` (gốc x6 + gbmc2 + cặp GBM cũ): LB dự báo nnc_y0inv2
+  **0.0897** (±0.01 → blend 0.052, ±0.02 → 0.049). NN cũ y0inv2: dự báo 0.119, thật 0.113. Nộp `match_nnc_y0inv2.csv`.
+- Trung bình 3 seed GBM: `result/match_gbmc3_y0inv2.csv` (msd tới gbmc2 0.0005, chưa nộp).

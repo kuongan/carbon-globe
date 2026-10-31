@@ -39,7 +39,7 @@ Slots are plentiful: submit every real candidate, but only after a local check.
 ### Track B — neural direct model with the same information (Kaggle GPU; diversity for the blend)
 GPU steps (B, C) ship as ready-to-run notebooks in `kaggle_notebooks/` (built by `make_notebooks.py` from the .py;
 inputs to attach + files to send back in the first cell); local artefacts go to `kaggle_upload/<name>/`.
-- [ ] B1 READY `kaggle_notebooks/kaggle_direct_nn_chrono.ipynb` (NN_CHRONO=1: chrono 34 + event risk 5, smoke-tested
+- [ ] B1 DONE on Kaggle (holdout 0.024-0.026/seed); SUBMIT `result/match_nnc_y0inv2.csv` (pred 0.0897), then x8. `kaggle_notebooks/kaggle_direct_nn_chrono.ipynb` (NN_CHRONO=1: chrono 34 + event risk 5, smoke-tested
       locally; send back nn_preds.npz + nn_summary.json). `carbonglobe_direct_nn.py` + chronosequence (15x7 profile, +20/+40 interpolation) + event-risk inputs;
       cross-age attention over the 15 ages of a site (both public neural notebooks use it). Same variants and
       mean matching as the GBM; submit y0inv2.
