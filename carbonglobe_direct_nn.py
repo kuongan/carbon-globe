@@ -57,7 +57,10 @@ SEEDS = [int(s) for s in os.environ.get('NN_SEEDS', '4,5,6,7' if XAGE else '0,1,
 EPOCHS = int(os.environ.get('NN_EPOCHS', 20))
 BS, LR, WD, DROPOUT = 4096, 2e-3, 1e-4, 0.1
 D_MODEL, HIDDEN = 128, 512
-BS_SITES, D_TOK, XAGE_LAYERS, XAGE_HEADS = 512, 192, 2, 4   # NN_XAGE: sites per batch (x15 rows), token width
+BS_SITES = 512                                               # NN_XAGE: sites per batch (x15 rows)
+D_TOK = int(os.environ.get('NN_DTOK', 192))                  # NN_XAGE token width / transformer depth (B3: 256 / 3)
+XAGE_LAYERS = int(os.environ.get('NN_XLAYERS', 2))
+XAGE_HEADS = 4
 HORIZONS = [10, 20, 30, 40]                          # predicted change at these years; year 40 is scored
 H_WEIGHT = [0.25, 0.25, 0.25, 1.0]
 VARIANTS = ['y0inv', 'none', 'y0inv2', 'inv', 'xinv']
@@ -432,7 +435,7 @@ def train_one(seed, max_steps=None):
 
 
 # %% Pre-flight (a few steps, every variant on a few test sites), then the seeds
-SUMMARY = dict(config=dict(chrono=CHRONO, xage=XAGE, seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
+SUMMARY = dict(config=dict(chrono=CHRONO, xage=XAGE, d_tok=D_TOK, xage_layers=XAGE_LAYERS, seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
                            horizons=HORIZONS, variants=VARIANTS, n_train=int(len(TRAIN)), n_hold=int(len(HOLD))),
                hold_persistence=float(metric(Y0[:, HOLD], Y40[:, HOLD])), seeds=[])
 if HAVE_TORCH and PREFLIGHT:

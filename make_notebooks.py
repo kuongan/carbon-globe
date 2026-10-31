@@ -72,6 +72,20 @@ y0inv.
 """
 
 
+NN_XAGE2_DOC = """# Neural direct model, cross-age version 2 (training, PLAN track B3)
+
+The cross-age NN (`kaggle_direct_nn_xage`) scored **0.061** alone, the best single model. Same model, bigger and
+trained longer: token width 256 (was 192), 3 transformer layers (was 2), 30 epochs (was 20), new seeds 8-11 (a
+second set of seeds also averages out seed noise, as with the GBM: 0.073 -> 0.072).
+
+- **Accelerator:** GPU T4 (one GPU is used). **Internet:** off is fine. Expected time: ~4-5.5 h.
+- **Inputs:** exactly as for `kaggle_direct_nn_xage`.
+- **Check in the log:** `pre-flight ok`, then `holdout year-40 metric` per epoch. Version 1 reached 0.0239-0.0256
+  per seed.
+- **Send back:** `nn_preds.npz` and `nn_summary.json`, zipped as `kaggle_direct_nn_xage2.zip`. Do not submit anything.
+"""
+
+
 def notebook(markdown, code):
     cell = lambda kind, src, **kw: dict(cell_type=kind, metadata={}, source=src.splitlines(keepends=True), **kw)
     return dict(nbformat=4, nbformat_minor=4,
@@ -105,4 +119,13 @@ chrono_code = nn_code.replace(_chr, "CHRONO = os.environ.get('NN_CHRONO', '1') =
 write('kaggle_direct_nn_chrono.ipynb', notebook(NN_CHRONO_DOC, chrono_code))
 _xa = "XAGE = os.environ.get('NN_XAGE', '0') == '1'"
 assert _xa in chrono_code
-write('kaggle_direct_nn_xage.ipynb', notebook(NN_XAGE_DOC, chrono_code.replace(_xa, "XAGE = os.environ.get('NN_XAGE', '1') == '1'")))
+xage_code = chrono_code.replace(_xa, "XAGE = os.environ.get('NN_XAGE', '1') == '1'")
+write('kaggle_direct_nn_xage.ipynb', notebook(NN_XAGE_DOC, xage_code))
+x2 = xage_code
+for old, new in (("os.environ.get('NN_DTOK', 192)", "os.environ.get('NN_DTOK', 256)"),
+                 ("os.environ.get('NN_XLAYERS', 2)", "os.environ.get('NN_XLAYERS', 3)"),
+                 ("os.environ.get('NN_EPOCHS', 20)", "os.environ.get('NN_EPOCHS', 30)"),
+                 ("'4,5,6,7' if XAGE", "'8,9,10,11' if XAGE")):
+    assert old in x2, old
+    x2 = x2.replace(old, new)
+write('kaggle_direct_nn_xage2.ipynb', notebook(NN_XAGE2_DOC, x2))
