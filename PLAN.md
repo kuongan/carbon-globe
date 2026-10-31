@@ -2,8 +2,8 @@
 
 ## MASTER PLAN (2026-10-28) — goal: win (top 1 = 0.038, top 3 = 0.042; we are at 0.054)
 
-**Where we are.** Best LB **0.054** (`submission_blend_x7f.csv`); best single model **0.073** (`match_gbmc_y0inv2.csv`,
-GBM direct + own-site chronosequence + collapse-event risk). Final picks right now: **x7f + x7 (0.057)**.
+**Where we are (2026-10-31).** Best LB **0.050** (`submission_blend_x8f.csv`); best singles: GBM chrono 2 seeds
+**0.072**, NN chrono **0.075**. Final picks right now: **x8f + x7f (0.054)**.
 
 **The one lever that works now: a better base model.** Grid holdout 0.0305 -> 0.0245 (-20%) gave LB 0.097 -> 0.073
 (-25%): grid accuracy carries over to the future. Post-hoc blend probes are exhausted (each round ~0.0002).
