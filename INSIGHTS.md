@@ -157,6 +157,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 133 | `match_gbmc2_y0inv2.csv` (GBM chrono, trung bình 2 seed 42 + 7) | **0.072** | 0.0731 (chỉ thông tin) | **model đơn tốt nhất**; lấy trung bình seed giúp ~0.001; blend 0.0532 → 0.0526 (+ cặp none), chờ seed 11 + NN chrono rồi làm x8 |
 | 134 | `match_nnc_y0inv2.csv` (NN direct + chrono + rủi ro sự kiện, 4 seed, khớp trung bình) | **0.075** | dự báo 0.0897 | tốt hơn dự báo 0.015; NN cũ 0.113 |
 | 135 | `submission_blend_x8f.csv` (x6 0.72 + gbmc2 0.45 + nnc 0.39 − GBM cũ 0.41 − NN cũ 0.15) | **0.050** | 0.0503 | **tốt nhất**; lựa chọn cuối: x8f + x7f |
+| 136–137 | `yp_x8f_ssp126` / `yp_x8f_ssp585` (bước young trên x8f, từng kịch bản; 0.053 = vô ích) | 0.053 / 0.054 | 0.053 mỗi file | x8f không cần hiệu chỉnh tuổi nữa (ssp585: bước −0.018, lợi 0.0001) |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -1074,3 +1075,5 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   gbmc2 0.45 + nnc 0.39 − GBM cũ y0inv2 0.41 − NN cũ y0inv2 0.15, ước tính **0.0503** (0.0492–0.0513);
   `submission_blend_x8.csv` (không có cặp NN cũ) 0.0509 (0.0499–0.0519); `submission_blend_x8s.csv` (không trọng
   số âm) 0.0552. Hai cặp "cũ → mới" (GBM, NN) cùng ngoại suy theo hướng "thêm chuỗi tuổi + sự kiện".
+- Probe young trên x8f (#136–137): ssp126 đúng mức vô ích, ssp585 hơi tệ hơn (rừng non nên giảm nhẹ, bước −0.018, lợi
+  0.0001) ⇒ phần "rừng non mọc nhanh hơn" mà x6 phải thêm tay giờ đã nằm trong các model chrono.
