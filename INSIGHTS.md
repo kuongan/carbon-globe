@@ -155,6 +155,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 131 | `probe_x7f_dead_raw0.csv` (x7f, 16,363 ô chết đặt về 0 vật lý) | 0.055 | 0.055 nếu T / 0.053 nếu vật lý | **đáp án ở không gian T xác nhận lần 2**; notebook công khai ("raw units") sai |
 | 132 | `match_gbmc_none.csv` (bản sinh đôi gbmc, y0 không gian T) | 0.158 | 0.168 | thêm vào blend: 0.0532 → 0.0529, dưới mức làm tròn ⇒ không làm file mới |
 | 133 | `match_gbmc2_y0inv2.csv` (GBM chrono, trung bình 2 seed 42 + 7) | **0.072** | 0.0731 (chỉ thông tin) | **model đơn tốt nhất**; lấy trung bình seed giúp ~0.001; blend 0.0532 → 0.0526 (+ cặp none), chờ seed 11 + NN chrono rồi làm x8 |
+| 134 | `match_nnc_y0inv2.csv` (NN direct + chrono + rủi ro sự kiện, 4 seed, khớp trung bình) | **0.075** | dự báo 0.0897 | tốt hơn dự báo 0.015; NN cũ 0.113 |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -1068,3 +1069,7 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   gbmc3 0.028, tới NN cũ 0.034 ⇒ đa dạng thật. `rank_members` (gốc x6 + gbmc2 + cặp GBM cũ): LB dự báo nnc_y0inv2
   **0.0897** (±0.01 → blend 0.052, ±0.02 → 0.049). NN cũ y0inv2: dự báo 0.119, thật 0.113. Nộp `match_nnc_y0inv2.csv`.
 - Trung bình 3 seed GBM: `result/match_gbmc3_y0inv2.csv` (msd tới gbmc2 0.0005, chưa nộp).
+- **nnc_y0inv2 = 0.075** (#134; dự báo 0.0897). Blend (`ensemble_scn.py shared`): `submission_blend_x8f.csv` = x6 0.72 +
+  gbmc2 0.45 + nnc 0.39 − GBM cũ y0inv2 0.41 − NN cũ y0inv2 0.15, ước tính **0.0503** (0.0492–0.0513);
+  `submission_blend_x8.csv` (không có cặp NN cũ) 0.0509 (0.0499–0.0519); `submission_blend_x8s.csv` (không trọng
+  số âm) 0.0552. Hai cặp "cũ → mới" (GBM, NN) cùng ngoại suy theo hướng "thêm chuỗi tuổi + sự kiện".
