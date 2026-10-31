@@ -1077,3 +1077,12 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   số âm) 0.0552. Hai cặp "cũ → mới" (GBM, NN) cùng ngoại suy theo hướng "thêm chuỗi tuổi + sự kiện".
 - Probe young trên x8f (#136–137): ssp126 đúng mức vô ích, ssp585 hơi tệ hơn (rừng non nên giảm nhẹ, bước −0.018, lợi
   0.0001) ⇒ phần "rừng non mọc nhanh hơn" mà x6 phải thêm tay giờ đã nằm trong các model chrono.
+
+### 4.47 NN cross-age (B2, `NN_XAGE=1`, `result/nn_direct_xage/`) [cục bộ + đại số]
+
+- Transformer 2 lớp qua 15 tuổi của một site, seed 4–7, cùng split: holdout từng seed 0.0256 / 0.0245 / 0.0239 /
+  0.0246 (trung bình 0.0246; NN chrono per-row 0.0252), msd giữa seed 0.0046 (per-row 0.0067) ⇒ ổn định hơn.
+- Khớp trung bình `result/match_nnx_y0inv2.csv` (slope thấp hơn: 0.76–0.86 ⇒ mức thô cao hơn). msd tới nnc 0.017, tới
+  gbmc3 0.020, tới x8f 0.017. `rank_members` (gốc = thành viên x8f): LB dự báo **0.067** (±0.01 → blend 0.0475).
+  Trung bình 8 seed NN (chrono + xage) `match_nn8_y0inv2.csv`: dự báo 0.0666. Nộp nnx_y0inv2 trước.
+- Ghi chú: lần gửi đầu là bản sao zip của NN chrono (md5 trùng) — đã bỏ; bản đúng là `result/kaggle_direct_nn_xage.zip`.
