@@ -43,7 +43,8 @@ inputs to attach + files to send back in the first cell); local artefacts go to 
       locally; send back nn_preds.npz + nn_summary.json). `carbonglobe_direct_nn.py` + chronosequence (15x7 profile, +20/+40 interpolation) + event-risk inputs;
       cross-age attention over the 15 ages of a site (both public neural notebooks use it). Same variants and
       mean matching as the GBM; submit y0inv2.
-- [ ] B2 multi-seed NN average once B1 helps.
+- [ ] B2 READY `kaggle_notebooks/kaggle_direct_nn_xage.ipynb` (NN_XAGE=1: transformer across the 15 ages of a site,
+      seeds 4-7; smoke-tested locally with CPU torch). Send back nn_preds.npz + nn_summary.json.
 
 ### Track C — annual neural emulator (GRU over 40 years, monthly climate; Kaggle GPU; lower priority)
 - [ ] C1 state(t) + 12 months of climate(t) -> state(t+1), site context + 15-age profile, loss on all years with weight

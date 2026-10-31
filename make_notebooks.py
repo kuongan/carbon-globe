@@ -55,6 +55,23 @@ collapses (a LightGBM event classifier trained inside this notebook). 4 seeds, a
 """
 
 
+NN_XAGE_DOC = """# Neural direct model, cross-age version (training, PLAN track B2)
+
+The chrono NN (`kaggle_direct_nn_chrono`, LB 0.075, the blend x8f = 0.050) with one change: the 15 seed ages of a
+site go through the net together, and a 2-layer transformer lets every age see the others (canopy closure and
+competition along the site's chronosequence). New seeds 4-7, so it also adds seed diversity. Variants y0inv2, none,
+y0inv.
+
+- **Accelerator:** GPU T4 (one GPU is used). **Internet:** off is fine. Expected time: ~2.5-3.5 h (same data and
+  risk-feature steps as the chrono notebook, then 4 seeds x 20 epochs).
+- **Inputs:** exactly as for `kaggle_direct_nn_chrono`: competition data, `zhihaow/carbonglobe`, and the dataset
+  holding `test_maps.npz`.
+- **Check in the log:** `event classifier: ... event rate ~0.013`, `pre-flight ok`, then one `holdout year-40 metric`
+  line per epoch. The per-row chrono NN reached 0.0243-0.0263 per seed: lower is better, similar is still useful.
+- **Send back:** `nn_preds.npz` and `nn_summary.json` (zip them as before). Do not submit anything.
+"""
+
+
 def notebook(markdown, code):
     cell = lambda kind, src, **kw: dict(cell_type=kind, metadata={}, source=src.splitlines(keepends=True), **kw)
     return dict(nbformat=4, nbformat_minor=4,
@@ -84,4 +101,8 @@ nn_code = open('carbonglobe_direct_nn.py', encoding='utf-8').read()
 write('kaggle_direct_nn.ipynb', notebook(NN_DOC, nn_code))
 _chr = "CHRONO = os.environ.get('NN_CHRONO', '0') == '1'"
 assert _chr in nn_code
-write('kaggle_direct_nn_chrono.ipynb', notebook(NN_CHRONO_DOC, nn_code.replace(_chr, "CHRONO = os.environ.get('NN_CHRONO', '1') == '1'")))
+chrono_code = nn_code.replace(_chr, "CHRONO = os.environ.get('NN_CHRONO', '1') == '1'")
+write('kaggle_direct_nn_chrono.ipynb', notebook(NN_CHRONO_DOC, chrono_code))
+_xa = "XAGE = os.environ.get('NN_XAGE', '0') == '1'"
+assert _xa in chrono_code
+write('kaggle_direct_nn_xage.ipynb', notebook(NN_XAGE_DOC, chrono_code.replace(_xa, "XAGE = os.environ.get('NN_XAGE', '1') == '1'")))

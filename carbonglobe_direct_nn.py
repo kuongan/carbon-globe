@@ -22,6 +22,9 @@
 #   risk  : site-year collapse events (>30% agb lost in a year): a LightGBM classifier trained here on the grid
 #           (seed ages 100/300/500, that year's + last year's monthly f0-f6, annual drivers, state, year), applied
 #           at the y0 state over the 40 years -> sum / max / time-weighted / last decade / peak year (5)
+# NN_XAGE=1 (PLAN B2): the 15 seed ages of a site go through the net together; one token per age (site encoding +
+#   its own y0 / age / chrono+risk), a 2-layer transformer across the 15 tokens (competition / canopy closure along
+#   the chronosequence, as in both public neural notebooks), then the same head per token. Batches are sites.
 
 # %%
 import os, time, gc, json, glob, math
@@ -49,10 +52,12 @@ else:
 os.makedirs(OUT, exist_ok=True)
 
 # ---- config ----
-SEEDS = [int(s) for s in os.environ.get('NN_SEEDS', '0,1,2,3').split(',')]
+XAGE = os.environ.get('NN_XAGE', '0') == '1'
+SEEDS = [int(s) for s in os.environ.get('NN_SEEDS', '4,5,6,7' if XAGE else '0,1,2,3').split(',')]
 EPOCHS = int(os.environ.get('NN_EPOCHS', 20))
 BS, LR, WD, DROPOUT = 4096, 2e-3, 1e-4, 0.1
 D_MODEL, HIDDEN = 128, 512
+BS_SITES, D_TOK, XAGE_LAYERS, XAGE_HEADS = 512, 192, 2, 4   # NN_XAGE: sites per batch (x15 rows), token width
 HORIZONS = [10, 20, 30, 40]                          # predicted change at these years; year 40 is scored
 H_WEIGHT = [0.25, 0.25, 0.25, 1.0]
 VARIANTS = ['y0inv', 'none', 'y0inv2', 'inv', 'xinv']
@@ -281,6 +286,36 @@ if HAVE_TORCH:
             return self.head(torch.cat([s, self.clim(clim), y0, age] + ([ex] if ex is not None else []), -1))
 
 
+if HAVE_TORCH:
+    class XAgeNet(nn.Module):
+        """all 15 ages of a site at once: (B sites) -> (B, 15, 2 * len(HORIZONS))"""
+        def __init__(self):
+            super().__init__()
+            d = D_MODEL
+            self.conv = nn.Sequential(nn.Conv1d(N_SEQ, d, 3, padding=1), nn.GELU(),
+                                      nn.Conv1d(d, d, 3, padding=1), nn.GELU())
+            self.gru = nn.GRU(d, d, batch_first=True, bidirectional=True)
+            self.site = nn.Sequential(nn.Linear(4 * d, 256), nn.GELU(), nn.LayerNorm(256))
+            self.clim = nn.Sequential(nn.Linear(N_CLIM, 64), nn.GELU())
+            self.tok = nn.Sequential(nn.Linear(256 + 64 + N_OUT + N_AGEF + N_EXTRA, D_TOK), nn.GELU(), nn.LayerNorm(D_TOK))
+            layer = nn.TransformerEncoderLayer(D_TOK, XAGE_HEADS, 2 * D_TOK, dropout=DROPOUT, activation='gelu',
+                                               batch_first=True, norm_first=True)
+            self.xage = nn.TransformerEncoder(layer, XAGE_LAYERS)
+            self.head = nn.Sequential(nn.Linear(D_TOK + N_OUT + N_AGEF + N_EXTRA, HIDDEN), nn.GELU(), nn.Dropout(DROPOUT),
+                                      nn.Linear(HIDDEN, HIDDEN // 2), nn.GELU(), nn.Linear(HIDDEN // 2, 2 * len(HORIZONS)))
+
+        def forward(self, seq, clim, y0, age, ex=None):             # y0 (B, 15, 7), age (15, 16), ex (B, 15, E)
+            B = seq.shape[0]
+            h = self.conv(seq.transpose(1, 2)).transpose(1, 2)
+            g, _ = self.gru(h)
+            sc = torch.cat([self.site(torch.cat([g.mean(1), g[:, -1]], -1)), self.clim(clim)], -1)   # (B, 320)
+            own = [y0, age.unsqueeze(0).expand(B, -1, -1)] + ([ex] if ex is not None else [])
+            own = torch.cat(own, -1)                                # (B, 15, 7 + 16 + E)
+            t = self.tok(torch.cat([sc.unsqueeze(1).expand(-1, N_AGES, -1), own], -1))
+            t = self.xage(t)
+            return self.head(torch.cat([t, own], -1))
+
+
 def batches(n, bs):
     for i in range(0, n, bs):
         yield slice(i, min(i + bs, n))
@@ -294,6 +329,15 @@ def predict_delta(net, seq, clim, y0n, ex=None):
         return out
     net.eval()
     S, Cl = torch.from_numpy(seq).to(DEV), torch.from_numpy(clim).to(DEV)
+    if XAGE:
+        Y0S = torch.from_numpy(np.ascontiguousarray(y0n.transpose(1, 0, 2))).to(DEV)            # (n, 15, 7)
+        ES = torch.from_numpy(np.ascontiguousarray(ex.transpose(1, 0, 2))).to(DEV) if ex is not None else None
+        AGT = torch.from_numpy(AGE_F).to(DEV)
+        with torch.no_grad(), torch.autocast(device_type=DEV.type, dtype=torch.float16, enabled=DEV.type == 'cuda'):
+            for b in batches(n, 2048):
+                o = net(S[b], Cl[b], Y0S[b], AGT, ES[b] if ES is not None else None).float()   # (B, 15, 8)
+                out[:, b] = o[..., -2:].transpose(0, 1).cpu().numpy()
+        return out
     with torch.no_grad(), torch.autocast(device_type=DEV.type, dtype=torch.float16, enabled=DEV.type == 'cuda'):
         for a in range(N_AGES):
             Y0a = torch.from_numpy(y0n[a]).to(DEV)
@@ -330,15 +374,20 @@ def test_predict(net, sites=None):
 
 def train_one(seed, max_steps=None):
     torch.manual_seed(seed); np.random.seed(seed)
-    net = DirectNet().to(DEV)
+    net = (XAgeNet() if XAGE else DirectNet()).to(DEV)
     S, Cl = torch.from_numpy(SEQ).to(DEV), torch.from_numpy(CLIM).to(DEV)
     Y0T, TG = torch.from_numpy(Y0N).to(DEV), torch.from_numpy(TGT).to(DEV)
     AG = torch.from_numpy(AGE_F).to(DEV)
     EXT = torch.from_numpy(EXG).to(DEV) if CHRONO else None
     W = torch.tensor([w for w in H_WEIGHT for _ in (0, 1)], device=DEV)
-    tr = torch.from_numpy(np.stack(np.meshgrid(np.arange(N_AGES), TRAIN, indexing='ij'), -1).reshape(-1, 2)).to(DEV)
+    if XAGE:                                                        # batches of sites, all 15 ages each
+        tr = torch.from_numpy(TRAIN).to(DEV)
+        bs = BS_SITES
+    else:
+        tr = torch.from_numpy(np.stack(np.meshgrid(np.arange(N_AGES), TRAIN, indexing='ij'), -1).reshape(-1, 2)).to(DEV)
+        bs = BS
     n_tr = tr.shape[0]
-    steps_ep = math.ceil(n_tr / BS)
+    steps_ep = math.ceil(n_tr / bs)
     total = max_steps or EPOCHS * steps_ep
     opt = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=WD)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=LR, total_steps=total, pct_start=0.1)
@@ -348,12 +397,19 @@ def train_one(seed, max_steps=None):
         net.train()
         perm = torch.randperm(n_tr, device=DEV)
         tl = 0.0
-        for b in batches(n_tr, BS):
-            idx = tr[perm[b]]
-            a, s = idx[:, 0], idx[:, 1]
-            with torch.autocast(device_type=DEV.type, dtype=torch.float16, enabled=DEV.type == 'cuda'):
-                out = net(S[s], Cl[s], Y0T[a, s], AG[a], EXT[a, s] if EXT is not None else None)
-            loss = (W * (out.float() - TG[a, s]) ** 2).mean()
+        for b in batches(n_tr, bs):
+            if XAGE:
+                s = tr[perm[b]]
+                with torch.autocast(device_type=DEV.type, dtype=torch.float16, enabled=DEV.type == 'cuda'):
+                    out = net(S[s], Cl[s], Y0T[:, s].transpose(0, 1), AG,
+                              EXT[:, s].transpose(0, 1) if EXT is not None else None)
+                loss = (W * (out.float() - TG[:, s].transpose(0, 1)) ** 2).mean()
+            else:
+                idx = tr[perm[b]]
+                a, s = idx[:, 0], idx[:, 1]
+                with torch.autocast(device_type=DEV.type, dtype=torch.float16, enabled=DEV.type == 'cuda'):
+                    out = net(S[s], Cl[s], Y0T[a, s], AG[a], EXT[a, s] if EXT is not None else None)
+                loss = (W * (out.float() - TG[a, s]) ** 2).mean()
             opt.zero_grad(set_to_none=True)
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
@@ -376,7 +432,7 @@ def train_one(seed, max_steps=None):
 
 
 # %% Pre-flight (a few steps, every variant on a few test sites), then the seeds
-SUMMARY = dict(config=dict(chrono=CHRONO, seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
+SUMMARY = dict(config=dict(chrono=CHRONO, xage=XAGE, seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
                            horizons=HORIZONS, variants=VARIANTS, n_train=int(len(TRAIN)), n_hold=int(len(HOLD))),
                hold_persistence=float(metric(Y0[:, HOLD], Y40[:, HOLD])), seeds=[])
 if HAVE_TORCH and PREFLIGHT:
