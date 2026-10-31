@@ -52,7 +52,8 @@ inputs to attach + files to send back in the first cell); local artefacts go to 
 
 ### Track D — blend and calibration after each new member (slots)
 - [ ] D1 re-blend with base x7f after each scored member; free pairs: (new GBM, old GBM), (y0inv2, none) twins.
-- [ ] D2 re-run the age x scenario probe (`scnprobe.py` young direction) on the new best blend: a better model may
+- [ ] D2 READY `result/yp_x8f_ssp585.csv`, `result/yp_x8f_ssp126.csv` (0.053 each = no correction needed);
+      `python youngprobe.py solve x8f <scn> 0.050 <LB>`. Re-run the age x scenario probe (`scnprobe.py` young direction) on the new best blend: a better model may
       need a different correction (1-2 slots).
 - [ ] D3 per-scenario weights (`ensemble_scn.py` hybrids) for the strongest new members once there are 2-3 of them.
 
