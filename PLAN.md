@@ -43,7 +43,9 @@ inputs to attach + files to send back in the first cell); local artefacts go to 
       locally; send back nn_preds.npz + nn_summary.json). `carbonglobe_direct_nn.py` + chronosequence (15x7 profile, +20/+40 interpolation) + event-risk inputs;
       cross-age attention over the 15 ages of a site (both public neural notebooks use it). Same variants and
       mean matching as the GBM; submit y0inv2.
-- [ ] B3 DONE (holdout 0.0236/seed, ~same function as v1); blended directly: SUBMIT `submission_blend_x10.csv`
+- [ ] B4 READY `kaggle_notebooks/kaggle_direct_nn_monthly.ipynb` (cross-age v2 + monthly f0-f6 encoder, seeds
+      12-15; smoke-tested); send back `kaggle_direct_nn_monthly.zip`.
+- [x] B3 DONE (holdout 0.0236/seed, ~same function as v1); x10 = 0.049 (same as x9f). Blended directly: SUBMIT `submission_blend_x10.csv`
       (x9f config, nnx8 + gbmc3; msd to x9f 0.0001). Optional: score `result/match_nnx8_y0inv2.csv` alone. `kaggle_notebooks/kaggle_direct_nn_xage2.ipynb` (cross-age NN, d_tok 256, 3 layers, 30 epochs,
       seeds 8-11; smoke-tested); send back `kaggle_direct_nn_xage2.zip`.
 - [x] B2 DONE: nnx_y0inv2 = 0.061 (best single). SUBMIT `submission_blend_x9f.csv` (est 0.0488), `submission_blend_x9.csv` (0.0496). `kaggle_notebooks/kaggle_direct_nn_xage.ipynb` (NN_XAGE=1: transformer across the 15 ages of a site,

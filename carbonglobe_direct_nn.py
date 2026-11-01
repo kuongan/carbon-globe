@@ -25,6 +25,9 @@
 # NN_XAGE=1 (PLAN B2): the 15 seed ages of a site go through the net together; one token per age (site encoding +
 #   its own y0 / age / chrono+risk), a 2-layer transformer across the 15 tokens (competition / canopy closure along
 #   the chronosequence, as in both public neural notebooks), then the same head per token. Batches are sites.
+# NN_MONTHLY=1 (PLAN B4, with NN_XAGE=1): a small conv over the 12 months of f0-f6 of every year (mean / max / min
+#   over the months) is appended to the 40-year sequence, so the net sees the monthly extremes behind the collapse
+#   events itself, not only the 5 risk summaries.
 
 # %%
 import os, time, gc, json, glob, math
@@ -53,6 +56,8 @@ os.makedirs(OUT, exist_ok=True)
 
 # ---- config ----
 XAGE = os.environ.get('NN_XAGE', '0') == '1'
+MONTHLY = os.environ.get('NN_MONTHLY', '0') == '1'
+MON_CH = 32                                                   # NN_MONTHLY: channels of the per-year monthly conv
 SEEDS = [int(s) for s in os.environ.get('NN_SEEDS', '4,5,6,7' if XAGE else '0,1,2,3').split(',')]
 EPOCHS = int(os.environ.get('NN_EPOCHS', 20))
 BS, LR, WD, DROPOUT = 4096, 2e-3, 1e-4, 0.1
@@ -261,7 +266,7 @@ for scn in SCENARIOS:
             ex = np.concatenate([chrono_feats(Y0V[v]), risk_feats(CLF, Y0V[v], F[FV[v]][0], MZ[FV[v]])], 2)
             EXV[v] = ((ex - EX_MU) / EX_SD).astype(np.float32)
             stamp(f'{scn} {v}: chrono + risk features done')
-    TEST[scn] = dict(F=F, Y0=Y0V, FV=FV, EX=EXV)
+    TEST[scn] = dict(F=F, Y0=Y0V, FV=FV, EX=EXV, MZ=MZ)
     del tx, d; gc.collect()
     stamp(f'{scn}: test inputs ready | dead share {np.mean(y0_p[..., 0] == 0):.4f}')
 
@@ -295,7 +300,11 @@ if HAVE_TORCH:
         def __init__(self):
             super().__init__()
             d = D_MODEL
-            self.conv = nn.Sequential(nn.Conv1d(N_SEQ, d, 3, padding=1), nn.GELU(),
+            n_in = N_SEQ + (3 * MON_CH if MONTHLY else 0)
+            if MONTHLY:
+                self.mon = nn.Sequential(nn.Conv1d(len(MON), MON_CH, 3, padding=1), nn.GELU(),
+                                         nn.Conv1d(MON_CH, MON_CH, 3, padding=1), nn.GELU())
+            self.conv = nn.Sequential(nn.Conv1d(n_in, d, 3, padding=1), nn.GELU(),
                                       nn.Conv1d(d, d, 3, padding=1), nn.GELU())
             self.gru = nn.GRU(d, d, batch_first=True, bidirectional=True)
             self.site = nn.Sequential(nn.Linear(4 * d, 256), nn.GELU(), nn.LayerNorm(256))
@@ -307,8 +316,12 @@ if HAVE_TORCH:
             self.head = nn.Sequential(nn.Linear(D_TOK + N_OUT + N_AGEF + N_EXTRA, HIDDEN), nn.GELU(), nn.Dropout(DROPOUT),
                                       nn.Linear(HIDDEN, HIDDEN // 2), nn.GELU(), nn.Linear(HIDDEN // 2, 2 * len(HORIZONS)))
 
-        def forward(self, seq, clim, y0, age, ex=None):             # y0 (B, 15, 7), age (15, 16), ex (B, 15, E)
+        def forward(self, seq, clim, y0, age, ex=None, mz=None):    # y0 (B, 15, 7), age (15, 16), ex (B, 15, E)
             B = seq.shape[0]
+            if MONTHLY:                                             # mz (B, 40, 12, 7) -> (B, 40, 3 * MON_CH)
+                m = self.mon(mz.reshape(B * N_YEAR, N_T, len(MON)).transpose(1, 2))
+                m = torch.cat([m.mean(-1), m.amax(-1), m.amin(-1)], -1).reshape(B, N_YEAR, -1)
+                seq = torch.cat([seq, m.to(seq.dtype)], -1)
             h = self.conv(seq.transpose(1, 2)).transpose(1, 2)
             g, _ = self.gru(h)
             sc = torch.cat([self.site(torch.cat([g.mean(1), g[:, -1]], -1)), self.clim(clim)], -1)   # (B, 320)
@@ -324,7 +337,7 @@ def batches(n, bs):
         yield slice(i, min(i + bs, n))
 
 
-def predict_delta(net, seq, clim, y0n, ex=None):
+def predict_delta(net, seq, clim, y0n, ex=None, mz=None):
     """seq (n, 40, F), clim (n, 84) per site; y0n (15, n, 7); ex (15, n, E) -> change at year 40, metric units"""
     n = seq.shape[0]
     out = np.zeros((N_AGES, n, 2), np.float32)
@@ -336,9 +349,11 @@ def predict_delta(net, seq, clim, y0n, ex=None):
         Y0S = torch.from_numpy(np.ascontiguousarray(y0n.transpose(1, 0, 2))).to(DEV)            # (n, 15, 7)
         ES = torch.from_numpy(np.ascontiguousarray(ex.transpose(1, 0, 2))).to(DEV) if ex is not None else None
         AGT = torch.from_numpy(AGE_F).to(DEV)
+        MZS = torch.from_numpy(np.ascontiguousarray(mz)).to(DEV) if mz is not None else None
         with torch.no_grad(), torch.autocast(device_type=DEV.type, dtype=torch.float16, enabled=DEV.type == 'cuda'):
             for b in batches(n, 2048):
-                o = net(S[b], Cl[b], Y0S[b], AGT, ES[b] if ES is not None else None).float()   # (B, 15, 8)
+                o = net(S[b], Cl[b], Y0S[b], AGT, ES[b] if ES is not None else None,
+                        MZS[b] if MZS is not None else None).float()                  # (B, 15, 8)
                 out[:, b] = o[..., -2:].transpose(0, 1).cpu().numpy()
         return out
     with torch.no_grad(), torch.autocast(device_type=DEV.type, dtype=torch.float16, enabled=DEV.type == 'cuda'):
@@ -368,10 +383,12 @@ def test_predict(net, sites=None):
             seq, clim = T['F'][T['FV'][v]]
             y0 = T['Y0'][v]
             ex = T['EX'].get(v)
+            mz = T['MZ'].get(T['FV'][v]) if MONTHLY else None
             if sites is not None:
                 seq, clim, y0 = seq[sites], clim[sites], y0[:, sites]
                 ex = ex[:, sites] if ex is not None else None
-            res[f'{scn}_{v}'] = to_state(y0, predict_delta(net, seq, clim, y0_norm(y0), ex))
+                mz = mz[sites] if mz is not None else None
+            res[f'{scn}_{v}'] = to_state(y0, predict_delta(net, seq, clim, y0_norm(y0), ex, mz))
     return res
 
 
@@ -382,6 +399,7 @@ def train_one(seed, max_steps=None):
     Y0T, TG = torch.from_numpy(Y0N).to(DEV), torch.from_numpy(TGT).to(DEV)
     AG = torch.from_numpy(AGE_F).to(DEV)
     EXT = torch.from_numpy(EXG).to(DEV) if CHRONO else None
+    MZT = torch.from_numpy(MONZ).to(DEV) if MONTHLY else None
     W = torch.tensor([w for w in H_WEIGHT for _ in (0, 1)], device=DEV)
     if XAGE:                                                        # batches of sites, all 15 ages each
         tr = torch.from_numpy(TRAIN).to(DEV)
@@ -405,7 +423,8 @@ def train_one(seed, max_steps=None):
                 s = tr[perm[b]]
                 with torch.autocast(device_type=DEV.type, dtype=torch.float16, enabled=DEV.type == 'cuda'):
                     out = net(S[s], Cl[s], Y0T[:, s].transpose(0, 1), AG,
-                              EXT[:, s].transpose(0, 1) if EXT is not None else None)
+                              EXT[:, s].transpose(0, 1) if EXT is not None else None,
+                              MZT[s] if MZT is not None else None)
                 loss = (W * (out.float() - TG[:, s].transpose(0, 1)) ** 2).mean()
             else:
                 idx = tr[perm[b]]
@@ -422,7 +441,8 @@ def train_one(seed, max_steps=None):
             if step >= total:
                 break
         hp = to_state(Y0[:, HOLD], predict_delta(net, SEQ[HOLD], CLIM[HOLD], Y0N[:, HOLD],
-                                                 EXG[:, HOLD] if CHRONO else None))
+                                                 EXG[:, HOLD] if CHRONO else None,
+                                                 MONZ[HOLD] if MONTHLY else None))
         hm = float(metric(hp, Y40[:, HOLD]))
         hist.append(dict(epoch=ep + 1, train_loss=tl / max(1, step - ep * steps_ep), hold_metric=hm))
         stamp(f'seed {seed} epoch {ep + 1}/{EPOCHS}: train {hist[-1]["train_loss"]:.5f} | holdout year-40 metric {hm:.5f}')
@@ -435,7 +455,8 @@ def train_one(seed, max_steps=None):
 
 
 # %% Pre-flight (a few steps, every variant on a few test sites), then the seeds
-SUMMARY = dict(config=dict(chrono=CHRONO, xage=XAGE, d_tok=D_TOK, xage_layers=XAGE_LAYERS, seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
+assert not MONTHLY or (XAGE and CHRONO), 'NN_MONTHLY needs NN_XAGE=1 and NN_CHRONO=1'
+SUMMARY = dict(config=dict(chrono=CHRONO, xage=XAGE, monthly=MONTHLY, d_tok=D_TOK, xage_layers=XAGE_LAYERS, seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
                            horizons=HORIZONS, variants=VARIANTS, n_train=int(len(TRAIN)), n_hold=int(len(HOLD))),
                hold_persistence=float(metric(Y0[:, HOLD], Y40[:, HOLD])), seeds=[])
 if HAVE_TORCH and PREFLIGHT:

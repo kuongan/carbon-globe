@@ -86,6 +86,20 @@ second set of seeds also averages out seed noise, as with the GBM: 0.073 -> 0.07
 """
 
 
+NN_MONTHLY_DOC = """# Neural direct model, cross-age + monthly climate (training, PLAN track B4)
+
+Cross-age NN v2 (d_tok 256, 3 layers, 30 epochs; v1 alone LB 0.061) plus one new input: a small conv over the 12
+months of f0-f6 of every year (mean / max / min over the months), appended to the 40-year sequence. The collapse
+events depend on monthly extremes; until now the net only saw 5 risk summaries of them. New seeds 12-15.
+
+- **Accelerator:** GPU T4 (one GPU is used). **Internet:** off is fine. Expected time: ~4.5-6 h.
+- **Inputs:** exactly as for `kaggle_direct_nn_xage` / `xage2`.
+- **Check in the log:** `pre-flight ok`, then `holdout year-40 metric` per epoch. v2 reached 0.0229-0.0242 per seed:
+  clearly lower = the monthly input helps.
+- **Send back:** `nn_preds.npz` and `nn_summary.json`, zipped as `kaggle_direct_nn_monthly.zip`. Do not submit anything.
+"""
+
+
 def notebook(markdown, code):
     cell = lambda kind, src, **kw: dict(cell_type=kind, metadata={}, source=src.splitlines(keepends=True), **kw)
     return dict(nbformat=4, nbformat_minor=4,
@@ -129,3 +143,9 @@ for old, new in (("os.environ.get('NN_DTOK', 192)", "os.environ.get('NN_DTOK', 2
     assert old in x2, old
     x2 = x2.replace(old, new)
 write('kaggle_direct_nn_xage2.ipynb', notebook(NN_XAGE2_DOC, x2))
+xm = x2
+for old, new in (("os.environ.get('NN_MONTHLY', '0')", "os.environ.get('NN_MONTHLY', '1')"),
+                 ("'8,9,10,11' if XAGE", "'12,13,14,15' if XAGE")):
+    assert old in xm, old
+    xm = xm.replace(old, new)
+write('kaggle_direct_nn_monthly.ipynb', notebook(NN_MONTHLY_DOC, xm))
