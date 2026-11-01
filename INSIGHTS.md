@@ -161,6 +161,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 138 | `match_nnx_y0inv2.csv` (NN cross-age + chrono + rủi ro sự kiện, seed 4–7) | **0.061** | dự báo 0.067 | **model đơn tốt nhất** (trước 0.072) |
 | 139 | `submission_blend_x9f.csv` (x6 + gbmc2 + nnc + nnx − GBM cũ − NN cũ + gbmc_none) | **0.049** | 0.0488 | **tốt nhất**; lựa chọn cuối: x9f + x8f |
 | 140 | `submission_blend_x10.csv` (cấu hình x9f, nnx8 + gbmc3) | 0.049 | 0.0489 (bi quan) | lợi bớt nhiễu < mức làm tròn |
+| 141 | `match_nnm4_y0inv2.csv` (NN cross-age + khí hậu theo tháng, seed 12–15) | 0.071 | dự báo 0.0726 | gần mức "không thông tin mới": blend 0.0489 → 0.0488 ⇒ không làm file mới |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -1112,3 +1113,5 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   tin mới thật.
 - `match_nnm4_y0inv2.csv` (đủ 4 seed, không chọn theo holdout) LB dự báo 0.0726 (±0.01 → blend 0.046);
   `match_nnm3_y0inv2.csv` (bỏ seed 13) 0.0756. Nộp nnm4.
+- **nnm4 = 0.071** (#141, dự báo 0.0726): khí hậu theo tháng gần như không thêm thông tin (blend +0.0001). Các biến
+  thể NN (to hơn, thêm seed, theo tháng) đã bão hòa quanh x9f/x10 = 0.049.
