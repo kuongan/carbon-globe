@@ -79,6 +79,7 @@ CO2 = list(range(8, 32))
 #           monthly climate + state) -> event classifier on the grid, summed / timed probabilities over the 40 years
 CHRONO = os.environ.get('GBM_CHRONO', '0') == '1'
 FIRE40 = os.environ.get('GBM_FIRE40', '0') == '1'    # + every year's event probability (featlab: 0.0270 -> 0.0264)
+MAG = os.environ.get('GBM_MAG', '0') == '1'          # + expected one-year agb loss (featlab 0.0270 -> 0.0260, A6)
 EV_SEEDS, EV_ROWS, EV_ROUNDS = (6, 10, 14), 2_000_000, 600      # seed ages 100 / 300 / 500 label the events
 KEEP = [j for j in range(N_CONS) if j not in CO2 and j != 32]   # 111 features: no CO2 block, no constant
 MON = list(range(7))      # f0-f6 also kept monthly; f7's test seasonal amplitude is ~20x the grid's -> annual mean only
@@ -295,11 +296,25 @@ def risk_feats(clf, y0, A, M):
     return out
 
 
+def mag_feats(reg, y0, A, M):
+    """(15, n, 4) expected one-year agb loss at the y0 state over the 40 years: sum, max, last decade, survival"""
+    n = y0.shape[1]; out = np.zeros((N_AGES, n, 4), np.float32)
+    for s0 in range(0, n, 4096):
+        sl = slice(s0, min(s0 + 4096, n))
+        for a in range(N_AGES):
+            L = np.stack([reg.predict(ev_X(y0[a, sl], t, A[sl, t], A[sl, max(t - 1, 0)], M[sl, t], M[sl, max(t - 1, 0)]))
+                          for t in range(N_YEAR)], 1)
+            out[a, sl] = np.stack([L.sum(1), L.max(1), L[:, 30:].sum(1), np.prod(1 - np.clip(L, 0, 1), 1)], 1)
+    return out
+
+
 if CHRONO:
     DNAMES += ([f'chr_{v}{a}' for a in SEED_AGES for v in ('h', 'a')] + ['chr_ana_h', 'chr_ana_a', 'chr_gap_h',
                'chr_gap_a', 'risk_sum', 'risk_max', 'risk_tw', 'risk_last10', 'risk_peak'])
     if FIRE40:
         DNAMES += [f'risk_y{t}' for t in range(N_YEAR)]
+    if MAG:
+        DNAMES += ['mag_sum', 'mag_max', 'mag_last10', 'mag_surv']
 
 
 def direct_predict(models, y0, clim, extra=None):
@@ -321,6 +336,7 @@ if RUN_DIRECT:
         st_ = y_all[a_, s_, t_]; nx_ = y_all[a_, s_, t_ + 1]
         keep_ = st_[:, 1] > 0
         lab_ = (nx_[:, 1] < 0.7 * st_[:, 1])[keep_]
+        loss_ = np.clip(1 - nx_[:, 1] / np.maximum(st_[:, 1], 1e-6), 0, 1)[keep_]
         s_, t_, st_ = s_[keep_], t_[keep_], st_[keep_]
         tp_ = np.maximum(t_ - 1, 0)
         Xe = np.concatenate([M_all[s_, t_].reshape(len(s_), -1), M_all[s_, tp_].reshape(len(s_), -1),
@@ -328,14 +344,20 @@ if RUN_DIRECT:
         CLF = lgb.train(dict(objective='binary', learning_rate=0.05, num_leaves=63, min_data_in_leaf=100,
                              feature_fraction=0.7, bagging_fraction=0.7, bagging_freq=1, verbose=-1, seed=SEED,
                              num_threads=PARAMS['num_threads']), lgb.Dataset(Xe, lab_.astype(np.float32)), EV_ROUNDS)
+        REG = None
+        if MAG:
+            REG = lgb.train(dict(objective='l2', learning_rate=0.05, num_leaves=63, min_data_in_leaf=100,
+                                 feature_fraction=0.7, bagging_fraction=0.7, bagging_freq=1, verbose=-1, seed=SEED,
+                                 num_threads=PARAMS['num_threads']), lgb.Dataset(Xe, loss_.astype(np.float32)), EV_ROUNDS)
         del Xe; gc.collect()
-        stamp(f'event classifier: {len(lab_):,} site-years, event rate {lab_.mean():.4f}')
+        stamp(f'event classifier: {len(lab_):,} site-years, event rate {lab_.mean():.4f} | magnitude model {MAG}')
 
         def extra_of(idx):
             parts = []
             for i in range(0, len(idx), 4096):
                 j = idx[i:i + 4096]; y0_ = y_all[:, j, 0]
-                parts.append(np.concatenate([chrono_feats(y0_), risk_feats(CLF, y0_, A_all[j], M_all[j])], 2))
+                parts.append(np.concatenate([chrono_feats(y0_), risk_feats(CLF, y0_, A_all[j], M_all[j])]
+                                            + ([mag_feats(REG, y0_, A_all[j], M_all[j])] if MAG else []), 2))
             return np.concatenate(parts, 1)
         EXTRA['train'], EXTRA['hold'] = extra_of(TRAIN), extra_of(HOLD)
         stamp('chrono + risk features done (grid)')
@@ -362,7 +384,8 @@ if RUN_DIRECT:
         key = f'direct_{v}'
         PREDS[key] = {}
         for scn, T in TEST.items():
-            ex = (np.concatenate([chrono_feats(T['y0'][v]), risk_feats(CLF, T['y0'][v], T['A'][v], T['M'][v])], 2)
+            ex = (np.concatenate([chrono_feats(T['y0'][v]), risk_feats(CLF, T['y0'][v], T['A'][v], T['M'][v])]
+                                 + ([mag_feats(REG, T['y0'][v], T['A'][v], T['M'][v])] if MAG else []), 2)
                   if CHRONO else None)
             PREDS[key][scn] = direct_predict(dmodels, T['y0'][v], direct_clim(T['A'][v], T['M'][v]), ex)
         write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}{TAG}.csv')

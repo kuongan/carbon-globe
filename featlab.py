@@ -9,6 +9,10 @@ blocks (per (site, seed age) row):
   prof7   all 7 state variables of the 15-age profile, interpolated at log(a+20) / log(a+40), log-age slope (A2)
   ratio   CUE = npp/gpp, NEP = npp - rh, agb/height, lai/height, y0/(age+5)                  (A3)
   climfp  per driver (annual means): 40-year slope, year-to-year std, first-5 / last-5 means  (A4)
+  firepath event risk along an approximate path: state at year t = the site's own y0 profile at age a+t (A5)
+  mag     expected one-year agb loss (regression, not only P(drop > 30%)) at the y0 state: sum, max, last
+          decade, expected surviving fraction prod(1 - loss)                                    (A6)
+  magpath the same along the path                                                              (A5 + A6)
 
 usage: python featlab.py <n_sites> <config> [<config> ...]   config = blocks joined by '+', e.g. base+chrono+fire
 """
@@ -90,24 +94,29 @@ if 'climfp' in NEED:
     slope_c = (ANNK * tt[None, :, None]).sum(1) / (tt ** 2).sum()
     fp = np.concatenate([slope_c, ANNK.std(1), ANNK[:, :5].mean(1), ANNK[:, -5:].mean(1)], 1)
     BLK['climfp'] = np.broadcast_to(fp[None], (15, N, fp.shape[1]))
-if NEED & {'fire', 'fire40'}:
+if NEED & {'fire', 'fire40', 'firepath', 'mag', 'magpath'}:
     PE = dict(objective='binary', learning_rate=0.05, num_leaves=63, min_data_in_leaf=100, feature_fraction=0.7,
               bagging_fraction=0.7, bagging_freq=1, verbose=-1, seed=0)
 
     def ev_X(sites, t, state):
         return np.concatenate([MON[sites, t].reshape(len(sites), -1), MON[sites, np.maximum(t - 1, 0)].reshape(len(sites), -1),
                                ANN[sites, t], state, np.asarray(t, np.float32).reshape(-1, 1) * np.ones((len(sites), 1))], 1)
-    rows, labs = [], []
+    rows, labs, loss = [], [], []
     trs = np.flatnonzero(train)
     for a, yf in YF.items():
         bb = yf[:, :, 1]
         lab = (bb[:, 1:] / np.maximum(bb[:, :-1], 1e-6) < 0.7) & (bb[:, :-1] > 0)
+        lo = np.clip(1 - bb[:, 1:] / np.maximum(bb[:, :-1], 1e-6), 0, 1)        # one-year agb loss fraction
         ni, ti = [v.ravel() for v in np.meshgrid(trs, np.arange(40), indexing='ij')]
         mm = bb[ni, ti] > 0
         ni, ti = ni[mm], ti[mm]
-        rows.append(ev_X(ni, ti, yf[ni, ti])); labs.append(lab[ni, ti])
-    clf = lgb.train(PE, lgb.Dataset(np.concatenate(rows), np.concatenate(labs).astype(np.float32)), 600)
-    del rows, labs
+        rows.append(ev_X(ni, ti, yf[ni, ti])); labs.append(lab[ni, ti]); loss.append(lo[ni, ti])
+    XE = np.concatenate(rows); del rows
+    clf = lgb.train(PE, lgb.Dataset(XE, np.concatenate(labs).astype(np.float32)), 600)
+    reg = None
+    if NEED & {'mag', 'magpath'}:
+        reg = lgb.train(dict(PE, objective='l2'), lgb.Dataset(XE, np.concatenate(loss).astype(np.float32)), 600)
+    del XE, labs, loss
     RISK = np.zeros((15, N, 5), np.float32); P40 = np.zeros((15, N, 40), np.float32)
     w = np.arange(40) / 40
     for i in range(15):
@@ -118,6 +127,35 @@ if NEED & {'fire', 'fire40'}:
             RISK[i, ss] = np.stack([P_.sum(1), P_.max(1), (P_ * w).sum(1), P_[:, 30:].sum(1), P_.argmax(1) / 40], 1)
     BLK['fire'], BLK['fire40'] = RISK, P40
     stamp('event risk done')
+
+    def path_state(i, ss, t):
+        """state of seed age i at year t ~ the site's own y0 profile at age AG[i] + t (log-age interpolation)"""
+        tl = np.log(min(AG[i] + t, 500.0))
+        j = min(max(int(np.searchsorted(LAG, tl)), 1), 14); w_ = np.clip((tl - LAG[j - 1]) / (LAG[j] - LAG[j - 1]), 0, 1)
+        return (1 - w_) * y0[j - 1, ss] + w_ * y0[j, ss]
+
+    def mag_summ(L):
+        return np.stack([L.sum(1), L.max(1), L[:, 30:].sum(1), np.prod(1 - np.clip(L, 0, 1), 1)], 1)
+    if 'firepath' in NEED:
+        FP = np.zeros((15, N, 5), np.float32)
+        for i in range(15):
+            for s0 in range(0, N, 4000):
+                ss = np.arange(s0, min(s0 + 4000, N))
+                P_ = np.stack([clf.predict(ev_X(ss, np.full(len(ss), t), path_state(i, ss, t))) for t in range(40)], 1)
+                FP[i, ss] = np.stack([P_.sum(1), P_.max(1), (P_ * w).sum(1), P_[:, 30:].sum(1), P_.argmax(1) / 40], 1)
+        BLK['firepath'] = FP
+        stamp('event risk along the path done')
+    for name, along in (('mag', False), ('magpath', True)):
+        if name in NEED:
+            MG = np.zeros((15, N, 4), np.float32)
+            for i in range(15):
+                for s0 in range(0, N, 4000):
+                    ss = np.arange(s0, min(s0 + 4000, N))
+                    L = np.stack([reg.predict(ev_X(ss, np.full(len(ss), t), path_state(i, ss, t) if along else y0[i, ss]))
+                                  for t in range(40)], 1)
+                    MG[i, ss] = mag_summ(L)
+            BLK[name] = MG
+            stamp(f'{name} done')
 
 
 def feats(sites, blocks):
