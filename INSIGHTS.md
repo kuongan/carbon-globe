@@ -1116,3 +1116,15 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   `match_nnm3_y0inv2.csv` (bỏ seed 13) 0.0756. Nộp nnm4.
 - **nnm4 = 0.071** (#141, dự báo 0.0726): khí hậu theo tháng gần như không thêm thông tin (blend +0.0001). Các biến
   thể NN (to hơn, thêm seed, theo tháng) đã bão hòa quanh x9f/x10 = 0.049.
+
+### 4.50 A5/A6: mức độ mất sinh khối (featlab + model đầy đủ, `GBM_MAG=1`) [cục bộ + đại số]
+
+- featlab (20k, cùng split): chrono + fire 0.0270; + mag (hồi quy tỷ lệ agb mất mỗi năm → tổng / max / thập kỷ cuối /
+  tỷ lệ còn lại kỳ vọng) **0.0260**, lợi đều ở mọi tuổi ≥ 50; + firepath / magpath (trạng thái năm t = profile y0
+  tại tuổi a+t) 0.0271 / 0.0273 ⇒ không giúp.
+- Model đầy đủ (`result/gbm/gbm_preds_mag.npz`, seed 42, cùng split với gbmc): holdout **0.0234** (gbmc 0.0245, −4.5%:
+  xác nhận, khác fire40). Khoảng cách hai kịch bản tăng gấp đôi (msd ssp126/ssp585 0.016 so với 0.009): mức mất phản
+  ứng với khí hậu từng kịch bản.
+- Khớp trung bình `result/match_gbmg_{y0inv2,y0inv,none}.csv` (ingest `gbmg_*`). msd gbmg_y0inv2 tới gbmc 0.027, tới
+  nnx8 0.048, tới x10 0.053 ⇒ rất khác. `rank_members` (gốc = thành viên x10 + gbmc3i + nnm4): LB dự báo **0.101**
+  (±0.01 → 0.047, ±0.02 → 0.044). Nộp `match_gbmg_y0inv2.csv`.

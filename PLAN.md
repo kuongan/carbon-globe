@@ -26,9 +26,10 @@ Slots are plentiful: submit every real candidate, but only after a local check.
       historical accumulation rate y0/(age+5).
 - [x] A4 (worse, 0.0285) climate trajectory fingerprint for the drivers the model uses (f0-f7, v1-v4 groups): 40-year slope, year-to-
       year std, first-5 / last-5 year means, warming (last decade - first decade) (ForestCast, 0.142->0.060 notebook).
-- [ ] A5 event risk along the trajectory, not only at y0: two-stage (stage-1 predicted y20/y40 -> recompute risk at
+- [x] A5 (no gain: path = own profile at age a+t) event risk along the trajectory, not only at y0: two-stage (stage-1 predicted y20/y40 -> recompute risk at
       the interpolated state), and "years since the last high-risk year" at year 40.
-- [ ] A6 event magnitude: regress the one-year agb loss (not only P(drop > 30%)); expected cumulative loss feature.
+- [x] A6 DONE: full holdout 0.0245 -> 0.0234; SUBMIT `result/match_gbmg_y0inv2.csv` (pred 0.101, very different).
+      Event magnitude: regress the one-year agb loss (not only P(drop > 30%)); expected cumulative loss feature.
 - [ ] A7 stage-2 stacking: out-of-fold stage-1 predictions of all 15 ages of the site as features (cross-age
       consistency; EcoPhysNet reports 0.0115 -> 0.0100 OOF).
 - [ ] A8 age-regime models (1-30 / 50-150 / 200-500) vs one model; per-variable target transforms (agb log-ratio).
