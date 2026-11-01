@@ -1092,3 +1092,10 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   0.0503 → 0.0493. Bỏ x6 làm tệ hẳn (0.059: các LSTM cũ trong x6 vẫn mang thông tin riêng).
   `submission_blend_x9f.csv` = x6 0.64 + gbmc2 0.27 + nnc 0.10 + nnx 0.43 − GBM cũ 0.40 − NN cũ 0.15 + gbmc_none 0.10,
   ước tính **0.0488**; `submission_blend_x9.csv` (1 trọng số âm) 0.0496.
+
+### 4.48 NN cross-age v2 (B3, `result/nn_direct_xage2/`) [cục bộ + đại số]
+
+- d_tok 256, 3 lớp, 30 epoch, seed 8–11: holdout từng seed 0.0236 / 0.0237 / 0.0229 / 0.0242 (trung bình 0.0236; v1
+  0.0246), msd giữa seed 0.0051. Nhưng gần trùng v1: msd nnx2 tới nnx 0.0019 ⇒ model to hơn hội tụ về cùng hàm, lợi
+  chính là bớt nhiễu. Trung bình 8 seed cross-age (v1 + v2) `result/match_nnx8_y0inv2.csv` (msd tới nnx 0.0005).
+  `rank_members` (gốc = thành viên x9f): dự báo nnx8 0.0609, nnx2 0.0618 (không tính phần bớt nhiễu). Nộp nnx8.
