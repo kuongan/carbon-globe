@@ -1099,3 +1099,6 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   0.0246), msd giữa seed 0.0051. Nhưng gần trùng v1: msd nnx2 tới nnx 0.0019 ⇒ model to hơn hội tụ về cùng hàm, lợi
   chính là bớt nhiễu. Trung bình 8 seed cross-age (v1 + v2) `result/match_nnx8_y0inv2.csv` (msd tới nnx 0.0005).
   `rank_members` (gốc = thành viên x9f): dự báo nnx8 0.0609, nnx2 0.0618 (không tính phần bớt nhiễu). Nộp nnx8.
+- `submission_blend_x10.csv` = cấu hình x9f với nnx8 (8 seed cross-age) và gbmc3 (3 seed GBM) thay nnx / gbmc2, LB của
+  hai thành viên chưa chấm gán bằng bản ít seed hơn (bi quan) ⇒ ước tính 0.0489 (công thức không thấy phần bớt nhiễu).
+  msd tới x9f 0.00011 ⇒ lợi thật kỳ vọng ~0.0003–0.0005 (LB hiện 0.048 hoặc 0.049).
