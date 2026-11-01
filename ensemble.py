@@ -102,6 +102,7 @@ RUNS = {
     'x8f':                   (0.050, None),    # submission_blend_x8f.csv (best): x6 + gbmc2 + nnc - old GBM - old NN
     'nnx_y0inv2':            (0.061, None),    # match_nnx_y0inv2.csv: cross-age NN + chrono + event risk, seeds 4-7 (Kaggle)
     'x9f':                   (0.049, None),    # submission_blend_x9f.csv (best): x6 + gbmc2 + nnc + nnx - old GBM - old NN + gbmc_none
+    'x10':                   (0.049, None),    # submission_blend_x10.csv: x9f config with nnx8 + gbmc3 (msd to x9f 0.0001)
     'nnx8_y0inv2':           (0.061, None),    # match_nnx8_y0inv2.csv: 8-seed cross-age NN (v1 + v2), UNSCORED: LB of nnx assumed (pessimistic)
     'x7f':                   (0.054, None),    # submission_blend_x7f.csv (best): x6 + gbmc_y0inv2 - old GBM y0inv2
     'x7':                    (0.057, None),    # submission_blend_x7.csv: x6 + gbmc_y0inv2, no negative weight

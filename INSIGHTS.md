@@ -160,6 +160,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 136–137 | `yp_x8f_ssp126` / `yp_x8f_ssp585` (bước young trên x8f, từng kịch bản; 0.053 = vô ích) | 0.053 / 0.054 | 0.053 mỗi file | x8f không cần hiệu chỉnh tuổi nữa (ssp585: bước −0.018, lợi 0.0001) |
 | 138 | `match_nnx_y0inv2.csv` (NN cross-age + chrono + rủi ro sự kiện, seed 4–7) | **0.061** | dự báo 0.067 | **model đơn tốt nhất** (trước 0.072) |
 | 139 | `submission_blend_x9f.csv` (x6 + gbmc2 + nnc + nnx − GBM cũ − NN cũ + gbmc_none) | **0.049** | 0.0488 | **tốt nhất**; lựa chọn cuối: x9f + x8f |
+| 140 | `submission_blend_x10.csv` (cấu hình x9f, nnx8 + gbmc3) | 0.049 | 0.0489 (bi quan) | lợi bớt nhiễu < mức làm tròn |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
