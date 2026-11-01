@@ -1103,3 +1103,12 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - `submission_blend_x10.csv` = cấu hình x9f với nnx8 (8 seed cross-age) và gbmc3 (3 seed GBM) thay nnx / gbmc2, LB của
   hai thành viên chưa chấm gán bằng bản ít seed hơn (bi quan) ⇒ ước tính 0.0489 (công thức không thấy phần bớt nhiễu).
   msd tới x9f 0.00011 ⇒ lợi thật kỳ vọng ~0.0003–0.0005 (LB hiện 0.048 hoặc 0.049).
+
+### 4.49 NN cross-age + khí hậu theo tháng (B4, `NN_MONTHLY=1`, `result/nn_direct_monthly/`) [cục bộ + đại số]
+
+- Conv nhỏ qua 12 tháng f0–f6 của từng năm (mean/max/min) ghép vào chuỗi 40 năm; v2 config, seed 12–15. Holdout
+  0.0224 / **0.0284** / **0.0212** / 0.0237 (trung bình 0.0240 ≈ v2 0.0236; seed 14 tốt nhất từ trước tới nay, seed 13
+  hỏng). msd giữa seed 0.0096–0.0188 (v2: ~0.005) ⇒ model nhiễu hơn. msd tới nnx8 0.0083 (v2 tới v1 0.0019) ⇒ thông
+  tin mới thật.
+- `match_nnm4_y0inv2.csv` (đủ 4 seed, không chọn theo holdout) LB dự báo 0.0726 (±0.01 → blend 0.046);
+  `match_nnm3_y0inv2.csv` (bỏ seed 13) 0.0756. Nộp nnm4.
