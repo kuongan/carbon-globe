@@ -1,7 +1,7 @@
 # Plan and runbook
 
 ## FINAL (2026-11-08): 5 days, 4 slots/day; top 1-2 = 0.025 -> clean, reproducible final
-1. Submit `result/submission_blend_flat6.csv` (6 single models, one blend layer, est 0.0487).
+1. DONE flat6 = 0.049 (= x9f). Final picks: **flat6 (main, reproducible) + x9f**.
 2. Build `final/`: README (which script makes each member), `final/make_submission.ipynb` (member predictions ->
    mean matching -> fixed weights -> submission.csv, checked against the submitted file).
 3. Final picks: flat6 (if >= as good as x9f) + x9f.

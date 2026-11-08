@@ -164,6 +164,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 141 | `match_nnm4_y0inv2.csv` (NN cross-age + khí hậu theo tháng, seed 12–15) | 0.071 | dự báo 0.0726 | gần mức "không thông tin mới": blend 0.0489 → 0.0488 ⇒ không làm file mới |
 | 142 | `match_gbmc3i.csv` (GBM chrono 3 seed, biến thể y0inv) | 0.091 | dự báo 0.0938 | blend 0.0489 → 0.0486 (+ nnm4: 0.0484); chờ nnc_y0inv / nnx8i rồi làm x11 |
 | 143 | `match_gbmg_y0inv2.csv` (GBM chrono + mức độ mất sự kiện, A6) | 0.098 | dự báo 0.101 | holdout tốt hơn (0.0234) nhưng LB tệ hơn gbmc (0.073); blend +0.0001 |
+| 144 | `submission_blend_flat6.csv` (6 model đơn, một tầng blend) | **0.049** | 0.0487 | ngang x9f; **lựa chọn cuối: flat6 + x9f** |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
