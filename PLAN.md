@@ -1,5 +1,11 @@
 # Plan and runbook
 
+## FINAL (2026-11-08): 5 days, 4 slots/day; top 1-2 = 0.025 -> clean, reproducible final
+1. Submit `result/submission_blend_flat6.csv` (6 single models, one blend layer, est 0.0487).
+2. Build `final/`: README (which script makes each member), `final/make_submission.ipynb` (member predictions ->
+   mean matching -> fixed weights -> submission.csv, checked against the submitted file).
+3. Final picks: flat6 (if >= as good as x9f) + x9f.
+
 ## MASTER PLAN (2026-10-28) — goal: win (top 1 = 0.038, top 3 = 0.042; we are at 0.054)
 
 **Where we are (2026-11-01).** Best LB **0.049** (`submission_blend_x9f.csv`); best singles: cross-age NN **0.061**,

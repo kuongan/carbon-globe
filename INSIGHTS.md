@@ -1136,3 +1136,13 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   được LB; giữ mức tóm tắt rủi ro đơn giản (fire 5 số), không đi sâu hơn (A5, A6, fire40 đều không giúp trên LB).
 - `submission_blend_x11.csv` = thành viên x10 + gbmc3i + nnm4 (4 trọng số âm: GBM cũ, NN cũ, gbmc_none, gbmc3i),
   ước tính **0.0484** (x10 0.0489).
+
+### 4.51 Blend phẳng gọn cho bản cuối (2026-11-08) [đại số]
+
+- Bối cảnh: top 1–2 = 0.025, còn 5 ngày × 4 lượt. Mục tiêu: pipeline cuối gọn, tái tạo được (một tầng blend trên các
+  model đơn, không lồng x6 ← x4f ← …).
+- Tìm trên 58 model đơn đã chấm (D chuẩn hóa theo mọi dòng như `msd_alive`; bản đầu chia theo dòng sống ⇒ lạc quan
+  ~10%, đã sửa). Vét cạn: 4 thành viên tốt nhất 0.0521, 5 thành viên 0.0504. 6 thành viên (tìm cục bộ từ 4 điểm xuất
+  phát, cùng hội tụ): **flat6** = nnx8 +0.54, gbmc3i +0.40, lstm_y0inv_xinv +0.31, sw_s42ep6_y0inv_xinv +0.28,
+  rfm_none −0.26, s7_xinv −0.26 ⇒ ước tính **0.0487** (rung LB 0.0476–0.0497, 39% ≤ 0.0485), ngang x9f (0.0488 → 0.049).
+  `result/submission_blend_flat6.csv`; flat5 (bỏ s42ep6) 0.0504. msd flat6 tới x9f 0.0049.
