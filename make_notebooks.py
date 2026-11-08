@@ -149,3 +149,30 @@ for old, new in (("os.environ.get('NN_MONTHLY', '0')", "os.environ.get('NN_MONTH
     assert old in xm, old
     xm = xm.replace(old, new)
 write('kaggle_direct_nn_monthly.ipynb', notebook(NN_MONTHLY_DOC, xm))
+
+
+NL = chr(10)
+
+
+def cells_from_py(src):
+    """`# %%` / `# %% [markdown]` blocks -> notebook cells (markdown lines lose their leading '# ')"""
+    cells = []
+    for block in src.split('# %%')[1:]:
+        head, _, body = block.partition(NL)
+        if '[markdown]' in head:
+            text = NL.join(l[2:] if l.startswith('# ') else l.lstrip('#') for l in body.strip().splitlines())
+            cells.append(dict(cell_type='markdown', metadata={}, source=text.splitlines(keepends=True)))
+        else:
+            code = ((head.strip() and f'# {head.strip()}' + NL) or '') + body.strip() + NL
+            cells.append(dict(cell_type='code', metadata={}, source=code.splitlines(keepends=True),
+                              execution_count=None, outputs=[]))
+    return cells
+
+
+final_nb = dict(nbformat=4, nbformat_minor=4,
+                metadata=dict(kernelspec=dict(display_name='Python 3', language='python', name='python3'),
+                              language_info=dict(name='python')),
+                cells=cells_from_py(open('final/make_submission.py', encoding='utf-8').read()))
+with open('final/make_submission.ipynb', 'w', encoding='utf-8') as f:
+    json.dump(final_nb, f, indent=1, ensure_ascii=False)
+print('wrote final/make_submission.ipynb')

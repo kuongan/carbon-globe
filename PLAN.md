@@ -2,8 +2,8 @@
 
 ## FINAL (2026-11-08): 5 days, 4 slots/day; top 1-2 = 0.025 -> clean, reproducible final
 1. DONE flat6 = 0.049 (= x9f). Final picks: **flat6 (main, reproducible) + x9f**.
-2. Build `final/`: README (which script makes each member), `final/make_submission.ipynb` (member predictions ->
-   mean matching -> fixed weights -> submission.csv, checked against the submitted file).
+2. DONE `final/`: README (provenance of each member), `final/make_submission.py` / `.ipynb` (raw outputs -> seed
+   averages -> map / mean match -> closed-form weights -> `final/submission.csv`; max |diff| to the scored file 3e-7).
 3. Final picks: flat6 (if >= as good as x9f) + x9f.
 
 ## MASTER PLAN (2026-10-28) — goal: win (top 1 = 0.038, top 3 = 0.042; we are at 0.054)
