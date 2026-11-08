@@ -163,6 +163,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 140 | `submission_blend_x10.csv` (cấu hình x9f, nnx8 + gbmc3) | 0.049 | 0.0489 (bi quan) | lợi bớt nhiễu < mức làm tròn |
 | 141 | `match_nnm4_y0inv2.csv` (NN cross-age + khí hậu theo tháng, seed 12–15) | 0.071 | dự báo 0.0726 | gần mức "không thông tin mới": blend 0.0489 → 0.0488 ⇒ không làm file mới |
 | 142 | `match_gbmc3i.csv` (GBM chrono 3 seed, biến thể y0inv) | 0.091 | dự báo 0.0938 | blend 0.0489 → 0.0486 (+ nnm4: 0.0484); chờ nnc_y0inv / nnx8i rồi làm x11 |
+| 143 | `match_gbmg_y0inv2.csv` (GBM chrono + mức độ mất sự kiện, A6) | 0.098 | dự báo 0.101 | holdout tốt hơn (0.0234) nhưng LB tệ hơn gbmc (0.073); blend +0.0001 |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -1128,3 +1129,10 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - Khớp trung bình `result/match_gbmg_{y0inv2,y0inv,none}.csv` (ingest `gbmg_*`). msd gbmg_y0inv2 tới gbmc 0.027, tới
   nnx8 0.048, tới x10 0.053 ⇒ rất khác. `rank_members` (gốc = thành viên x10 + gbmc3i + nnm4): LB dự báo **0.101**
   (±0.01 → 0.047, ±0.02 → 0.044). Nộp `match_gbmg_y0inv2.csv`.
+- **Kết quả: gbmg_y0inv2 = 0.098** (#143), gần mức "không thông tin mới" (0.101) và tệ hơn hẳn gbmc 0.073, dù holdout
+  lịch sử tốt hơn (0.0234 so với 0.0245). Cùng hiện tượng với emulator của đội 0.060 (bắt sụt tốt trên lịch sử, đơn
+  lẻ 0.144 trên LB): mô hình hóa sự kiện chi tiết hơn học khí hậu sụt của lịch sử, rồi ngoại suy sai sang khí hậu
+  tương lai (khoảng cách hai kịch bản gấp đôi). **Bài học:** với đặc trưng sự kiện, holdout lịch sử không xếp hạng
+  được LB; giữ mức tóm tắt rủi ro đơn giản (fire 5 số), không đi sâu hơn (A5, A6, fire40 đều không giúp trên LB).
+- `submission_blend_x11.csv` = thành viên x10 + gbmc3i + nnm4 (4 trọng số âm: GBM cũ, NN cũ, gbmc_none, gbmc3i),
+  ước tính **0.0484** (x10 0.0489).

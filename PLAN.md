@@ -28,7 +28,7 @@ Slots are plentiful: submit every real candidate, but only after a local check.
       year std, first-5 / last-5 year means, warming (last decade - first decade) (ForestCast, 0.142->0.060 notebook).
 - [x] A5 (no gain: path = own profile at age a+t) event risk along the trajectory, not only at y0: two-stage (stage-1 predicted y20/y40 -> recompute risk at
       the interpolated state), and "years since the last high-risk year" at year 40.
-- [x] A6 DONE: full holdout 0.0245 -> 0.0234; SUBMIT `result/match_gbmg_y0inv2.csv` (pred 0.101, very different).
+- [x] A6 DEAD on LB: holdout 0.0234 but LB 0.098 (gbmc 0.073); detailed event modelling extrapolates badly.
       Event magnitude: regress the one-year agb loss (not only P(drop > 30%)); expected cumulative loss feature.
 - [ ] A7 stage-2 stacking: out-of-fold stage-1 predictions of all 15 ages of the site as features (cross-age
       consistency; EcoPhysNet reports 0.0115 -> 0.0100 OOF).
