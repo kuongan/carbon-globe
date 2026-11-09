@@ -30,7 +30,8 @@ import lightgbm as lgb
 import glob
 
 T0 = time.time()
-if os.path.isdir('/kaggle/input'):
+KAGGLE = os.path.isdir('/kaggle/input')
+if KAGGLE:
     COMP = '/kaggle/input/competitions/ieee-bigdata-cup-2026-ai-emulation-challenge/public'
     BASE = '/kaggle/input/datasets/zhihaow/carbonglobe'
     OUT = '/kaggle/working'
@@ -60,10 +61,11 @@ HOLD_FRAC, BLOCK_DEG = 0.08, 10       # holdout = 8% of 10-degree blocks (neighb
 ROLL_ROWS, ROLL_VAL_ROWS = 2_000_000, 200_000        # one-step (site, age, year) rows sampled for the rollout model
                                                      # (peak RAM ~6 GB; 3M rows on Kaggle's 30 GB is fine too)
 STATE_CEIL = 2.0                      # rollout states capped at 2x the grid maximum (as in the LSTM notebook)
-LOAD_CHUNK = 1024
+LOAD_CHUNK = 4096 if KAGGLE else 1024                # Kaggle CPU sessions have ~30 GB RAM
 PARAMS = dict(objective='l2', learning_rate=0.05, num_leaves=127, min_data_in_leaf=200,
               feature_fraction=0.5, bagging_fraction=0.7, bagging_freq=1, lambda_l2=1.0, max_bin=127,
-              num_threads=max(1, (os.cpu_count() or 4) - 2), verbose=-1, seed=SEED)   # leave 2 cores free
+              num_threads=(os.cpu_count() or 4) if KAGGLE else max(1, (os.cpu_count() or 4) - 2),   # local: 2 cores free
+              verbose=-1, seed=SEED)
 DIRECT_ROUNDS, ROLL_ROUNDS, ES_ROUNDS = 5000, 3000, 100
 # env GBM_BOOSTING=rf (INSIGHTS 4.33): LightGBM's random-forest mode, i.e. bagged deep trees averaged instead of
 # boosted, a different tree family from the same library (XGBoost / CatBoost would be more boosting)
@@ -83,7 +85,8 @@ MAG = os.environ.get('GBM_MAG', '0') == '1'          # + expected one-year agb l
 # GBM_ANCHOR=1: the direct target is y40 - (the site's own y0 at age a+40) instead of y40 - own y0: the level comes
 # from the site's chronosequence (in the same space as the answer), the trees only learn the correction
 ANCHOR = os.environ.get('GBM_ANCHOR', '0') == '1'
-EV_SEEDS, EV_ROWS, EV_ROUNDS = (6, 10, 14), 2_000_000, 600      # seed ages 100 / 300 / 500 label the events
+EV_SEEDS, EV_ROUNDS = (6, 10, 14), 600                           # seed ages 100 / 300 / 500 label the events
+EV_ROWS = 4_000_000 if KAGGLE else 2_000_000                     # event-classifier rows (Kaggle: more RAM)
 KEEP = [j for j in range(N_CONS) if j not in CO2 and j != 32]   # 111 features: no CO2 block, no constant
 MON = list(range(7))      # f0-f6 also kept monthly; f7's test seasonal amplitude is ~20x the grid's -> annual mean only
 V2 = list(range(34, 129, 4))
