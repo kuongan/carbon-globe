@@ -1153,3 +1153,13 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - Mục tiêu y40 − y0(tuổi a+40 của chính site) thay cho y40 − y0 của chính tuổi. Holdout **0.0247** (gbmc 0.0245): không
   giúp. msd tới gbmc 0.0073 (≈ nhiễu seed 0.006) ⇒ dự báo tương lai gần như không đổi: các đặc trưng chuỗi tuổi đã
   cho cây đủ thông tin mức nền. `match_gbma_y0inv2.csv`, LB dự báo (gốc flat6) 0.0763; không đáng slot.
+
+### 4.53 Hệ số "thời kỳ" của từng site: trạng thái đầu 2015 (test) so với 1981 (lưới) [cục bộ, chờ LB]
+
+- Cùng site (97% khớp, `_matched_traj.npz` J) và cùng tuổi gieo: height y0 test (map chính xác) / y0 lưới có trung vị
+  **1.00** (không có tăng tốc chung) nhưng một **hệ số riêng theo site**: sd log 0.20, nhất quán giữa tuổi 10–50
+  (tương quan 0.93–0.96; 50–100 0.47, 250–500 0.81); hệ số agb tương quan 0.60. Gần như không liên quan đến thay đổi
+  khí hậu 1981→2015 (|tương quan| ≤ 0.15), hơi liên quan mức nhiệt (0.26). Tuổi 1: trung vị 0.94. `result/era_factor.npz`.
+- Chưa model nào thấy tín hiệu này (chúng chỉ thấy y0 test, không thấy cặp với y0 lưới). Probe `eraprobe.py`: tăng
+  trưởng dự báo của flat6 × z(log hệ số height), cả hai kịch bản, trung bình 0 theo biến ⇒ `result/ep_flat6.csv`
+  (bước 0.169; 0.052 = vô ích). Giải: `python eraprobe.py solve flat6 0.049 <LB>`.
