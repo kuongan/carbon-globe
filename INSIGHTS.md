@@ -1163,3 +1163,6 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - Chưa model nào thấy tín hiệu này (chúng chỉ thấy y0 test, không thấy cặp với y0 lưới). Probe `eraprobe.py`: tăng
   trưởng dự báo của flat6 × z(log hệ số height), cả hai kịch bản, trung bình 0 theo biến ⇒ `result/ep_flat6.csv`
   (bước 0.169; 0.052 = vô ích). Giải: `python eraprobe.py solve flat6 0.049 <LB>`.
+- Thêm 2 hướng trực giao (`eraprobe.py make2`): `level` (toàn bộ mức trên số 0 × z, bước 0.071) và `young` (tăng trưởng
+  × z chỉ tuổi ≤ 50, bước 0.347) ⇒ `result/ep_flat6_level.csv`, `result/ep_flat6_young.csv` (0.052 = vô ích mỗi
+  file). Giải cả ba: `python eraprobe.py solve flat6 0.049 <growth> <level> <young>`.
