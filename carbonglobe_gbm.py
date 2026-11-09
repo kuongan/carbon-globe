@@ -80,6 +80,9 @@ CO2 = list(range(8, 32))
 CHRONO = os.environ.get('GBM_CHRONO', '0') == '1'
 FIRE40 = os.environ.get('GBM_FIRE40', '0') == '1'    # + every year's event probability (featlab: 0.0270 -> 0.0264)
 MAG = os.environ.get('GBM_MAG', '0') == '1'          # + expected one-year agb loss (featlab 0.0270 -> 0.0260, A6)
+# GBM_ANCHOR=1: the direct target is y40 - (the site's own y0 at age a+40) instead of y40 - own y0: the level comes
+# from the site's chronosequence (in the same space as the answer), the trees only learn the correction
+ANCHOR = os.environ.get('GBM_ANCHOR', '0') == '1'
 EV_SEEDS, EV_ROWS, EV_ROUNDS = (6, 10, 14), 2_000_000, 600      # seed ages 100 / 300 / 500 label the events
 KEEP = [j for j in range(N_CONS) if j not in CO2 and j != 32]   # 111 features: no CO2 block, no constant
 MON = list(range(7))      # f0-f6 also kept monthly; f7's test seasonal amplitude is ~20x the grid's -> annual mean only
@@ -317,12 +320,18 @@ if CHRONO:
         DNAMES += ['mag_sum', 'mag_max', 'mag_last10', 'mag_surv']
 
 
+def base_of(y0):
+    """the level the direct model predicts a change from: own y0, or (GBM_ANCHOR) the site's y0 at age a+40"""
+    return chrono_feats(y0)[..., 30:32] if ANCHOR else y0[..., :2]
+
+
 def direct_predict(models, y0, clim, extra=None):
     X = direct_X(y0, clim, extra)
     p = y0.copy()                                     # channels 2-6 are not predicted: left at y0 (not scored)
     dead = (y0[..., 0] == 0) & (y0[..., 1] == 0)      # on the grid a dead stand stays dead for 40 years (100%)
+    base = base_of(y0)
     for k, m in models.items():
-        p[..., k] = np.where(dead, 0.0, np.clip(y0[..., k] + m.predict(X).reshape(N_AGES, -1), 0.0, CEIL[k]))
+        p[..., k] = np.where(dead, 0.0, np.clip(base[..., k] + m.predict(X).reshape(N_AGES, -1), 0.0, CEIL[k]))
     return p
 
 
@@ -366,8 +375,8 @@ if RUN_DIRECT:
     assert Xtr.shape[1] == len(DNAMES), (Xtr.shape, len(DNAMES))
     dmodels = {}
     for k in (0, 1):
-        ytr = (y_all[:, TRAIN, N_YEAR, k] - y_all[:, TRAIN, 0, k]).reshape(-1)
-        yva = (hold_y40[..., k] - hold_y0[..., k]).reshape(-1)
+        ytr = (y_all[:, TRAIN, N_YEAR, k] - base_of(y_all[:, TRAIN, 0])[..., k]).reshape(-1)
+        yva = (hold_y40[..., k] - base_of(hold_y0)[..., k]).reshape(-1)
         dtr = lgb.Dataset(Xtr, ytr, feature_name=DNAMES, params=PARAMS, free_raw_data=False)
         dva = lgb.Dataset(Xva, yva, reference=dtr, params=PARAMS)
         dmodels[k] = lgb.train(PARAMS, dtr, DIRECT_ROUNDS, valid_sets=[dva], valid_names=['hold'],

@@ -5,6 +5,8 @@
 2. DONE `final/`: README (provenance of each member), `final/make_submission.py` / `.ipynb` (raw outputs -> seed
    averages -> map / mean match -> closed-form weights -> `final/submission.csv`; max |diff| to the scored file 3e-7).
 3. Final picks: flat6 (if >= as good as x9f) + x9f.
+4. Push for 0.044 (top 10): chronosequence-anchored target, `kaggle_notebooks/kaggle_gbm_anchor.ipynb` (CPU,
+   `GBM_ANCHOR=1`); compare holdout with 0.0245, then mean-match + submit + flat re-blend.
 
 ## MASTER PLAN (2026-10-28) — goal: win (top 1 = 0.038, top 3 = 0.042; we are at 0.054)
 

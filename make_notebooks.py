@@ -151,6 +151,30 @@ for old, new in (("os.environ.get('NN_MONTHLY', '0')", "os.environ.get('NN_MONTH
 write('kaggle_direct_nn_monthly.ipynb', notebook(NN_MONTHLY_DOC, xm))
 
 
+GBM_ANCHOR_DOC = """# LightGBM direct, chronosequence-anchored target (CPU, final push for 0.044)
+
+The chrono GBM (`GBM_CHRONO=1`, LB 0.073 alone) predicts `y40 - own y0`. Here the target is
+`y40 - (the site's own y0 at age a+40)`: on the grid that anchor alone is already close for young stands (age 1:
+0.037 vs persistence 0.93), and the test provides the same 15-age profile per site. The trees then learn only the
+correction, so less of the level depends on extrapolating the historical dynamics. Same features, seed 42 (same
+holdout as the chrono GBM, 0.0245), variants y0inv / y0inv2 / none.
+
+- **Accelerator:** none (CPU). **Internet:** off is fine. Expected time: ~45-75 min on Kaggle CPU.
+- **Inputs:** competition data, `zhihaow/carbonglobe`, and a dataset holding `test_maps.npz` (e.g. `noco2-ep4`).
+- **Check in the log:** `event classifier ...`, then `direct holdout metric X` (chrono GBM without the anchor:
+  0.0245 on this same holdout: lower is good).
+- **Send back:** `gbm_preds_anchor.npz`, `gbm_summary_anchor.json` (zip as `kaggle_gbm_anchor.zip`). Do not submit.
+"""
+gbm_code = open('carbonglobe_gbm.py', encoding='utf-8').read()
+for old, new in (("os.environ.get('GBM_MODELS', 'direct,rollout')", "os.environ.get('GBM_MODELS', 'direct')"),
+                 ("os.environ.get('GBM_TAG', '')", "os.environ.get('GBM_TAG', '_anchor')"),
+                 ("os.environ.get('GBM_VARIANTS', 'inv,y0inv')", "os.environ.get('GBM_VARIANTS', 'y0inv,y0inv2,none')"),
+                 ("os.environ.get('GBM_CHRONO', '0')", "os.environ.get('GBM_CHRONO', '1')"),
+                 ("os.environ.get('GBM_ANCHOR', '0')", "os.environ.get('GBM_ANCHOR', '1')")):
+    assert old in gbm_code, old
+    gbm_code = gbm_code.replace(old, new)
+write('kaggle_gbm_anchor.ipynb', notebook(GBM_ANCHOR_DOC, gbm_code))
+
 NL = chr(10)
 
 

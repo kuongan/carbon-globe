@@ -162,7 +162,7 @@ def feats(sites, blocks):
     rows = []
     for i in range(15):
         f = [y0[i, sites], np.full((len(sites), 1), AG[i], np.float32), clim[sites]]
-        f += [BLK[b][i, sites] for b in blocks if b != 'base']
+        f += [BLK[b][i, sites] for b in blocks if b not in ('base', 'anchor')]
         rows.append(np.concatenate(f, 1).astype(np.float32))
     return np.concatenate(rows, 0)
 
@@ -175,12 +175,14 @@ for cfg in CONFIGS:
     blocks = cfg.split('+')
     Xtr, Xho = feats(tr, blocks), feats(ho, blocks)
     pred = np.empty((15, len(ho), 2))
+    anchor = 'anchor' in blocks                        # target = y40 - y0 at age a+40 (own chronosequence), not - own y0
     for k in (0, 1):
-        ytr = (y40[:, tr, k] - y0[:, tr, k]).reshape(-1)
-        yho = (y40[:, ho, k] - y0[:, ho, k]).reshape(-1)
+        base = ana[..., k] if anchor else y0[..., k]
+        ytr = (y40[:, tr, k] - base[:, tr]).reshape(-1)
+        yho = (y40[:, ho, k] - base[:, ho]).reshape(-1)
         m = lgb.train(P, lgb.Dataset(Xtr, ytr), 4000, valid_sets=[lgb.Dataset(Xho, yho)],
                       callbacks=[lgb.early_stopping(100, verbose=False)])
-        pred[..., k] = np.clip(y0[:, ho, k] + m.predict(Xho).reshape(15, -1), 0, None)
+        pred[..., k] = np.clip(base[:, ho] + m.predict(Xho).reshape(15, -1), 0, None)
     dead = (y0[:, ho, 0] == 0) & (y0[:, ho, 1] == 0)
     pred[dead] = 0
     e = 0.5 * (((pred[..., 0] - y40[:, ho, 0]) / H) ** 2 + ((pred[..., 1] - y40[:, ho, 1]) / A_) ** 2)
