@@ -104,6 +104,7 @@ RUNS = {
     'x9f':                   (0.049, None),    # submission_blend_x9f.csv (best): x6 + gbmc2 + nnc + nnx - old GBM - old NN + gbmc_none
     'x10':                   (0.049, None),    # submission_blend_x10.csv: x9f config with nnx8 + gbmc3 (msd to x9f 0.0001)
     'flat6':                 (0.049, None),    # submission_blend_flat6.csv (final): 6 single models, one blend layer
+    'flat6e':                (0.049, None),    # submission_blend_flat6e.csv: flat6 + era-factor level/young steps (gain < rounding)
     'nnm4_y0inv2':           (0.071, None),    # match_nnm4_y0inv2.csv: cross-age NN + monthly climate, seeds 12-15 (Kaggle)
     'gbmc3i':                (0.091, None),    # match_gbmc3i.csv: 3-seed chrono GBM, y0inv variant (y0 physical)
     'gbmg_y0inv2':           (0.098, None),    # match_gbmg_y0inv2.csv: chrono GBM + event magnitude (A6): holdout better, LB worse

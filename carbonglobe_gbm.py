@@ -43,6 +43,8 @@ os.makedirs(OUT, exist_ok=True)
 _mz = np.load(MAPS)
 MAP_XS, MAP_XB = _mz['x_s'].astype(np.float32), _mz['x_b'].astype(np.float32)
 MAP_YS, MAP_YB = _mz['y_s'].astype(np.float32), _mz['y_b'].astype(np.float32)
+if os.environ.get('GBM_YS_AGB'):                     # override the (estimated, not exact) agb slope of the y0 map
+    MAP_YS[1] = float(os.environ['GBM_YS_AGB'])
 
 SEED_AGES = [1, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 350, 400, 450, 500]
 SCENARIOS = ['ssp126', 'ssp585']
