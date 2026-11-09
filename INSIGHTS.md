@@ -1147,3 +1147,9 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   phát, cùng hội tụ): **flat6** = nnx8 +0.54, gbmc3i +0.40, lstm_y0inv_xinv +0.31, sw_s42ep6_y0inv_xinv +0.28,
   rfm_none −0.26, s7_xinv −0.26 ⇒ ước tính **0.0487** (rung LB 0.0476–0.0497, 39% ≤ 0.0485), ngang x9f (0.0488 → 0.049).
   `result/submission_blend_flat6.csv`; flat5 (bỏ s42ep6) 0.0504. msd flat6 tới x9f 0.0049.
+
+### 4.52 Mục tiêu neo vào chuỗi tuổi (`GBM_ANCHOR=1`, Kaggle CPU, `result/kaggle_gbm_anchor/`) [cục bộ]
+
+- Mục tiêu y40 − y0(tuổi a+40 của chính site) thay cho y40 − y0 của chính tuổi. Holdout **0.0247** (gbmc 0.0245): không
+  giúp. msd tới gbmc 0.0073 (≈ nhiễu seed 0.006) ⇒ dự báo tương lai gần như không đổi: các đặc trưng chuỗi tuổi đã
+  cho cây đủ thông tin mức nền. `match_gbma_y0inv2.csv`, LB dự báo (gốc flat6) 0.0763; không đáng slot.
