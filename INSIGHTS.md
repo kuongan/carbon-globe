@@ -1173,3 +1173,14 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   ⇒ lợi nhỏ theo chiều ngược (rừng có hệ số cao bị dự báo hơi cao), tổng 0.0006 (0.0002–0.0016 theo làm tròn).
   `result/submission_blend_flat6e.csv` = flat6 + hai bước đó (ước tính ~0.0481). Hệ số thời kỳ chủ yếu là khác biệt
   khởi tạo mà model đã nhớ qua y0 test, không phải tín hiệu tăng trưởng.
+
+### 4.54 NN cross-age + augmentation y0 (`NN_AUG=1`, Kaggle, `result/nn_direct_aug/`) [cục bộ + đại số]
+
+- Mỗi site, mỗi batch: height / agb của cả 15 tuổi × exp(N(0, 0.05 / 0.10)); mục tiêu là trạng thái thật, đặc trưng
+  chuỗi tuổi nhân theo. Lý do: y0 test qua phép đảo map ước lượng (slope agb 0.84 / 0.876, hệ số site 2015/1981 sd
+  0.20, y0inv2 giúp mọi model), còn y0 train chính xác.
+- v2 config, seed 16–19: holdout 0.0247 / 0.0256 / 0.0252 / 0.0259 (v2 0.0229–0.0242; holdout có y0 chính xác nên tệ
+  hơn chút là dự kiến). Dự báo test đổi nhiều: msd nna_y0inv2 tới nnx8_y0inv2 **0.033** (v1/v2 chỉ 0.0019); slope khớp
+  agb 1.01/1.10 (nnx8 0.79/0.86) ⇒ phản ứng agb khác hẳn.
+- `rank_members` (gốc flat8t): LB dự báo nna_y0inv2 0.097 (lệch 0.02 → blend 0.0448), nna_y0inv 0.130 (→ 0.0431).
+  Nộp `result/match_nna_y0inv2.csv` và `result/match_nna_y0inv.csv`.
