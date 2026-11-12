@@ -200,3 +200,8 @@ final_nb = dict(nbformat=4, nbformat_minor=4,
 with open('final/make_submission.ipynb', 'w', encoding='utf-8') as f:
     json.dump(final_nb, f, indent=1, ensure_ascii=False)
 print('wrote final/make_submission.ipynb')
+
+twins_nb = dict(final_nb, cells=cells_from_py(open('make_twins.py', encoding='utf-8').read()))
+with open('kaggle_notebooks/kaggle_twins.ipynb', 'w', encoding='utf-8') as f:
+    json.dump(twins_nb, f, indent=1, ensure_ascii=False)
+print('wrote kaggle_notebooks/kaggle_twins.ipynb')
