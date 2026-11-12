@@ -166,6 +166,8 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 143 | `match_gbmg_y0inv2.csv` (GBM chrono + mức độ mất sự kiện, A6) | 0.098 | dự báo 0.101 | holdout tốt hơn (0.0234) nhưng LB tệ hơn gbmc (0.073); blend +0.0001 |
 | 144 | `submission_blend_flat6.csv` (6 model đơn, một tầng blend) | **0.049** | 0.0487 | ngang x9f; **lựa chọn cuối: flat6 + x9f** |
 | 145–147 | `ep_flat6` / `ep_flat6_level` / `ep_flat6_young` (hệ số thời kỳ của site; 0.052 = vô ích) | 0.052 / 0.054 / 0.054 | 0.052 mỗi file | growth đúng mức vô ích; level, young: bước ngược −0.024 / −0.116, lợi 0.0003 mỗi hướng |
+| 148 | `submission_blend_flat6e.csv` (flat6 + bước level/young của hệ số site) | 0.049 | ~0.0481 | lợi dưới mức làm tròn |
+| 149–150 | `match_nnx8i.csv` / `match_nnc_y0inv.csv` (bản sinh đôi y0inv của NN cross-age / NN chrono) | 0.117 / 0.114 | 0.1157 / 0.1158 | sát mức không thông tin: flat6 + cả hai = 0.0483 (`submission_blend_flat8t.csv`) |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
