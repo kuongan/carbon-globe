@@ -149,6 +149,24 @@ for old, new in (("os.environ.get('NN_MONTHLY', '0')", "os.environ.get('NN_MONTH
     assert old in xm, old
     xm = xm.replace(old, new)
 write('kaggle_direct_nn_monthly.ipynb', notebook(NN_MONTHLY_DOC, xm))
+NN_AUG_DOC = """# Neural direct model, cross-age + y0 augmentation (training, final push)
+
+Cross-age NN v2 (d_tok 256, 3 layers, 30 epochs; v1 alone LB 0.061, the strongest member) trained with y0
+augmentation: per site and batch, height / agb of all 15 seed ages are multiplied by exp(N(0, 0.05 / 0.10)); the
+target stays the true future state and the chronosequence inputs are scaled with them. Why: the test y0 comes through
+an estimated inverse map (agb slope 0.84 vs 0.876, a per-site 2015/1981 factor of sd 0.20, and pushing y0 past
+physical helps every model), while training y0 was exact, so the net trusted y0 completely. New seeds 16-19.
+
+- **Accelerator:** GPU T4 (one GPU is used). **Internet:** off is fine. Expected time: ~4-5.5 h.
+- **Inputs:** exactly as for `kaggle_direct_nn_xage2`: competition data, `zhihaow/carbonglobe`, and the dataset
+  holding `test_maps.npz`.
+- **Check in the log:** `pre-flight ok`, then `holdout year-40 metric` per epoch. The holdout has exact y0, so it
+  may be a little WORSE than v2 (0.0229-0.0242): that is expected; the LB decides.
+- **Send back:** `nn_preds.npz` and `nn_summary.json`, zipped as `kaggle_direct_nn_aug.zip`. Do not submit anything.
+"""
+xa = x2.replace("os.environ.get('NN_AUG', '0')", "os.environ.get('NN_AUG', '1')").replace("'8,9,10,11' if XAGE", "'16,17,18,19' if XAGE")
+assert "get('NN_AUG', '1')" in xa and "'16,17,18,19'" in xa
+write('kaggle_direct_nn_aug.ipynb', notebook(NN_AUG_DOC, xa))
 
 
 GBM_ANCHOR_DOC = """# LightGBM direct, chronosequence-anchored target (CPU, final push for 0.044)

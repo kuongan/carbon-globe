@@ -57,6 +57,12 @@ os.makedirs(OUT, exist_ok=True)
 # ---- config ----
 XAGE = os.environ.get('NN_XAGE', '0') == '1'
 MONTHLY = os.environ.get('NN_MONTHLY', '0') == '1'
+# NN_AUG=1 (with NN_XAGE=1): y0 augmentation. The test y0 comes through an estimated inverse map (agb slope 0.84 vs
+# 0.876; per-site 2015/1981 factor sd 0.20; y0inv2 helps every model) while training y0 is exact, so the net trusts
+# y0 completely. Per site and batch, height / agb of all 15 ages are multiplied by exp(N(0, AUG_SD)); the target stays
+# the true year-10..40 state (change = truth - fed y0) and the chronosequence inputs are scaled consistently.
+AUG = os.environ.get('NN_AUG', '0') == '1'
+AUG_SD = (float(os.environ.get('NN_AUG_SD_H', 0.05)), float(os.environ.get('NN_AUG_SD_A', 0.10)))
 MON_CH = 32                                                   # NN_MONTHLY: channels of the per-year monthly conv
 SEEDS = [int(s) for s in os.environ.get('NN_SEEDS', '4,5,6,7' if XAGE else '0,1,2,3').split(',')]
 EPOCHS = int(os.environ.get('NN_EPOCHS', 20))
@@ -400,6 +406,13 @@ def train_one(seed, max_steps=None):
     AG = torch.from_numpy(AGE_F).to(DEV)
     EXT = torch.from_numpy(EXG).to(DEV) if CHRONO else None
     MZT = torch.from_numpy(MONZ).to(DEV) if MONTHLY else None
+    if AUG:
+        Y0RT = torch.from_numpy(np.ascontiguousarray(Y0[..., :2])).to(DEV)              # (15, N, 2) physical
+        YM2, YS2 = torch.tensor(Y_MEAN[:2], device=DEV), torch.tensor(Y_STD[:2], device=DEV)
+        SCT = torch.tensor(SC, device=DEV)
+        SDT = torch.tensor(AUG_SD, device=DEV)
+        COLV = torch.tensor([j % 2 for j in range(30)] + [0, 1, 0, 1], device=DEV)       # chrono column -> variable
+        EMU, ESD = torch.tensor(EX_MU[:34], device=DEV), torch.tensor(EX_SD[:34], device=DEV)
     W = torch.tensor([w for w in H_WEIGHT for _ in (0, 1)], device=DEV)
     if XAGE:                                                        # batches of sites, all 15 ages each
         tr = torch.from_numpy(TRAIN).to(DEV)
@@ -421,11 +434,21 @@ def train_one(seed, max_steps=None):
         for b in batches(n_tr, bs):
             if XAGE:
                 s = tr[perm[b]]
+                y0n, tg = Y0T[:, s].transpose(0, 1), TG[:, s].transpose(0, 1)               # (B, 15, 7), (B, 15, 8)
+                ex = EXT[:, s].transpose(0, 1) if EXT is not None else None
+                if AUG:
+                    f = torch.exp(torch.randn(len(s), 1, 2, device=DEV) * SDT)             # per site, per variable
+                    y0r = Y0RT[:, s].transpose(0, 1)
+                    fed = y0r * f
+                    y0n = y0n.clone(); y0n[..., :2] = (fed - YM2) / YS2
+                    tg = tg + ((y0r - fed) / SCT).repeat(1, 1, len(HORIZONS))              # change from the fed y0
+                    if ex is not None:
+                        ex = ex.clone()
+                        raw = ex[..., :34] * ESD + EMU
+                        ex[..., :34] = (raw * f[..., COLV] - EMU) / ESD
                 with torch.autocast(device_type=DEV.type, dtype=torch.float16, enabled=DEV.type == 'cuda'):
-                    out = net(S[s], Cl[s], Y0T[:, s].transpose(0, 1), AG,
-                              EXT[:, s].transpose(0, 1) if EXT is not None else None,
-                              MZT[s] if MZT is not None else None)
-                loss = (W * (out.float() - TG[:, s].transpose(0, 1)) ** 2).mean()
+                    out = net(S[s], Cl[s], y0n, AG, ex, MZT[s] if MZT is not None else None)
+                loss = (W * (out.float() - tg) ** 2).mean()
             else:
                 idx = tr[perm[b]]
                 a, s = idx[:, 0], idx[:, 1]
@@ -456,7 +479,8 @@ def train_one(seed, max_steps=None):
 
 # %% Pre-flight (a few steps, every variant on a few test sites), then the seeds
 assert not MONTHLY or (XAGE and CHRONO), 'NN_MONTHLY needs NN_XAGE=1 and NN_CHRONO=1'
-SUMMARY = dict(config=dict(chrono=CHRONO, xage=XAGE, monthly=MONTHLY, d_tok=D_TOK, xage_layers=XAGE_LAYERS, seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
+assert not AUG or (XAGE and CHRONO), 'NN_AUG needs NN_XAGE=1 and NN_CHRONO=1'
+SUMMARY = dict(config=dict(chrono=CHRONO, xage=XAGE, monthly=MONTHLY, aug=AUG, aug_sd=AUG_SD, d_tok=D_TOK, xage_layers=XAGE_LAYERS, seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
                            horizons=HORIZONS, variants=VARIANTS, n_train=int(len(TRAIN)), n_hold=int(len(HOLD))),
                hold_persistence=float(metric(Y0[:, HOLD], Y40[:, HOLD])), seeds=[])
 if HAVE_TORCH and PREFLIGHT:
