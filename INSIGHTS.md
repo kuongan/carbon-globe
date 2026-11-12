@@ -168,6 +168,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 145–147 | `ep_flat6` / `ep_flat6_level` / `ep_flat6_young` (hệ số thời kỳ của site; 0.052 = vô ích) | 0.052 / 0.054 / 0.054 | 0.052 mỗi file | growth đúng mức vô ích; level, young: bước ngược −0.024 / −0.116, lợi 0.0003 mỗi hướng |
 | 148 | `submission_blend_flat6e.csv` (flat6 + bước level/young của hệ số site) | 0.049 | ~0.0481 | lợi dưới mức làm tròn |
 | 149–150 | `match_nnx8i.csv` / `match_nnc_y0inv.csv` (bản sinh đôi y0inv của NN cross-age / NN chrono) | 0.117 / 0.114 | 0.1157 / 0.1158 | sát mức không thông tin: flat6 + cả hai = 0.0483 (`submission_blend_flat8t.csv`) |
+| 151–152 | `match_nna_y0inv2.csv` / `match_nna_y0inv.csv` (NN cross-age + augmentation y0) | 0.096 / 0.130 | 0.0974 / 0.1304 | đúng mức không thông tin: augmentation đổi dự báo nhưng không theo hướng có ích |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -1184,3 +1185,5 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   agb 1.01/1.10 (nnx8 0.79/0.86) ⇒ phản ứng agb khác hẳn.
 - `rank_members` (gốc flat8t): LB dự báo nna_y0inv2 0.097 (lệch 0.02 → blend 0.0448), nna_y0inv 0.130 (→ 0.0431).
   Nộp `result/match_nna_y0inv2.csv` và `result/match_nna_y0inv.csv`.
+- **Kết quả** (#151–152): 0.096 / 0.130 = đúng dự báo "không thông tin mới" ⇒ augmentation y0 không giúp; model dựa ít
+  vào y0 hơn nhưng phần thay thế (khí hậu lịch sử) không đúng hơn cho tương lai.
