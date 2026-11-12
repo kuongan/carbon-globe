@@ -192,6 +192,22 @@ for old, new in (("os.environ.get('GBM_MODELS', 'direct,rollout')", "os.environ.
     assert old in gbm_code, old
     gbm_code = gbm_code.replace(old, new)
 write('kaggle_gbm_anchor.ipynb', notebook(GBM_ANCHOR_DOC, gbm_code))
+GBM_YS_DOC = """# LightGBM direct (chrono), agb slope of the y0 map = 0.876 (CPU)
+
+The agb slope of the test map is estimated (0.84, matching means), not exact like height (0.8763 from the 0 m and
+35 m anchors); the public 0.060 notebook calibrated 0.876 on the LB. The slope sets the physical y0 agb (and the
+chronosequence inputs) the models see. Same chrono GBM as the 0.073 member (seed 42), only the input agb slope changes.
+
+- **Accelerator:** none (CPU). **Internet:** off is fine. Expected time: ~45-75 min.
+- **Inputs:** competition data, `zhihaow/carbonglobe`, and a dataset holding `test_maps.npz` (e.g. `noco2-ep4`).
+- **Send back:** `gbm_preds_ys876.npz`, `gbm_summary_ys876.json` (zip as `kaggle_gbm_ys876.zip`). Do not submit.
+"""
+ys_code = gbm_code.replace("os.environ.get('GBM_ANCHOR', '1')", "os.environ.get('GBM_ANCHOR', '0')").replace(
+    "os.environ.get('GBM_TAG', '_anchor')", "os.environ.get('GBM_TAG', '_ys876')").replace(
+    "if os.environ.get('GBM_YS_AGB'):", "if os.environ.get('GBM_YS_AGB', '0.876'):").replace(
+    "MAP_YS[1] = float(os.environ['GBM_YS_AGB'])", "MAP_YS[1] = float(os.environ.get('GBM_YS_AGB', '0.876'))")
+assert "GBM_YS_AGB', '0.876'):" in ys_code and "'GBM_ANCHOR', '0'" in ys_code and "'_ys876'" in ys_code
+write('kaggle_gbm_ys876.ipynb', notebook(GBM_YS_DOC, ys_code))
 
 NL = chr(10)
 
