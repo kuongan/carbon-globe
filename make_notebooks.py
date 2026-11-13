@@ -239,3 +239,18 @@ twins_nb = dict(final_nb, cells=cells_from_py(open('make_twins.py', encoding='ut
 with open('kaggle_notebooks/kaggle_twins.ipynb', 'w', encoding='utf-8') as f:
     json.dump(twins_nb, f, indent=1, ensure_ascii=False)
 print('wrote kaggle_notebooks/kaggle_twins.ipynb')
+
+EMU_DOC = """# Annual GRU emulator (training, PLAN track C1)
+
+A different model family for the blend: it steps through the years like ED itself (state(t) + climate of year t ->
+state(t+1), 40 times) instead of mapping y0 + a climate summary to year 40 in one step. Context: the site's mean
+climate + its chronosequence (y0 of the 15 seed ages). Loss on every year of the free rollout, year 40 x5. 3 seeds.
+The 0.060 public team's emulator scored 0.144 alone but improved their blend because its errors differ.
+
+- **Accelerator:** GPU T4 (one GPU is used). **Internet:** off is fine. Expected time: ~3-5 h.
+- **Inputs:** competition data, `zhihaow/carbonglobe`, and the dataset holding `test_maps.npz` (as for the NN notebooks).
+- **Check in the log:** `pre-flight ok` (~15 min in, after loading); then one `holdout year-40` line per epoch
+  (persistence ~0.37; the direct NNs reached ~0.024: the emulator will likely be worse, that is fine).
+- **Send back:** `emu_preds.npz` and `emu_summary.json`, zipped as `kaggle_emulator.zip` (saved after every seed).
+"""
+write('kaggle_emulator.ipynb', notebook(EMU_DOC, open('carbonglobe_emulator.py', encoding='utf-8').read()))
