@@ -169,6 +169,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 148 | `submission_blend_flat6e.csv` (flat6 + bước level/young của hệ số site) | 0.049 | ~0.0481 | lợi dưới mức làm tròn |
 | 149–150 | `match_nnx8i.csv` / `match_nnc_y0inv.csv` (bản sinh đôi y0inv của NN cross-age / NN chrono) | 0.117 / 0.114 | 0.1157 / 0.1158 | sát mức không thông tin: flat6 + cả hai = 0.0483 (`submission_blend_flat8t.csv`) |
 | 151–152 | `match_nna_y0inv2.csv` / `match_nna_y0inv.csv` (NN cross-age + augmentation y0) | 0.096 / 0.130 | 0.0974 / 0.1304 | đúng mức không thông tin: augmentation đổi dự báo nhưng không theo hướng có ích |
+| 153–164 | `cw_scn_*` / `cw_age_*` (thành viên flat6 ở một ô, flat6 ở ô kia) | scn 0.054/0.065/0.068/0.071/0.095/0.135; age 0.052/0.056/0.074/0.069/0.084/0.106 | | trọng số theo ô: scn lợi 0.0006, age 0.0005 |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -1187,3 +1188,14 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   Nộp `result/match_nna_y0inv2.csv` và `result/match_nna_y0inv.csv`.
 - **Kết quả** (#151–152): 0.096 / 0.130 = đúng dự báo "không thông tin mới" ⇒ augmentation y0 không giúp; model dựa ít
   vào y0 hơn nhưng phần thay thế (khí hậu lịch sử) không đúng hơn cho tương lai.
+
+### 4.55 Trọng số theo ô cho flat6 (`cellweights.py`) [đại số]
+
+- 6 probe lai mỗi cách chia (thành viên ở ô A, flat6 ở ô B); hằng số chưa biết (cách lỗi flat6 chia giữa hai ô) cộng
+  đều vào C nên không đổi trọng số; kiểm chứng trên pseudo-truth (x9f): khôi phục đúng trọng số bình phương tối thiểu.
+- Theo kịch bản: ssp126 dựa GBM chrono nhiều hơn (0.46 so với 0.35), ssp585 dựa NN cross-age và LSTM ep6 nhiều hơn;
+  lợi **0.0006** (rung LB: 0.0006–0.0007) ⇒ `submission_blend_flat6_scn.csv` ~0.0481.
+- Theo tuổi (≤ 50 / > 50): rừng non dựa GBM chrono nhiều hơn (0.57 so với 0.36); lợi **0.0005** (0.0004–0.0007) ⇒
+  `submission_blend_flat6_age.csv` ~0.0482.
+- GBM chrono với slope agb 0.876 ở đầu vào (`kaggle_gbm_ys876`): holdout 0.0253, msd tới bản slope 0.84 cùng seed
+  0.0033 (≈ nhiễu seed) ⇒ slope đầu vào không quan trọng; không nộp.
