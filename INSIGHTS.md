@@ -170,6 +170,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 149–150 | `match_nnx8i.csv` / `match_nnc_y0inv.csv` (bản sinh đôi y0inv của NN cross-age / NN chrono) | 0.117 / 0.114 | 0.1157 / 0.1158 | sát mức không thông tin: flat6 + cả hai = 0.0483 (`submission_blend_flat8t.csv`) |
 | 151–152 | `match_nna_y0inv2.csv` / `match_nna_y0inv.csv` (NN cross-age + augmentation y0) | 0.096 / 0.130 | 0.0974 / 0.1304 | đúng mức không thông tin: augmentation đổi dự báo nhưng không theo hướng có ích |
 | 153–164 | `cw_scn_*` / `cw_age_*` (thành viên flat6 ở một ô, flat6 ở ô kia) | scn 0.054/0.065/0.068/0.071/0.095/0.135; age 0.052/0.056/0.074/0.069/0.084/0.106 | | trọng số theo ô: scn lợi 0.0006, age 0.0005 |
+| 165–166 | `submission_blend_flat6_scn.csv` / `submission_blend_flat6_age.csv` (trọng số theo ô) | 0.049 / 0.049 | ~0.0481 / ~0.0482 | lợi dưới mức làm tròn |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -1199,3 +1200,10 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   `submission_blend_flat6_age.csv` ~0.0482.
 - GBM chrono với slope agb 0.876 ở đầu vào (`kaggle_gbm_ys876`): holdout 0.0253, msd tới bản slope 0.84 cùng seed
   0.0033 (≈ nhiễu seed) ⇒ slope đầu vào không quan trọng; không nộp.
+
+### 4.56 Lỗi của model có bền theo site không? (`persist.py`) [cục bộ]
+
+- Điều kiện tiên quyết của hiệu chỉnh theo lỗi lịch sử của site (97% site test là site lưới). 20k site, GBM, OOF 2
+  khối: P1 = năm 0→20, P2 = năm 20→40. Tương quan lỗi cùng (site, tuổi): height −0.03 (trung bình theo site 0.02),
+  agb −0.21 (hồi quy về trung bình: mọc nhiều ở P1 → to hơn ở năm 20 → mọc chậm ở P2; phụ thuộc trạng thái đầu nên
+  không chuyển sang lần chạy tương lai). ⇒ Không có lệch bền theo site; hướng đóng.
