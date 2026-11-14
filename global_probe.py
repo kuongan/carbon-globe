@@ -62,8 +62,11 @@ OUT = '/kaggle/working'
 #   'sweep'   (kaggle_sweep_pairs.ipynb, INSIGHTS 4.36): every attached `sweep_<tag>.npz` (no-CO2 snapshots of runs
 #             3/4/6 and bagging m1, kaggle_upload/lstm-sweep/) in turn, variants none / y0inv+xinv / xinv each.
 PROFILE = os.environ.get('PROBE_PROFILE', 'sweep')   # env override: noco2 (seed 42 ep4), noco2_s7, sweep, co2phys
-CO2_CONST = PROFILE.startswith('noco2') or PROFILE == 'sweep'   # CO2 block held at 0 after standardization
-WEIGHTS_GLOB = {'noco2': 'snap_ep4.npz', 'noco2_s7': 's7_ep3.npz', 'sweep': 'sweep_*.npz',
+CO2_CONST = PROFILE.startswith('noco2') or PROFILE in ('sweep', 'nov2')   # CO2 block held at 0 after standardization
+#   'nov2'    (final blend member nov2_snapmean): run 5 'global_nov2' (no CO2, group v2 held at its grid mean in
+#             training and test); weights nov2_best.npz + nov2_ep2..ep5.npz; 'none' with each, then the mean of the five
+#             predictions = submission_snapmean_none of the training notebook; checked against global_nov2_preds.npz
+WEIGHTS_GLOB = {'noco2': 'snap_ep4.npz', 'noco2_s7': 's7_ep3.npz', 'sweep': 'sweep_*.npz', 'nov2': 'nov2_*.npz',
                 'co2phys': 'global_lstmxl.weights.h5'}[PROFILE]
 Z_CLIP = 10.0 if CO2_CONST else None   # standardized inputs clipped like in training (run 1 had no clip)
 SCREEN, SCREEN_SITES = False, 1500    # done for no-CO2 ep4 (INSIGHTS 4.13): only v2 matters
@@ -84,7 +87,7 @@ FEAT_SCREEN, FEAT_SCREEN_SITES = (), 600      # done; was ('v2', 'v1', 'v3')
 # the y0 twin of 'y0inv+xinv+co2inv' (the pair y0inv+xinv / xinv gave the 0.066 blend, INSIGHTS 4.28)
 # Session G: 'none' reproduces the scored s7_ep3 file (no slot; compared locally), the pair is 2 submissions
 FULL_VARIANTS = {'noco2': ['none', 'y0inv', 'y0inv+xinv', 'xinv'],
-                 'noco2_s7': ['none', 'y0inv+xinv', 'xinv'], 'sweep': ['y0inv+xinv', 'xinv'],
+                 'noco2_s7': ['none', 'y0inv+xinv', 'xinv'], 'sweep': ['y0inv+xinv', 'xinv'], 'nov2': ['none'],
                  'co2phys': ['co2_hist', 'y0inv+xinv+co2inv', 'y0inv+xinv+co2_hist', 'xinv+co2inv',
                              'y0inv+xinv+co2inv0.5']}[PROFILE]
 # CO2 block -> physical (INSIGHTS 4.28): ppm = grid level at 2015 (grid year 30, ~399 ppm, with the grid's mean
@@ -119,12 +122,16 @@ if NEED_MAPS:
 
 _w = [WEIGHTS_FILE] if WEIGHTS_FILE else sorted(glob.glob(f'{ROOT_IN}/**/{WEIGHTS_GLOB}', recursive=True))
 assert _w, f'attach a dataset that contains {WEIGHTS_GLOB}'
-if len(_w) > 1 and PROFILE != 'sweep':
+if len(_w) > 1 and PROFILE not in ('sweep', 'nov2'):
     print('WARNING: several weight files found, using the first; set WEIGHTS_FILE to choose:', _w)
 WEIGHTS = _w[0]
 # sweep: run 1 = SWEEP_ONLY ('s7ep3', 's42ep6', 'bagep6', 's42ep3'), run 2 = ('s7ep5', 'swaep4', 's42ep5'); () = all
 SWEEP_ONLY = ('s7ep3', 's42ep6', 'bagep6', 's42ep3')
-SWEEP = {os.path.basename(f)[6:-4]: f for f in _w} if PROFILE == 'sweep' else {'': WEIGHTS}
+SWEEP = ({os.path.basename(f)[6:-4]: f for f in _w} if PROFILE == 'sweep' else
+         {os.path.basename(f)[5:-4]: f for f in _w} if PROFILE == 'nov2' else {'': WEIGHTS})
+if PROFILE == 'nov2':
+    assert sorted(SWEEP) == ['best', 'ep2', 'ep3', 'ep4', 'ep5'], f'nov2 needs nov2_best/ep2..ep5.npz, got {sorted(SWEEP)}'
+    WEIGHTS = SWEEP['best']
 if PROFILE == 'sweep' and SWEEP_ONLY:
     assert set(SWEEP_ONLY) <= set(SWEEP), f'missing weights for {set(SWEEP_ONLY) - set(SWEEP)}'
     SWEEP = {t: SWEEP[t] for t in SWEEP_ONLY}
@@ -252,6 +259,8 @@ def zscore(e):
     z = normData(e, X_MEAN, X_STD)
     if Z_CLIP is not None:
         z = np.clip(z, -Z_CLIP, Z_CLIP)
+    if PROFILE == 'nov2':
+        z[..., GROUPS['v2']] = 0.0                       # run 5 held group v2 at its grid mean in training
     if CO2_CONST:
         z[..., CO2] = 0.0
     return z.astype(np.float32)
@@ -530,3 +539,13 @@ if FULL_VARIANTS:
             check_none(_tag)
         run_full(_tag)
         print(f'== {_tag or WEIGHTS}: {(time.time() - t1) / 60:.1f} min', flush=True)
+    if PROFILE == 'nov2':                                # snapshot mean, as in the training notebook
+        for scn in SCENARIOS:
+            ALL_PREDS[f'{scn}_snapmean_none'] = np.mean([ALL_PREDS[f'{scn}_{t}_none'] for t in SWEEP], axis=0)
+        np.savez_compressed(f'{OUT}/global_probe_preds.npz', **ALL_PREDS)
+        ref = glob.glob(f'{ROOT_IN}/**/global_nov2_preds.npz', recursive=True)
+        if ref:
+            z = np.load(ref[0])
+            for scn in SCENARIOS:
+                print(f'reproduction {scn}: msd(snapmean, training run) = '
+                      f'{msd(ALL_PREDS[scn + "_snapmean_none"], z[scn + "_snapmean_none"]):.2e} (~1e-6 or less: exact)', flush=True)

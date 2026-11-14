@@ -305,3 +305,21 @@ FINAL_GBM_CODE = NL.join([
 ]) + NL
 compile(FINAL_GBM_CODE, 'final_gbm', 'exec')
 write('kaggle_final_gbm.ipynb', notebook(FINAL_GBM_DOC, FINAL_GBM_CODE))
+
+
+NOV2_DOC = """# LSTM-XL run 5 ('global_nov2') inference for the final blend member `nov2_snapmean`
+
+`global_probe.py` with PROFILE 'nov2': the five weight sets of run 5 (best + snapshots of epochs 2-5; no CO2, feature
+group v2 held at its grid mean as in training), variant 'none', then the mean of the five predictions (the training
+notebook's `snapmean`). The scored predictions of the run are attached for an exact reproduction check.
+
+- **Accelerator:** GPU T4 (one GPU). **Internet:** off is fine. Expected time: ~2.5-3 h (5 weight sets x 2 scenarios).
+- **Inputs:** competition data, `zhihaow/carbonglobe`, and a NEW dataset made from `kaggle_upload/nov2/`
+  (`nov2_best.npz`, `nov2_ep2..ep5.npz`, `global_nov2_preds.npz`).
+- **Check in the log:** at the end `reproduction ssp126 / ssp585: msd(snapmean, training run) = ...` (~1e-6 or less).
+- **Send back:** `global_probe_preds.npz` (zip as `kaggle_nov2.zip`).
+"""
+_probe = open('global_probe.py', encoding='utf-8').read()
+_dflt = "os.environ.get('PROBE_PROFILE', 'sweep')"
+assert _dflt in _probe
+write('kaggle_nov2_infer.ipynb', notebook(NOV2_DOC, _probe.replace(_dflt, "os.environ.get('PROBE_PROFILE', 'nov2')")))
