@@ -56,6 +56,9 @@ os.makedirs(OUT, exist_ok=True)
 
 # ---- config ----
 XAGE = os.environ.get('NN_XAGE', '0') == '1'
+# NN_WEIGHTS=<dir>: inference only from saved checkpoints (nn_seed<k>.pt, nn_event_clf.txt, nn_prep.npz written by a
+# training run); no training, no grid features, same test predictions
+WEIGHTS = os.environ.get('NN_WEIGHTS', '')
 MONTHLY = os.environ.get('NN_MONTHLY', '0') == '1'
 # NN_AUG=1 (with NN_XAGE=1): y0 augmentation. The test y0 comes through an estimated inverse map (agb slope 0.84 vs
 # 0.876; per-site 2015/1981 factor sd 0.20; y0inv2 helps every model) while training y0 is exact, so the net trusts
@@ -227,12 +230,20 @@ if CHRONO:
         st_[m] = np.nan_to_num(EVP[age][s_[m], t_[m]]); nx_[m] = np.nan_to_num(EVP[age][s_[m], t_[m] + 1])
     keep = st_[:, 1] > 0
     lab = (nx_[:, 1] < 0.7 * st_[:, 1])[keep]
-    Xe = ev_X(st_[keep], t_[keep], SEQ, MONZ, rows=s_[keep])
-    CLF = lgb.train(dict(objective='binary', learning_rate=0.1, num_leaves=63, min_data_in_leaf=100,
-                         feature_fraction=0.7, bagging_fraction=0.7, bagging_freq=1, verbose=-1, seed=HOLD_SEED),
-                    lgb.Dataset(Xe, lab.astype(np.float32)), EV_ROUNDS if not SMOKE else 50)
-    del Xe, st_, nx_, EVP; gc.collect()
-    stamp(f'event classifier: {int(keep.sum()):,} site-years, event rate {lab.mean():.4f}')
+    if WEIGHTS:
+        CLF = lgb.Booster(model_file=f'{WEIGHTS}/nn_event_clf.txt')
+        _pp = np.load(f'{WEIGHTS}/nn_prep.npz'); EX_MU, EX_SD = _pp['ex_mu'], _pp['ex_sd']
+        stamp('inference only: event classifier and feature scaling loaded from ' + WEIGHTS)
+    else:
+        Xe = ev_X(st_[keep], t_[keep], SEQ, MONZ, rows=s_[keep])
+        CLF = lgb.train(dict(objective='binary', learning_rate=0.1, num_leaves=63, min_data_in_leaf=100,
+                             feature_fraction=0.7, bagging_fraction=0.7, bagging_freq=1, verbose=-1, seed=HOLD_SEED),
+                        lgb.Dataset(Xe, lab.astype(np.float32)), EV_ROUNDS if not SMOKE else 50)
+        CLF.save_model(f'{OUT}/nn_event_clf.txt')
+        del Xe
+        stamp(f'event classifier: {int(keep.sum()):,} site-years, event rate {lab.mean():.4f} | saved nn_event_clf.txt')
+    del st_, nx_, EVP; gc.collect()
+if CHRONO and not WEIGHTS:
     EXG = np.zeros((N_AGES, N_G, N_EXTRA), np.float32)
     OKI = np.flatnonzero(SITE_OK)
     for i in range(0, len(OKI), 8192):
@@ -242,6 +253,7 @@ if CHRONO:
         stamp(f'chrono + risk features (grid) {min(i + 8192, len(OKI))}/{len(OKI)}')
     EX_MU = EXG[:, TRAIN].reshape(-1, N_EXTRA).mean(0); EX_SD = EXG[:, TRAIN].reshape(-1, N_EXTRA).std(0) + 1e-6
     EXG = ((EXG - EX_MU) / EX_SD).astype(np.float32)
+    np.savez(f'{OUT}/nn_prep.npz', ex_mu=EX_MU, ex_sd=EX_SD, ceil=CEIL)
 
 
 def metric(p, t):
@@ -483,7 +495,7 @@ assert not AUG or (XAGE and CHRONO), 'NN_AUG needs NN_XAGE=1 and NN_CHRONO=1'
 SUMMARY = dict(config=dict(chrono=CHRONO, xage=XAGE, monthly=MONTHLY, aug=AUG, aug_sd=AUG_SD, d_tok=D_TOK, xage_layers=XAGE_LAYERS, seeds=SEEDS, epochs=EPOCHS, bs=BS, lr=LR, d_model=D_MODEL, hidden=HIDDEN,
                            horizons=HORIZONS, variants=VARIANTS, n_train=int(len(TRAIN)), n_hold=int(len(HOLD))),
                hold_persistence=float(metric(Y0[:, HOLD], Y40[:, HOLD])), seeds=[])
-if HAVE_TORCH and PREFLIGHT:
+if HAVE_TORCH and PREFLIGHT and not WEIGHTS:
     _ep = EPOCHS; EPOCHS = 1
     net, _ = train_one(123, max_steps=20)
     EPOCHS = _ep
@@ -494,8 +506,13 @@ if HAVE_TORCH and PREFLIGHT:
 
 PREDS = {}
 for seed in (SEEDS if HAVE_TORCH else [0]):
-    if HAVE_TORCH:
+    if HAVE_TORCH and WEIGHTS:                                                    # inference from checkpoints
+        net = (XAgeNet() if XAGE else DirectNet()).to(DEV)
+        net.load_state_dict(torch.load(f'{WEIGHTS}/nn_seed{seed}.pt', map_location=DEV))
+        info = dict(seed=seed, best_hold=float('nan'), history=[], loaded=True)
+    elif HAVE_TORCH:
         net, info = train_one(seed)
+        torch.save(net.state_dict(), f'{OUT}/nn_seed{seed}.pt')
     else:
         net, info = None, dict(seed=seed, best_hold=float('nan'), history=[])
     SUMMARY['seeds'].append(info)

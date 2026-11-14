@@ -87,6 +87,9 @@ MAG = os.environ.get('GBM_MAG', '0') == '1'          # + expected one-year agb l
 # GBM_ANCHOR=1: the direct target is y40 - (the site's own y0 at age a+40) instead of y40 - own y0: the level comes
 # from the site's chronosequence (in the same space as the answer), the trees only learn the correction
 ANCHOR = os.environ.get('GBM_ANCHOR', '0') == '1'
+# GBM_WEIGHTS=<dir>: inference only from saved boosters (gbm_direct<TAG>_<k>.txt, gbm_event<TAG>.txt,
+# gbm_rollout<TAG>_<k>.txt written by a training run with the same TAG); no training, same test predictions
+WEIGHTS = os.environ.get('GBM_WEIGHTS', '')
 EV_SEEDS, EV_ROUNDS = (6, 10, 14), 600                           # seed ages 100 / 300 / 500 label the events
 EV_ROWS = 4_000_000 if KAGGLE else 2_000_000                     # event-classifier rows (Kaggle: more RAM)
 KEEP = [j for j in range(N_CONS) if j not in CO2 and j != 32]   # 111 features: no CO2 block, no constant
@@ -345,7 +348,11 @@ if RUN_DIRECT:
         return np.concatenate([direct_clim(A_all[idx[i:i + 4096]], M_all[idx[i:i + 4096]])
                                for i in range(0, len(idx), 4096)], 0)
     EXTRA, CLF = {}, None
-    if CHRONO:
+    if CHRONO and WEIGHTS:
+        CLF, REG = lgb.Booster(model_file=f'{WEIGHTS}/gbm_event{TAG}.txt'), None
+        assert not MAG, 'GBM_MAG inference from weights not supported'
+        stamp('inference only: event classifier loaded')
+    elif CHRONO:
         s_ = rng.choice(TRAIN, EV_ROWS); a_ = rng.choice(EV_SEEDS, EV_ROWS); t_ = rng.integers(0, N_YEAR, EV_ROWS)
         st_ = y_all[a_, s_, t_]; nx_ = y_all[a_, s_, t_ + 1]
         keep_ = st_[:, 1] > 0
@@ -364,6 +371,7 @@ if RUN_DIRECT:
                                  feature_fraction=0.7, bagging_fraction=0.7, bagging_freq=1, verbose=-1, seed=SEED,
                                  num_threads=PARAMS['num_threads']), lgb.Dataset(Xe, loss_.astype(np.float32)), EV_ROUNDS)
         del Xe; gc.collect()
+        CLF.save_model(f'{OUT}/gbm_event{TAG}.txt')
         stamp(f'event classifier: {len(lab_):,} site-years, event rate {lab_.mean():.4f} | magnitude model {MAG}')
 
         def extra_of(idx):
@@ -375,11 +383,15 @@ if RUN_DIRECT:
             return np.concatenate(parts, 1)
         EXTRA['train'], EXTRA['hold'] = extra_of(TRAIN), extra_of(HOLD)
         stamp('chrono + risk features done (grid)')
-    Xtr = direct_X(y_all[:, TRAIN, 0], clim_of(TRAIN), EXTRA.get('train'))
-    Xva = direct_X(hold_y0, clim_of(HOLD), EXTRA.get('hold'))
-    assert Xtr.shape[1] == len(DNAMES), (Xtr.shape, len(DNAMES))
-    dmodels = {}
-    for k in (0, 1):
+    if WEIGHTS:
+        dmodels = {k: lgb.Booster(model_file=f'{WEIGHTS}/gbm_direct{TAG}_{k}.txt') for k in (0, 1)}
+        stamp('inference only: direct boosters loaded')
+    else:
+        Xtr = direct_X(y_all[:, TRAIN, 0], clim_of(TRAIN), EXTRA.get('train'))
+        Xva = direct_X(hold_y0, clim_of(HOLD), EXTRA.get('hold'))
+        assert Xtr.shape[1] == len(DNAMES), (Xtr.shape, len(DNAMES))
+        dmodels = {}
+    for k in ((0, 1) if not WEIGHTS else ()):
         ytr = (y_all[:, TRAIN, N_YEAR, k] - base_of(y_all[:, TRAIN, 0])[..., k]).reshape(-1)
         yva = (hold_y40[..., k] - base_of(hold_y0)[..., k]).reshape(-1)
         dtr = lgb.Dataset(Xtr, ytr, feature_name=DNAMES, params=PARAMS, free_raw_data=False)
@@ -389,11 +401,14 @@ if RUN_DIRECT:
         gi, top = importance(dmodels[k])
         SUMMARY.setdefault('direct', {})[STATE_NAMES[k]] = dict(best_iter=dmodels[k].best_iteration, groups=gi, top=top)
         stamp(f'direct {STATE_NAMES[k]}: best iter {dmodels[k].best_iteration} | gain by group {gi}')
+        dmodels[k].save_model(f'{OUT}/gbm_direct{TAG}_{k}.txt', num_iteration=dmodels[k].best_iteration)
+        dmodels[k] = lgb.Booster(model_file=f'{OUT}/gbm_direct{TAG}_{k}.txt')   # predict exactly as a reload will
         del dtr, dva; gc.collect()
-    del Xtr, Xva; gc.collect()
-    hp = direct_predict(dmodels, hold_y0, clim_of(HOLD), EXTRA.get('hold'))
-    SUMMARY['direct']['hold_metric'] = float(metric(hp, hold_y40))
-    stamp(f'direct holdout metric {metric(hp, hold_y40):.4f} (persistence {SUMMARY["hold_persistence"]:.4f})')
+    if not WEIGHTS:
+        del Xtr, Xva; gc.collect()
+        hp = direct_predict(dmodels, hold_y0, clim_of(HOLD), EXTRA.get('hold'))
+        SUMMARY['direct']['hold_metric'] = float(metric(hp, hold_y40))
+        stamp(f'direct holdout metric {metric(hp, hold_y40):.4f} (persistence {SUMMARY["hold_persistence"]:.4f})')
     for v in VARIANTS:
         key = f'direct_{v}'
         PREDS[key] = {}
@@ -447,7 +462,16 @@ def rollout(models, y0, A, M):
     return st.reshape(N_AGES, n, N_OUT)
 
 
-if RUN_ROLLOUT:
+if RUN_ROLLOUT and WEIGHTS:
+    rmodels = {k: lgb.Booster(model_file=f'{WEIGHTS}/gbm_rollout{TAG}_{k}.txt') for k in range(N_OUT)}
+    stamp('inference only: rollout boosters loaded')
+    for v in VARIANTS:
+        key = f'rollout_{v}'
+        PREDS[key] = {scn: rollout(rmodels, T['y0'][v], T['A'][v], T['M'][v]) for scn, T in TEST.items()}
+        write_submission(PREDS[key], f'{OUT}/submission_gbm_{key}{TAG}.csv')
+        report(key)
+    save_outputs()
+elif RUN_ROLLOUT:
     Xr, Yr = sample_rows(TRAIN, ROLL_ROWS)
     Xv, Yv = sample_rows(HOLD, ROLL_VAL_ROWS)
     A_hold, M_hold = A_all[HOLD], M_all[HOLD]        # all the rest of the grid arrays is no longer needed: free RAM
@@ -464,6 +488,8 @@ if RUN_ROLLOUT:
         gi, top = importance(rmodels[k])
         SUMMARY.setdefault('rollout', {})[STATE_NAMES[k]] = dict(best_iter=rmodels[k].best_iteration, groups=gi, top=top)
         stamp(f'rollout {STATE_NAMES[k]}: best iter {rmodels[k].best_iteration} | gain by group {gi}')
+        rmodels[k].save_model(f'{OUT}/gbm_rollout{TAG}_{k}.txt', num_iteration=rmodels[k].best_iteration)
+        rmodels[k] = lgb.Booster(model_file=f'{OUT}/gbm_rollout{TAG}_{k}.txt')
     del dtr, dva, Xr, Yr, Xv, Yv; gc.collect()
     hp = rollout(rmodels, hold_y0, A_hold, M_hold)
     SUMMARY['rollout']['hold_metric'] = float(metric(hp, hold_y40))

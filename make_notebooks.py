@@ -117,7 +117,7 @@ def write(name, nb):
 
 
 probe = open('global_probe.py', encoding='utf-8').read()
-assert "PROFILE = 'sweep'" in probe, 'global_probe.py must be committed with PROFILE = sweep'
+assert "os.environ.get('PROBE_PROFILE', 'sweep')" in probe, 'global_probe.py must default to PROFILE sweep'
 DEFAULT_ONLY = "SWEEP_ONLY = ('s7ep3', 's42ep6', 'bagep6', 's42ep3')"
 assert DEFAULT_ONLY in probe
 for run, only, hours in ((1, ('s7ep3', 's42ep6', 'bagep6', 's42ep3'), '~4.5 h (4 snapshots x ~65 min)'),
@@ -264,3 +264,44 @@ g12_nb = dict(final_nb, cells=cells_from_py(open('final/make_submission_flatg12.
 with open('final/make_submission_flatg12.ipynb', 'w', encoding='utf-8') as f:
     json.dump(g12_nb, f, indent=1, ensure_ascii=False)
 print('wrote final/make_submission_flatg12.ipynb')
+
+
+# ---- final (reproducible) members: all GBM members in one CPU notebook, each config a subprocess with its env ----
+FINAL_GBM_DOC = """# Final GBM members with saved boosters (CPU)
+
+Retrains the five LightGBM members of the final blend and SAVES every booster (`gbm_direct<TAG>_<k>.txt`,
+`gbm_event<TAG>.txt`, `gbm_rollout<TAG>_<k>.txt`) next to the predictions, so that `carbonglobe_gbm.py` with
+`GBM_WEIGHTS=<dir>` reproduces the predictions without training. Configs (run one after the other):
+chrono GBM seeds 42 / 7 / 11 (`gbmc3i`), random-forest mode (`rfm_none`), GBM without chrono features, y0 past
+physical (`gbmm_y0inv2`), annual rollout (`gbm_rollout_y0inv`).
+
+- **Accelerator:** none (CPU). **Internet:** off is fine. Expected time: ~5-7 h in total (each config is saved as
+  soon as it finishes; you can also split the CONFIGS list over several sessions).
+- **Inputs:** competition data, `zhihaow/carbonglobe`, and a dataset holding `test_maps.npz` (e.g. `noco2-ep4`).
+- **Send back:** everything in /kaggle/working except the CSVs (`gbm_preds_*.npz`, `gbm_summary_*.json`, all
+  `*.txt` boosters), zipped as `kaggle_final_gbm.zip`.
+"""
+_gbm_src = open('carbonglobe_gbm.py', encoding='utf-8').read()
+FINAL_GBM_CODE = NL.join([
+    "import os, subprocess, sys, time",
+    "SRC = " + repr(_gbm_src),
+    "open('/kaggle/working/carbonglobe_gbm.py', 'w').write(SRC)",
+    "CONFIGS = [  # tag: env",
+    "    ('_chrono',     dict(GBM_CHRONO='1', GBM_MODELS='direct', GBM_VARIANTS='y0inv,y0inv2', GBM_SEED='42')),",
+    "    ('_chrono_s7',  dict(GBM_CHRONO='1', GBM_MODELS='direct', GBM_VARIANTS='y0inv,y0inv2', GBM_SEED='7')),",
+    "    ('_chrono_s11', dict(GBM_CHRONO='1', GBM_MODELS='direct', GBM_VARIANTS='y0inv,y0inv2', GBM_SEED='11')),",
+    "    ('_rf',         dict(GBM_BOOSTING='rf', GBM_MODELS='direct', GBM_VARIANTS='y0inv,none')),",
+    "    ('_y0x',        dict(GBM_MODELS='direct', GBM_VARIANTS='y0inv,y0inv2')),",
+    "    ('_roll',       dict(GBM_MODELS='rollout', GBM_VARIANTS='y0inv')),",
+    "]",
+    "for tag, env in CONFIGS:",
+    "    t = time.time(); print('=====', tag, env, flush=True)",
+    "    r = subprocess.run([sys.executable, '/kaggle/working/carbonglobe_gbm.py'], env={**os.environ, **env, 'GBM_TAG': tag},",
+    "                       cwd='/kaggle/working', capture_output=True, text=True)",
+    "    print(r.stdout[-3000:], r.stderr[-2000:], flush=True)",
+    "    print(f'===== {tag} done in {(time.time() - t) / 60:.1f} min, exit {r.returncode}', flush=True)",
+    "for f in os.listdir('/kaggle/working'):",
+    "    if f.endswith('.csv'): os.remove(os.path.join('/kaggle/working', f))   # keep the download small",
+]) + NL
+compile(FINAL_GBM_CODE, 'final_gbm', 'exec')
+write('kaggle_final_gbm.ipynb', notebook(FINAL_GBM_DOC, FINAL_GBM_CODE))

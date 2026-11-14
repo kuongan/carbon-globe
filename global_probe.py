@@ -61,7 +61,7 @@ OUT = '/kaggle/working'
 #             pair (y0inv+xinv / xinv) like the one in x1/x2. Attach kaggle_upload/noco2-s7/ (s7_ep3.npz + test_maps.npz).
 #   'sweep'   (kaggle_sweep_pairs.ipynb, INSIGHTS 4.36): every attached `sweep_<tag>.npz` (no-CO2 snapshots of runs
 #             3/4/6 and bagging m1, kaggle_upload/lstm-sweep/) in turn, variants none / y0inv+xinv / xinv each.
-PROFILE = 'sweep'
+PROFILE = os.environ.get('PROBE_PROFILE', 'sweep')   # env override: noco2 (seed 42 ep4), noco2_s7, sweep, co2phys
 CO2_CONST = PROFILE.startswith('noco2') or PROFILE == 'sweep'   # CO2 block held at 0 after standardization
 WEIGHTS_GLOB = {'noco2': 'snap_ep4.npz', 'noco2_s7': 's7_ep3.npz', 'sweep': 'sweep_*.npz',
                 'co2phys': 'global_lstmxl.weights.h5'}[PROFILE]

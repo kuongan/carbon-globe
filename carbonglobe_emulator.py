@@ -32,6 +32,7 @@ else:
 os.makedirs(OUT, exist_ok=True)
 
 SEEDS = [int(s) for s in os.environ.get('EMU_SEEDS', '0,1,2').split(',')]
+WEIGHTS = os.environ.get('EMU_WEIGHTS', '')            # dir with emu_seed<k>.pt: inference only, no training
 EPOCHS = int(os.environ.get('EMU_EPOCHS', 25))
 BS_SITES, LR, WD = 256, 2e-3, 1e-4
 EMB, HID = 128, 256
@@ -241,7 +242,7 @@ def test_predict(net, sites=None):
 SUMMARY = dict(config=dict(seeds=SEEDS, epochs=EPOCHS, emb=EMB, hid=HID, w40=W40, variants=VARIANTS,
                            n_train=int(len(TRAIN)), n_hold=int(len(HOLD))),
                hold_persistence=float(metric(Y[:, HOLD, 0], Y[:, HOLD, -1])), seeds=[])
-if not SMOKE:
+if not SMOKE and not WEIGHTS:
     _e = EPOCHS; EPOCHS = 1
     net, _ = train_one(123, max_steps=20)
     EPOCHS = _e
@@ -253,7 +254,13 @@ if not SMOKE:
 
 PREDS = {}
 for seed in SEEDS:
-    net, info = train_one(seed)
+    if WEIGHTS:
+        net = Emulator().to(DEV)
+        net.load_state_dict(torch.load(f'{WEIGHTS}/emu_seed{seed}.pt', map_location=DEV))
+        info = dict(seed=seed, best_hold=float('nan'), history=[], loaded=True)
+    else:
+        net, info = train_one(seed)
+        torch.save(net.state_dict(), f'{OUT}/emu_seed{seed}.pt')
     SUMMARY['seeds'].append(info)
     for k, v in test_predict(net).items():
         PREDS[f'{k}_s{seed}'] = v
