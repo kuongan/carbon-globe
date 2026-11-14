@@ -34,7 +34,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument('--blend', default='flatg12', choices=('flatg12', 'repro8'))
 ap.add_argument('--nn', default='result/final_runs/nn/nn_preds.npz')              # carbonglobe_direct_nn.py (cross-age)
 ap.add_argument('--gbm', default='result/final_runs/gbm')                          # carbonglobe_gbm.py, 6 configurations
-ap.add_argument('--nov2', default='result/nov2_run/global_nov2_preds.npz')        # LSTM run 5 (global_probe.py nov2)
+ap.add_argument('--nov2', default='result/final_runs/nov2/global_probe_preds.npz')        # LSTM run 5 (global_probe.py nov2)
 ap.add_argument('--ecoformer', default='result/ecoformer_run/ecoformer_ed_preds.npz')  # EcoFormer inference
 ap.add_argument('--analog', default='result/analog_preds.npz')                     # analog_build.py + analog.py
 ap.add_argument('--lstm-ep4', default='result/1/global_probe_preds.npz')           # global_probe.py PROFILE noco2
