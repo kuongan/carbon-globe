@@ -25,3 +25,4 @@ data/
 /_*.npy
 /_*.npz
 
+weights/
