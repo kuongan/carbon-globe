@@ -1207,3 +1207,12 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   khối: P1 = năm 0→20, P2 = năm 20→40. Tương quan lỗi cùng (site, tuổi): height −0.03 (trung bình theo site 0.02),
   agb −0.21 (hồi quy về trung bình: mọc nhiều ở P1 → to hơn ở năm 20 → mọc chậm ở P2; phụ thuộc trạng thái đầu nên
   không chuyển sang lần chạy tương lai). ⇒ Không có lệch bền theo site; hướng đóng.
+
+### 4.57 Emulator GRU từng năm (C1, `carbonglobe_emulator.py`, Kaggle, `result/emulator/`) [cục bộ + đại số]
+
+- state(t) + khí hậu năm t (12 tháng f0–f6 + trung bình năm 111 driver) → state(t+1), 40 bước tự chạy, ngữ cảnh =
+  khí hậu trung bình + profile y0 15 tuổi; loss mọi năm, năm 40 ×5; 3 seed. Holdout **0.0229 / 0.0240 / 0.0223** (ngang
+  hoặc tốt hơn NN cross-age 0.0229–0.0242).
+- Rất khác các thành viên: msd emu_y0inv2 tới flat6 **0.073**, tới nnx8 0.063, tới gbmc3i 0.044; ít nhạy với biến thể y0
+  (y0inv2 / y0inv cách 0.012, nnx8 cặp tương ứng 0.063). `rank_members` (gốc flat8t): LB dự báo emu_y0inv2 0.122,
+  emu_y0inv 0.152 (lệch 0.02 → blend 0.0437). Nộp `match_emu_y0inv2.csv`, `match_emu_y0inv.csv`.
