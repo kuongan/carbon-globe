@@ -107,6 +107,8 @@ RUNS = {
     'flat6e':                (0.049, None),    # submission_blend_flat6e.csv: flat6 + era-factor level/young steps (gain < rounding)
     'nnx8i':                 (0.117, None),    # match_nnx8i.csv: cross-age NN 8 seeds, y0inv twin
     'nnc_y0inv':             (0.114, None),    # match_nnc_y0inv.csv: chrono NN, y0inv twin
+    'emu_y0inv2':            (0.116, None),    # match_emu_y0inv2.csv: annual GRU emulator, 3 seeds (Kaggle)
+    'emu_y0inv':             (0.144, None),    # match_emu_y0inv.csv: its y0inv twin
     'nnm4_y0inv2':           (0.071, None),    # match_nnm4_y0inv2.csv: cross-age NN + monthly climate, seeds 12-15 (Kaggle)
     'gbmc3i':                (0.091, None),    # match_gbmc3i.csv: 3-seed chrono GBM, y0inv variant (y0 physical)
     'gbmg_y0inv2':           (0.098, None),    # match_gbmg_y0inv2.csv: chrono GBM + event magnitude (A6): holdout better, LB worse

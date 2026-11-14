@@ -171,6 +171,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 151–152 | `match_nna_y0inv2.csv` / `match_nna_y0inv.csv` (NN cross-age + augmentation y0) | 0.096 / 0.130 | 0.0974 / 0.1304 | đúng mức không thông tin: augmentation đổi dự báo nhưng không theo hướng có ích |
 | 153–164 | `cw_scn_*` / `cw_age_*` (thành viên flat6 ở một ô, flat6 ở ô kia) | scn 0.054/0.065/0.068/0.071/0.095/0.135; age 0.052/0.056/0.074/0.069/0.084/0.106 | | trọng số theo ô: scn lợi 0.0006, age 0.0005 |
 | 165–166 | `submission_blend_flat6_scn.csv` / `submission_blend_flat6_age.csv` (trọng số theo ô) | 0.049 / 0.049 | ~0.0481 / ~0.0482 | lợi dưới mức làm tròn |
+| 167–168 | `match_emu_y0inv2.csv` / `match_emu_y0inv.csv` (emulator GRU) | 0.116 / 0.144 | 0.122 / 0.152 | tốt hơn dự báo 0.006–0.008: thông tin mới thật |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -1216,3 +1217,9 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
 - Rất khác các thành viên: msd emu_y0inv2 tới flat6 **0.073**, tới nnx8 0.063, tới gbmc3i 0.044; ít nhạy với biến thể y0
   (y0inv2 / y0inv cách 0.012, nnx8 cặp tương ứng 0.063). `rank_members` (gốc flat8t): LB dự báo emu_y0inv2 0.122,
   emu_y0inv 0.152 (lệch 0.02 → blend 0.0437). Nộp `match_emu_y0inv2.csv`, `match_emu_y0inv.csv`.
+- **Kết quả** (#167–168): 0.116 / 0.144 (dự báo 0.122 / 0.152). flat8t + cặp emulator ước tính 0.0474.
+- Tìm kiếm phẳng tham lam + hoán đổi trên 63 model đơn (công thức đóng, chuẩn hóa theo mọi dòng): ước tính 8 → 0.0466,
+  10 → 0.0455, 12 → **0.0442**, 16 → **0.0426**; trọng số bền khi rung LB (p95 ≈ danh nghĩa), |w| ≤ 0.82.
+  `submission_blend_flatg12.csv`, `submission_blend_flatg16.csv` (tập thành viên: `result/flat_greedy_sets.json`).
+  Rủi ro: D tính trên mọi dòng còn LB chỉ trên phần public ⇒ nhiều thành viên có thể lạc quan hơn (notebook công
+  khai: ~0.002 với 31 bài nộp).

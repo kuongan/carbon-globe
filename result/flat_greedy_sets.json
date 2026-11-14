@@ -1,0 +1,170 @@
+{
+ "1": [
+  "nnx8_y0inv2"
+ ],
+ "2": [
+  "nnx8_y0inv2",
+  "a2_dsh_v2"
+ ],
+ "3": [
+  "nnx8_y0inv2",
+  "a2_dsh_v2",
+  "gbmc3i"
+ ],
+ "4": [
+  "nnx_y0inv2",
+  "a2_dsh_v2",
+  "gbmc3i",
+  "gbmm_y0inv2"
+ ],
+ "5": [
+  "nnx_y0inv2",
+  "a2_dsh_v2",
+  "gbmc3i",
+  "gbmm_y0inv2",
+  "nov2_snapmean"
+ ],
+ "6": [
+  "nnx_y0inv2",
+  "a2_dsh_v2",
+  "gbmc3i",
+  "gbmm_y0inv2",
+  "nov2_snapmean",
+  "analog_add"
+ ],
+ "7": [
+  "nnx8_y0inv2",
+  "a2_dsh_v2",
+  "gbmc3i",
+  "y0_persist",
+  "nov2_snapmean",
+  "analog_add",
+  "sw_s42ep6_y0inv_xinv"
+ ],
+ "8": [
+  "nnx8_y0inv2",
+  "lstm_y0inv_xinv",
+  "emu_y0inv",
+  "y0_persist",
+  "nov2_snapmean",
+  "analog_add",
+  "s7_xinv",
+  "sw_s42ep6_y0inv_xinv"
+ ],
+ "9": [
+  "nnx_y0inv2",
+  "lstm_y0inv_xinv",
+  "gbmc3i",
+  "y0_persist",
+  "nov2_snapmean",
+  "analog_add",
+  "s7_xinv",
+  "sw_s42ep6_y0inv_xinv",
+  "ecoformer_ed"
+ ],
+ "10": [
+  "nnx_y0inv2",
+  "lstm_y0inv_xinv",
+  "gbmc3i",
+  "y0_persist",
+  "nov2_snapmean",
+  "analog_add",
+  "s7_xinv",
+  "sw_s42ep6_y0inv_xinv",
+  "ecoformer_ed",
+  "gbmm_y0inv2"
+ ],
+ "11": [
+  "nnx_y0inv2",
+  "lstm_y0inv_xinv",
+  "gbmc3i",
+  "rfm_none",
+  "nov2_snapmean",
+  "analog_add",
+  "s7_xinv",
+  "sw_s42ep6_y0inv_xinv",
+  "ecoformer_ed",
+  "gbmm_y0inv2",
+  "gbm_rollout_y0inv"
+ ],
+ "12": [
+  "nnx_y0inv2",
+  "lstm_y0inv_xinv",
+  "gbmc3i",
+  "rfm_none",
+  "nov2_snapmean",
+  "analog_add",
+  "s7_xinv",
+  "sw_s42ep6_y0inv_xinv",
+  "ecoformer_ed",
+  "gbmm_y0inv2",
+  "gbm_rollout_y0inv",
+  "s7_ep3"
+ ],
+ "13": [
+  "nnx_y0inv2",
+  "lstm_y0inv_xinv",
+  "gbmc3i",
+  "rfm_none",
+  "nov2_snapmean",
+  "analog_add",
+  "s7_xinv",
+  "sw_s42ep6_y0inv_xinv",
+  "ecoformer_ed",
+  "gbmm_y0inv2",
+  "gbm_rollout_y0inv",
+  "s7_ep3",
+  "noco2_ep6"
+ ],
+ "14": [
+  "nnx_y0inv2",
+  "lstm_y0inv_xinv",
+  "gbmc3i",
+  "rfm_none",
+  "nov2_snapmean",
+  "analog_add",
+  "s7_xinv",
+  "sw_s42ep6_y0inv_xinv",
+  "ecoformer_ed",
+  "gbmm_y0inv2",
+  "gbm_rollout_y0inv",
+  "s7_ep3",
+  "noco2_ep6",
+  "nnx8i"
+ ],
+ "15": [
+  "nnx_y0inv2",
+  "lstm_y0inv_xinv",
+  "gbmc3i",
+  "rfm_none",
+  "nov2_snapmean",
+  "analog_add",
+  "s7_xinv",
+  "sw_s42ep6_y0inv_xinv",
+  "ecoformer_ed",
+  "gbmm_y0inv2",
+  "gbm_rollout_y0inv",
+  "s7_ep3",
+  "noco2_ep6",
+  "nnx8i",
+  "emu_y0inv"
+ ],
+ "16": [
+  "nnx_y0inv2",
+  "lstm_y0inv_xinv",
+  "gbmc3i",
+  "rfm_none",
+  "nov2_snapmean",
+  "analog_add",
+  "s7_xinv",
+  "sw_s42ep6_y0inv_xinv",
+  "ecoformer_ed",
+  "gbmm_y0inv2",
+  "gbm_rollout_y0inv",
+  "s7_ep3",
+  "noco2_ep6",
+  "nnx8i",
+  "emu_y0inv",
+  "gbmm_none"
+ ]
+}
