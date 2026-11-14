@@ -1,4 +1,13 @@
-# Final submission: `flat6` (public LB 0.049)
+# Final submissions
+
+**Main: `flatg12` (public LB 0.046)**: `python final/make_submission_flatg12.py` (or the `.ipynb`) rebuilds it
+exactly (max |diff| 7e-15) from the scored predictions of its twelve single models (`result/<member>_preds/`) and
+their public LBs, with the same closed-form weights as below. Members: cross-age NN (+0.71), LSTM-XL physical-input
+pair members, chrono GBM, RF, EcoFormer, GBM rollout, own-site analog, ... (list and provenance in the script header).
+
+**Fallback: `flat6` (public LB 0.049)**, documented below: rebuilt from the raw model outputs.
+
+## flat6 (public LB 0.049)
 
 One blend layer over six single models. `python final/make_submission.py` (or `final/make_submission.ipynb`, the
 same code) rebuilds the submission from the raw model outputs in this repository and checks every step:

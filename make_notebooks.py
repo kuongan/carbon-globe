@@ -254,3 +254,8 @@ The 0.060 public team's emulator scored 0.144 alone but improved their blend bec
 - **Send back:** `emu_preds.npz` and `emu_summary.json`, zipped as `kaggle_emulator.zip` (saved after every seed).
 """
 write('kaggle_emulator.ipynb', notebook(EMU_DOC, open('carbonglobe_emulator.py', encoding='utf-8').read()))
+
+g12_nb = dict(final_nb, cells=cells_from_py(open('final/make_submission_flatg12.py', encoding='utf-8').read()))
+with open('final/make_submission_flatg12.ipynb', 'w', encoding='utf-8') as f:
+    json.dump(g12_nb, f, indent=1, ensure_ascii=False)
+print('wrote final/make_submission_flatg12.ipynb')
