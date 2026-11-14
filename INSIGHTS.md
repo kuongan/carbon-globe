@@ -20,7 +20,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
   Test = lưới CarbonGlobe sau phép biến đổi affine; đáp án nằm trong không gian đó (T2). Blend đã hội tụ tại 0.072
   sau khi thêm GBM rollout và seed-avg (mục 4.26). Đòn bẩy còn lại: LSTM `y0inv` trên Kaggle (session E).
 - **LB tốt nhất: 0.066** (`submission_blend_x1.csv`, #86). Analog cùng site thất bại (0.173 / 0.209, mục 4.28).
-- **Model đơn tốt nhất: 0.061** (`match_nnx_y0inv2.csv`, #138, NN cross-age). Trước: 0.072 (`match_gbmc2_y0inv2.csv`, #133, 2 seed). Trước: 0.073 (`match_gbmc_y0inv2.csv`, #128, mục 4.44). **LB tốt nhất: 0.049** (`submission_blend_x9f.csv`, #139). Trước: 0.050 (`submission_blend_x8f.csv`, #135). Trước: 0.054 (`submission_blend_x7f.csv`, #129). Trước đó 0.060 (`submission_blend_x6.csv`, #119; mục 4.40–4.41). Trước đó 0.061 (`submission_blend_x4f.csv`, #106). Trước đó 0.063 (`submission_blend_x2.csv`, #93: cặp LSTM + cặp GBM + CO2 lịch sử, mục 4.32).
+- **Model đơn tốt nhất: 0.061** (`match_nnx_y0inv2.csv`, #138, NN cross-age). Trước: 0.072 (`match_gbmc2_y0inv2.csv`, #133, 2 seed). Trước: 0.073 (`match_gbmc_y0inv2.csv`, #128, mục 4.44). **LB tốt nhất: 0.046** (`submission_blend_flatg12.csv`, #169). Trước: 0.049 (`submission_blend_x9f.csv`, #139). Trước: 0.050 (`submission_blend_x8f.csv`, #135). Trước: 0.054 (`submission_blend_x7f.csv`, #129). Trước đó 0.060 (`submission_blend_x6.csv`, #119; mục 4.40–4.41). Trước đó 0.061 (`submission_blend_x4f.csv`, #106). Trước đó 0.063 (`submission_blend_x2.csv`, #93: cặp LSTM + cặp GBM + CO2 lịch sử, mục 4.32).
 - Đòn bẩy lớn nhất đã tìm được, theo thứ tự: train trên toàn lưới (0.168 → 0.134), thay CO2 test (0.134 → 0.122),
   blend với model cũ (0.122 → 0.100), hiệu chỉnh bias theo kịch bản (0.100 → 0.094).
 
@@ -172,6 +172,7 @@ File cũ đã xóa (notebook chưa chạy / đã thay thế, `lstm_xl_probe.py`,
 | 153–164 | `cw_scn_*` / `cw_age_*` (thành viên flat6 ở một ô, flat6 ở ô kia) | scn 0.054/0.065/0.068/0.071/0.095/0.135; age 0.052/0.056/0.074/0.069/0.084/0.106 | | trọng số theo ô: scn lợi 0.0006, age 0.0005 |
 | 165–166 | `submission_blend_flat6_scn.csv` / `submission_blend_flat6_age.csv` (trọng số theo ô) | 0.049 / 0.049 | ~0.0481 / ~0.0482 | lợi dưới mức làm tròn |
 | 167–168 | `match_emu_y0inv2.csv` / `match_emu_y0inv.csv` (emulator GRU) | 0.116 / 0.144 | 0.122 / 0.152 | tốt hơn dự báo 0.006–0.008: thông tin mới thật |
+| 169–170 | `submission_blend_flatg12.csv` / `submission_blend_flatg16.csv` (blend phẳng 12 / 16 model đơn, có emulator) | **0.046** / **0.046** | 0.0442 / 0.0426 | **tốt nhất**; độ lạc quan tăng theo số thành viên (+0.0018 / +0.0034) |
 
 Chưa nộp: `submission_blend_scn3.csv` (0.0759), `submission_blend_scn3_x.csv` (0.0752), `submission_blend_scn_x.csv` (0.0902), `submission_blend_scn.csv` (0.0935), `submission_blend_latest.csv`
 (0.0937), `submission_blend_global_x.csv` (0.0977).
@@ -1223,3 +1224,5 @@ và tuổi đó dưới khí hậu lịch sử. Biến thể (vật lý, rồi k
   `submission_blend_flatg12.csv`, `submission_blend_flatg16.csv` (tập thành viên: `result/flat_greedy_sets.json`).
   Rủi ro: D tính trên mọi dòng còn LB chỉ trên phần public ⇒ nhiều thành viên có thể lạc quan hơn (notebook công
   khai: ~0.002 với 31 bài nộp).
+- **Kết quả** (#169–170): flatg12 = flatg16 = **0.046**. Độ lạc quan của ước tính tăng theo số thành viên (12: +0.0018,
+  16: +0.0034) ⇒ lợi thật dừng quanh 12 thành viên; thêm thành viên chỉ khớp sâu hơn vào phần public.
