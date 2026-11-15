@@ -93,7 +93,8 @@ regenerated raw outputs instead. `--blend repro8` builds the 8-member fallback.
 | Member | Notebook / command | Hardware, time |
 |---|---|---|
 | NN | `kaggle_notebooks/kaggle_direct_nn_xage.ipynb` (`carbonglobe_direct_nn.py`, `NN_CHRONO=1 NN_XAGE=1`, seeds 4-7) | GPU T4, ~3 h |
-| 5 LightGBM members | `kaggle_notebooks/kaggle_final_gbm.ipynb` (the six configurations above without `GBM_WEIGHTS`) | CPU, ~5-7 h |
+| LightGBM chrono (3 seeds) | `kaggle_notebooks/kaggle_gbm_chrono_exact.ipynb` (the three chrono commands above without `GBM_WEIGHTS`, plus `GBM_THREADS=10 GBM_EV_ROWS=2000000`, the settings of the scored runs) | CPU, ~4-6 h |
+| other LightGBM members | `kaggle_notebooks/kaggle_final_gbm.ipynb` (rf / y0x / roll configurations above without `GBM_WEIGHTS`) | CPU, ~3-4 h |
 | LSTM-XL runs | `carbonglobe-global.ipynb` (`CO2_MODE='const'`; SEED 42; SEED 7; `RUN_NAME='global_nov2'`, `DROP_GROUPS=('v2',)`) | GPU T4 x2, ~5-6 h per run |
 | EcoFormer | `carbonglobe-ecoformer.ipynb` | GPU T4, ~3 h |
 
