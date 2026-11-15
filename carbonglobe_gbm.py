@@ -66,7 +66,9 @@ STATE_CEIL = 2.0                      # rollout states capped at 2x the grid max
 LOAD_CHUNK = 4096 if KAGGLE else 1024                # Kaggle CPU sessions have ~30 GB RAM
 PARAMS = dict(objective='l2', learning_rate=0.05, num_leaves=127, min_data_in_leaf=200,
               feature_fraction=0.5, bagging_fraction=0.7, bagging_freq=1, lambda_l2=1.0, max_bin=127,
-              num_threads=(os.cpu_count() or 4) if KAGGLE else max(1, (os.cpu_count() or 4) - 2),   # local: 2 cores free
+              num_threads=int(os.environ.get('GBM_THREADS', 0)) or ((os.cpu_count() or 4) if KAGGLE else
+                                                                    max(1, (os.cpu_count() or 4) - 2)),
+              # GBM_THREADS fixes the thread count: float sums depend on it (the scored chrono runs used 10)
               verbose=-1, seed=SEED)
 DIRECT_ROUNDS, ROLL_ROUNDS, ES_ROUNDS = 5000, 3000, 100
 # env GBM_BOOSTING=rf (INSIGHTS 4.33): LightGBM's random-forest mode, i.e. bagged deep trees averaged instead of
@@ -91,7 +93,8 @@ ANCHOR = os.environ.get('GBM_ANCHOR', '0') == '1'
 # gbm_rollout<TAG>_<k>.txt written by a training run with the same TAG); no training, same test predictions
 WEIGHTS = os.environ.get('GBM_WEIGHTS', '')
 EV_SEEDS, EV_ROUNDS = (6, 10, 14), 600                           # seed ages 100 / 300 / 500 label the events
-EV_ROWS = 4_000_000 if KAGGLE else 2_000_000                     # event-classifier rows (Kaggle: more RAM)
+EV_ROWS = int(os.environ.get('GBM_EV_ROWS', 0)) or (4_000_000 if KAGGLE else 2_000_000)   # event-classifier rows
+# (the scored chrono runs: 2,000,000)
 KEEP = [j for j in range(N_CONS) if j not in CO2 and j != 32]   # 111 features: no CO2 block, no constant
 MON = list(range(7))      # f0-f6 also kept monthly; f7's test seasonal amplitude is ~20x the grid's -> annual mean only
 V2 = list(range(34, 129, 4))

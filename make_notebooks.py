@@ -323,3 +323,41 @@ _probe = open('global_probe.py', encoding='utf-8').read()
 _dflt = "os.environ.get('PROBE_PROFILE', 'sweep')"
 assert _dflt in _probe
 write('kaggle_nov2_infer.ipynb', notebook(NOV2_DOC, _probe.replace(_dflt, "os.environ.get('PROBE_PROFILE', 'nov2')")))
+
+
+EXACT_DOC = """# Chrono GBM, exact replay of the scored runs, boosters saved (CPU)
+
+The three chrono LightGBM runs (seeds 42 / 7 / 11) of the final member `gbmc3i` were trained locally with 10 threads
+and a 2,000,000-row event classifier. This notebook replays them with exactly those settings (`GBM_THREADS=10`,
+`GBM_EV_ROWS=2000000`; float sums depend on the thread count) and SAVES every booster, then compares the predictions
+with the scored ones.
+
+- **Accelerator:** none (CPU). **Internet:** off is fine. Expected time: ~3-4 h (three runs one after the other).
+- **Inputs:** competition data, `zhihaow/carbonglobe`, a dataset holding `test_maps.npz` (e.g. `noco2-ep4`), and a NEW
+  dataset made from `kaggle_upload/gbm_ref/` (the three scored `gbm_preds_chrono*.npz`).
+- **Check in the log:** `max |diff| to the scored predictions` per seed: 0 or ~1e-6 = exact.
+- **Send back:** `gbm_preds_chrono*.npz`, `gbm_summary_chrono*.json` and all `*.txt` boosters, zipped as
+  `kaggle_gbm_exact.zip`.
+"""
+EXACT_CODE = NL.join([
+    "import os, subprocess, sys, time, glob",
+    "import numpy as np",
+    "SRC = " + repr(_gbm_src),
+    "open('/kaggle/working/carbonglobe_gbm.py', 'w').write(SRC)",
+    "BASE_ENV = dict(GBM_CHRONO='1', GBM_MODELS='direct', GBM_VARIANTS='y0inv,y0inv2,none', GBM_THREADS='10', GBM_EV_ROWS='2000000')",
+    "for tag, seed in (('_chrono', '42'), ('_chrono_s7', '7'), ('_chrono_s11', '11')):",
+    "    t = time.time(); print('=====', tag, flush=True)",
+    "    r = subprocess.run([sys.executable, '/kaggle/working/carbonglobe_gbm.py'],",
+    "                       env={**os.environ, **BASE_ENV, 'GBM_SEED': seed, 'GBM_TAG': tag}, cwd='/kaggle/working', capture_output=True, text=True)",
+    "    print(r.stdout[-2500:], r.stderr[-1500:], flush=True)",
+    "    print(f'===== {tag} done in {(time.time() - t) / 60:.1f} min, exit {r.returncode}', flush=True)",
+    "    ref = [p for p in glob.glob('/kaggle/input/**/gbm_preds' + tag + '.npz', recursive=True)]",
+    "    if ref:",
+    "        a, b = np.load('/kaggle/working/gbm_preds' + tag + '.npz'), np.load(ref[0])",
+    "        d = max(float(np.abs(a[k][..., :2] - b[k][..., :2]).max()) for k in b.files if k in a.files)",
+    "        print(f'{tag}: max |diff| to the scored predictions {d:.2e}', flush=True)",
+    "for f in os.listdir('/kaggle/working'):",
+    "    if f.endswith('.csv'): os.remove(os.path.join('/kaggle/working', f))",
+]) + NL
+compile(EXACT_CODE, 'exact', 'exec')
+write('kaggle_gbm_chrono_exact.ipynb', notebook(EXACT_DOC, EXACT_CODE))
