@@ -2,7 +2,9 @@
 
 Final Kaggle submission: **`submission_final.csv`** (= `final/submission_final.csv`), produced by
 `python final/make_final.py`: a fixed-weight blend of **twelve** single models (`flatg12`). Method: `final/REPORT.md`.
-Everything below runs from the repository root.
+Everything below runs from the root of the code package (`iuem_code.zip`, no GitHub access needed: all code,
+including `LSTM-LSTNet-DeepED/` for EcoFormer, and every raw output used by the blend are inside it; on Kaggle,
+attach the extracted package as a dataset). Technical report: `final/iuem_report.pdf`.
 
 ## 1. Environment
 
