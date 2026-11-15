@@ -10,12 +10,58 @@ table { border-collapse: collapse; width: 100%; font-size: 8.2pt; margin: 3px 0;
 th, td { border: 1px solid #bbb; padding: 2px 4px; vertical-align: top; text-align: left; }
 th { background: #f0f0f0; } code { font-family: Consolas, monospace; font-size: 8.2pt; }
 .eq { font-family: Consolas, monospace; font-size: 8.4pt; background: #f6f6f6; padding: 1px 4px; }
+.auth { text-align:center; font-size:9pt; margin:2px 0 6px; } .abs { font-size:8.8pt; text-align:justify; margin:4px 0; }
+figure { margin:6px 0 2px; } figure svg { width:100%; } figcaption { font-size:8.3pt; color:#333; margin-top:1px; }
 </style></head><body>
 
-<h1>IEEE BigData Cup 2026, AI Emulation Challenge: team <b>iuem</b></h1>
-<p class="sub">Final submission <code>submission_final.csv</code> (public LB 0.047): a fixed-weight blend of 12 single models
-(4 model families). Code, trained weights and commands: <code>final/README.md</code> of the code package;
-<code>python final/make_final.py</code> rebuilds the file exactly, and every model output is regenerated from the weights without training.</p>
+<h1 style="text-align:center">Emulating Forest Growth under Unseen Climate Scenarios:<br>Test-Space Mapping, Chronosequence Features and Covariance-Based Blending</h1>
+<p class="auth">An Nguyen Tran Khuong<sup>1</sup> (22520026@gm.uit.edu.vn) &nbsp;·&nbsp; Phu Nguyen Thi Minh<sup>1</sup> (23521186@gm.uit.edu.vn)<br>
+<sup>1</sup>University of Information Technology, VNU-HCM, Vietnam &nbsp;·&nbsp; Kaggle team <b>iuem</b>, IEEE BigData Cup 2026 AI Emulation Challenge</p>
+<p class="abs"><b>Abstract.</b> We emulate 40-year forest height and above-ground biomass (agb) under SSP1-2.6 and SSP5-8.5. The test
+inputs and the hidden answers are the CarbonGlobe grid behind per-variable affine maps; we build site-level chronosequence and
+collapse-risk features, train four model families (a cross-age neural model, LightGBM, an LSTM emulator, EcoFormer) and combine
+12 models with weights solved in closed form from leaderboard scores. Final submission <code>submission_final.csv</code>: public LB 0.047.
+Code, weights and commands: <code>final/README.md</code>; <code>python final/make_final.py</code> rebuilds the file exactly, and every model
+output is regenerated from the weights without training.</p>
+<figure>
+<svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="9.5">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#444"/></marker></defs>
+<style>.b{fill:#fff;stroke:#555;stroke-width:1}.g{fill:#eef4fb;stroke:#4a78a8}.o{fill:#fdf2e6;stroke:#c07a2c}.v{fill:#eef7ee;stroke:#4c8c4c}.t{font-weight:600}.l{stroke:#444;stroke-width:1;fill:none;marker-end:url(#ar)}.s{font-size:8.3px;fill:#333}</style>
+<text x="70" y="12" text-anchor="middle" class="t">Inputs</text>
+<rect class="b" x="5" y="22" width="130" height="44" rx="4"/><text x="70" y="37" text-anchor="middle" class="t">CarbonGlobe grid</text><text x="70" y="50" text-anchor="middle" class="s">54,152 sites × 15 ages × 40 y</text><text x="70" y="61" text-anchor="middle" class="s">136 monthly drivers, 7 states</text>
+<rect class="b" x="5" y="80" width="130" height="44" rx="4"/><text x="70" y="95" text-anchor="middle" class="t">Test (SSP126/585)</text><text x="70" y="108" text-anchor="middle" class="s">6,171 sites; y_test = s·y + b</text><text x="70" y="119" text-anchor="middle" class="s">CO2 block dropped</text>
+<rect class="o" x="5" y="140" width="130" height="58" rx="4"/><text x="70" y="155" text-anchor="middle" class="t">Test-space maps</text><text x="70" y="168" text-anchor="middle" class="s">static-feature matching (97%)</text><text x="70" y="180" text-anchor="middle" class="s">variants none / y0inv /</text><text x="70" y="191" text-anchor="middle" class="s">y0inv2 / xinv; dead rows</text>
+<path class="l" d="M70,124 L70,138"/>
+<text x="218" y="12" text-anchor="middle" class="t">Features</text>
+<rect class="v" x="152" y="22" width="132" height="40" rx="4"/><text x="218" y="37" text-anchor="middle" class="t">Chronosequence (34)</text><text x="218" y="51" text-anchor="middle" class="s">y0 of 15 ages, y0 at age a+40</text>
+<rect class="v" x="152" y="70" width="132" height="40" rx="4"/><text x="218" y="85" text-anchor="middle" class="t">Event risk (5)</text><text x="218" y="99" text-anchor="middle" class="s">LightGBM collapse clf, 40 y</text>
+<rect class="v" x="152" y="118" width="132" height="40" rx="4"/><text x="218" y="133" text-anchor="middle" class="t">Climate summaries</text><text x="218" y="147" text-anchor="middle" class="s">40-y / decade / monthly</text>
+<path class="l" d="M135,44 L150,44"/><path class="l" d="M135,102 L150,92"/>
+<text x="440" y="12" text-anchor="middle" class="t">Models (12 blend members)</text>
+<rect class="g" x="300" y="20" width="282" height="78" rx="4"/><text x="308" y="33" class="t">Cross-age neural direct model (×4 seeds)</text>
+<rect class="b" x="308" y="40" width="62" height="34"/><text x="339" y="54" text-anchor="middle" class="s">Conv1d×2</text><text x="339" y="66" text-anchor="middle" class="s">+BiGRU 128</text>
+<rect class="b" x="380" y="40" width="58" height="34"/><text x="409" y="54" text-anchor="middle" class="s">15 age</text><text x="409" y="66" text-anchor="middle" class="s">tokens 192</text>
+<rect class="b" x="448" y="40" width="64" height="34"/><text x="480" y="54" text-anchor="middle" class="s">Transformer</text><text x="480" y="66" text-anchor="middle" class="s">×2 (ages)</text>
+<rect class="b" x="522" y="40" width="52" height="34"/><text x="548" y="54" text-anchor="middle" class="s">MLP</text><text x="548" y="66" text-anchor="middle" class="s">Δ y10..40</text>
+<path class="l" d="M370,57 L378,57"/><path class="l" d="M438,57 L446,57"/><path class="l" d="M512,57 L520,57"/>
+<text x="308" y="90" class="s">40 annual drivers + y0 + age + chronosequence + event risk</text>
+<rect class="g" x="300" y="104" width="282" height="34" rx="4"/><text x="308" y="118" class="t">LightGBM ×4</text><text x="308" y="131" class="s">direct+chrono (3 seeds) · direct · RF mode · annual rollout</text>
+<rect class="g" x="300" y="144" width="282" height="34" rx="4"/><text x="308" y="158" class="t">LSTM-XL emulator ×5</text><text x="308" y="171" class="s">3×LSTM 320, monthly forcing → next-year state, 40-y rollout</text>
+<rect class="g" x="300" y="184" width="138" height="34" rx="4"/><text x="308" y="198" class="t">EcoFormer</text><text x="308" y="211" class="s">enc-dec Transformer 6/4</text>
+<rect class="g" x="444" y="184" width="138" height="34" rx="4"/><text x="452" y="198" class="t">Own-site analog</text><text x="452" y="211" class="s">y0 + historical Δ (no training)</text>
+<path class="l" d="M284,42 L298,42"/><path class="l" d="M284,90 L298,118"/><path class="l" d="M284,138 L298,124"/>
+<path class="l" d="M135,170 L298,165"/><path class="l" d="M135,185 L298,200"/>
+<rect class="o" x="598" y="70" width="70" height="96" rx="4"/><text x="633" y="88" text-anchor="middle" class="t">Answer</text><text x="633" y="100" text-anchor="middle" class="t">space</text><text x="633" y="116" text-anchor="middle" class="s">map: s·p+b</text><text x="633" y="128" text-anchor="middle" class="s">match: mean</text><text x="633" y="140" text-anchor="middle" class="s">dead rows</text><text x="633" y="152" text-anchor="middle" class="s">→ b (exact)</text>
+<path class="l" d="M582,59 L596,90"/><path class="l" d="M582,121 L596,118"/><path class="l" d="M582,161 L596,140"/><path class="l" d="M582,201 L596,158"/>
+<rect class="o" x="682" y="70" width="74" height="96" rx="4"/><text x="719" y="88" text-anchor="middle" class="t">Blend</text><text x="719" y="104" text-anchor="middle" class="s">C from LB:</text><text x="719" y="116" text-anchor="middle" class="s">MSEi+MSEj−Dij</text><text x="719" y="132" text-anchor="middle" class="s">w = C⁻¹1/1ᵀC⁻¹1</text><text x="719" y="148" text-anchor="middle" class="s">12 fixed w</text>
+<path class="l" d="M668,118 L680,118"/>
+<rect class="b" x="682" y="186" width="74" height="32" rx="4"/><text x="719" y="200" text-anchor="middle" class="t">submission</text><text x="719" y="212" text-anchor="middle" class="s">LB 0.047</text>
+<path class="l" d="M719,166 L719,184"/>
+<text x="5" y="240" class="s">Blue: trained models · green: engineered features · orange: test-space handling and ensembling.</text>
+</svg>
+<figcaption><b>Figure 1.</b> Pipeline and architecture. Inputs are mapped between the test space and physical units; four model
+families (top: the cross-age neural model in detail) predict year-40 states, which are mapped back to the answer space and blended.</figcaption>
+</figure>
 
 <h2>1. Data and preprocessing</h2>
 <ul>
