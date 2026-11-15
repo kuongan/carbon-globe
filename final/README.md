@@ -1,7 +1,7 @@
 # IEEE BigData Cup 2026 AI Emulation Challenge: team **iuem**: reproduction guide
 
 Final Kaggle submission: **`submission_final.csv`** (= `final/submission_final.csv`), produced by
-`python final/make_final.py`: a fixed-weight blend of **twelve** single models (`flatg12`). Method: `final/REPORT.md`.
+`python final/make_final.py`: a fixed-weight blend of **twelve** single models (`flatg12`), **public LB 0.046**. Method: `final/iuem_report.pdf`.
 Everything below runs from the root of the code package (`iuem_code.zip`, no GitHub access needed: all code,
 including `LSTM-LSTNet-DeepED/` for EcoFormer, and every raw output used by the blend are inside it; on Kaggle,
 attach the extracted package as a dataset). Technical report: `final/iuem_report.pdf`.
@@ -46,7 +46,7 @@ as a Kaggle notebook, or change `ROOT_IN` at its top.
 | `nov2_snapmean` | -0.309 | LSTM-XL run 5 (no CO2, group v2 at its mean), mean of 5 weight sets | `lstm/nov2/nov2_{best,ep2,ep3,ep4,ep5}.npz` | `result/final_runs/nov2/global_probe_preds.npz` |
 | `s7_xinv` | -0.335 | LSTM-XL seed 7 epoch 3; physical forcing | `lstm/s7_ep3.npz` | `result/noco2-s7/global_probe_preds.npz` (`xinv`) |
 
-Weights sum to 1; negative weights extrapolate along pairs of variants of one model (closed-form blend, REPORT §3).
+Weights sum to 1; negative weights extrapolate along pairs of variants of one model (closed-form blend, report Section 5).
 All raw outputs listed are in the repository, so step 5 alone rebuilds the submission in minutes.
 
 ## 4. Reproduce the raw outputs from the weights (no training)

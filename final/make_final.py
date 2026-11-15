@@ -1,6 +1,6 @@
 """Final submission of team iuem: a fixed-weight blend of single models, rebuilt from the raw model outputs.
 
-BLEND 'flatg12' (default, the final): 12 members, public LB 0.046 for the originally scored version.
+BLEND 'flatg12' (default, the final): 12 members, public LB 0.046 (this exact file).
 BLEND 'repro8' (fallback): 8 members, estimate 0.0471.
 
 Each member is a raw model output (year-40 predictions, (15 seed ages, 6171 sites, 7) per scenario), written by
@@ -14,7 +14,7 @@ the model scripts in training mode or in inference-only mode from the supplied w
      fixed  physical predictions -> fixed slopes (the own-site analog, slopes of its scored version)
    stands dead at year 0 (result/dead_rows.npz) are set to the mapped zero, their exact answer;
 2. blend with the fixed weights below, solved once in closed form from the public LB of each member
-   (MSE_i + MSE_j - D_ij = 2 Cov(e_i, e_j); best weights summing to 1 = C^-1 1 / 1'C^-1 1; final/REPORT.md);
+   (MSE_i + MSE_j - D_ij = 2 Cov(e_i, e_j); best weights summing to 1 = C^-1 1 / 1'C^-1 1; final/iuem_report.pdf);
 3. write final/submission_final.csv (185,130 rows, height / 10.90645, agb / 3.39567).
 
 usage (repository root): python final/make_final.py [--blend flatg12|repro8] [--nn NPZ] [--gbm DIR] [--nov2 NPZ]
