@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><title>Team iuem: technical report</title>
 <style>
 @page { size: A4; margin: 11mm 13mm; }
-body { font-family: "Segoe UI", Arial, sans-serif; font-size: 9pt; line-height: 1.27; color: #111; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 9pt; line-height: 1.25; color: #111; }
 h1 { font-size: 13.5pt; margin: 0 0 2px; } .sub { color: #444; margin: 0 0 6px; font-size: 8.8pt; }
 h2 { font-size: 10.3pt; margin: 6px 0 2px; border-bottom: 1px solid #bbb; padding-bottom: 1px; }
 p, li { margin: 2px 0; } ul { margin: 2px 0 2px 16px; padding: 0; }
@@ -10,12 +10,19 @@ table { border-collapse: collapse; width: 100%; font-size: 8.2pt; margin: 3px 0;
 th, td { border: 1px solid #bbb; padding: 2px 4px; vertical-align: top; text-align: left; }
 th { background: #f0f0f0; } code { font-family: Consolas, monospace; font-size: 8.2pt; }
 .eq { font-family: Consolas, monospace; font-size: 8.4pt; background: #f6f6f6; padding: 1px 4px; }
-.auth { text-align:center; font-size:9pt; margin:2px 0 6px; } .abs { font-size:8.8pt; text-align:justify; margin:4px 0; }
+.auth { text-align:center; font-size:9pt; margin:2px 0 4px; line-height:1.38; } .abs { font-size:8.8pt; text-align:justify; margin:4px 0; }
 figure { margin:6px 0 2px; } figure svg { width:100%; } figcaption { font-size:8.3pt; color:#333; margin-top:1px; }
 tr { page-break-inside: avoid; } table.w td:nth-child(even), table.w th:nth-child(even) { text-align:right; white-space:nowrap; }
 sub, sup { line-height: 0; }
 .refs { font-size:7.9pt; color:#333; margin-top:5px; } table.r td:nth-child(n+2), table.r th:nth-child(n+2) { text-align:right; white-space:nowrap; }
 h2 { break-after: avoid; page-break-after: avoid; }
+table.r td, table.r th { padding: 1px 5px; } table.r caption { caption-side: top; text-align: left; font-size: 8.3pt; color: #333; padding-bottom: 2px; }
+table.ens { width: 100%; margin-top: 4px; font-size: 8pt; } table.ens td, table.ens th { padding: 1px 5px; } table.ens caption { caption-side: top; text-align: left; font-size: 8.3pt; color: #333; padding-bottom: 2px; }
+table.ens th { background: #e8eef5; } table.ens tr.fam td { border-top: 1.5px solid #7a8ea5; }
+table.ens td:nth-child(1)[rowspan], table.ens tr.fam td:first-child { font-weight: 600; background: #f7f9fc; }
+table.ens td:last-child, table.ens th:last-child { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; width: 9%; }
+table.ens td.pos { color: #1d5e2e; } table.ens td.neg { color: #9a2a2a; }
+table.ens tr.tot td { border-top: 1.5px solid #7a8ea5; background: #f0f0f0; font-weight: 600; }
 </style></head><body>
 
 <h1 style="text-align:center">Emulating Forest Growth under Unseen Climate Scenarios:<br>Test-Space Mapping, Chronosequence Features and Covariance-Based Blending</h1>
@@ -29,7 +36,7 @@ collapses are tied to single climate years and can be forecast. A cross-age neur
 public score of 0.061 (lower is better; provided baseline 0.231, no-change prediction 0.285). An ensemble of 12 models whose
 weights are solved in closed form from their public scores reaches 0.046 (0.047 for the fully reproducible resubmission).</p>
 <figure>
-<svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="9.5">
+<svg viewBox="0 0 760 224" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial" font-size="9.5">
 <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#444"/></marker></defs>
 <style>.b{fill:#fff;stroke:#555;stroke-width:1}.g{fill:#eef4fb;stroke:#4a78a8}.o{fill:#fdf2e6;stroke:#c07a2c}.v{fill:#eef7ee;stroke:#4c8c4c}.t{font-weight:600}.l{stroke:#444;stroke-width:1;fill:none;marker-end:url(#ar)}.s{font-size:8.3px;fill:#333}</style>
 <text x="70" y="12" text-anchor="middle" class="t">Inputs</text>
@@ -62,10 +69,9 @@ weights are solved in closed form from their public scores reaches 0.046 (0.047 
 <path class="l" d="M668,118 L680,118"/>
 <rect class="b" x="682" y="186" width="74" height="32" rx="4"/><text x="719" y="200" text-anchor="middle" class="t">submission</text><text x="719" y="212" text-anchor="middle" class="s">score 0.046</text>
 <path class="l" d="M719,166 L719,184"/>
-<text x="5" y="240" class="s">Blue: models · green: engineered features · orange: unit conversion and ensembling.</text>
 </svg>
 <figcaption><b>Figure 1.</b> Pipeline and architecture. Test inputs are converted to physical units, four model families predict the year-40 state (top: the
-cross-age neural model in detail), predictions are converted back to test units and combined.</figcaption>
+cross-age neural model in detail), predictions are converted back to test units and combined. Blue: models; green: engineered features; orange: unit conversion and ensembling.</figcaption>
 </figure>
 
 <h2>1. Task and key observations</h2>
@@ -89,7 +95,7 @@ grid such stands always stay at 0 for 40 years, so we set their answer to <i>b</
 states trace ED's growth curve there (a <i>chronosequence</i>). The year-0 state of the stand 40 years older is already a strong
 guess for year 40.</p>
 <p><b>Observation 4: collapses are climate events.</b> 22% of old stands lose more than 30% of agb in a single year, in the
-same year for all ages of a site (fire or drought in ED). That year's monthly climate predicts the event (AUC 0.985).</p>
+same year for all ages of a site (fire or drought). That year's monthly climate predicts the event (AUC 0.985).</p>
 
 <h2>2. Data preprocessing</h2>
 <ul>
@@ -108,14 +114,13 @@ past physical units. <code>y0inv2</code> is an empirical heuristic: it scored be
 have no physical explanation for it.</li>
 </ul>
 
-<h2>3. Models, losses and hyperparameters</h2>
+<h2 style="break-before: page">3. Models, losses and hyperparameters</h2>
 <table>
-<tr><th style="width:19%">Model</th><th style="width:43%">Architecture and inputs</th><th>Loss, optimization, hyperparameters</th></tr>
+<tr><th style="width:16%">Model</th><th style="width:47%">Architecture and inputs</th><th>Loss, optimization, hyperparameters</th></tr>
 <tr><td><b>Cross-age neural model</b> (ours; PyTorch, 4 seeds averaged)</td>
-<td>Predicts all 15 ages of a site at once. Conv1d×2 + bidirectional GRU (hidden 128) encode the 40 annual means of the 111
-drivers and the monthly climatology. Each age is a token (width 192) holding this encoding, its year-0 state, age,
-chronosequence and event risk. A 2-layer Transformer attends across the 15 ages; an MLP outputs the change of height and agb
-at years 10, 20, 30, 40.</td>
+<td>All 15 ages of a site at once. Conv1d×2 + BiGRU (hidden 128) encode 40 years of the 111 drivers and the monthly
+climatology; each age is a token (width 192) with this encoding, year-0 state, age, chronosequence and event risk; a 2-layer
+Transformer attends across ages; an MLP outputs the change of height and agb at years 10, 20, 30, 40.</td>
 <td>MSE on values divided by their year-40 global means, year weights 0.25 / 0.25 / 0.25 / 1. AdamW, learning rate 2e-3,
 one-cycle schedule, 512 sites per batch, 20 epochs, best holdout epoch.</td></tr>
 <tr><td><b>LightGBM</b> [3] (4 models)</td>
@@ -136,12 +141,13 @@ fixed at its mean.</td>
 </table>
 
 <h2>4. Training, validation and results</h2>
-<p>Validation holds out a fixed 8% of 10°×10° spatial blocks (4,170 sites); neighboring 0.5° cells are near copies, so a
-random split would leak. The metric is the competition metric on historical climate. Neural models were trained on Kaggle T4
+<p>Validation holds out a fixed 8% of 10°×10° spatial blocks (4,170 sites), since neighboring 0.5° cells are near copies; the
+metric is the competition metric. Neural models were trained on Kaggle T4
 GPUs, LightGBM on a 30 GB CPU machine; all seeds are fixed. The holdout ranks models correctly within a family but
 <b>does not predict the leaderboard</b> (test climate is future, the holdout's is historical), so final choices used the
 public leaderboard (LB).</p>
 <table class="r">
+<caption><b>Table 1.</b> Results: holdout (historical climate) and public LB (lower is better).</caption>
 <tr><th>Step (single models unless noted)</th><th>Holdout</th><th>Public LB</th></tr>
 <tr><td>Persistence (year 40 = year 0) / provided DeepED baseline [4]</td><td>0.368 / –</td><td>0.285 / 0.231</td></tr>
 <tr><td>LightGBM direct (y0inv2)</td><td>0.0305</td><td>0.097</td></tr>
@@ -156,31 +162,32 @@ public leaderboard (LB).</p>
 <p><b>Inference.</b> Each model predicts both scenarios from its input version (Section 2). Physical predictions <i>p</i> are
 converted to the answer units by <code>map</code> (<i>s</i>·<i>p</i> + <i>b</i>) or <code>match</code>: <i>b</i> exact and
 <i>s</i> chosen so the mean over living stands equals that of a fixed reference, our earlier scored submission (LB 0.072),
-which calibrates the level of agb whose slope is only estimated. Dead stands are set to <i>b</i>.</p>
+calibrating the estimated agb slope. Dead stands are set to <i>b</i>.</p>
 <p><b>Ensemble weights.</b> For MSE, the errors of two models <i>i</i>, <i>j</i> satisfy
 2·Cov(<i>e<sub>i</sub></i>, <i>e<sub>j</sub></i>) = MSE<sub><i>i</i></sub> + MSE<sub><i>j</i></sub> − D<sub><i>ij</i></sub>,
 where D<sub><i>ij</i></sub> is the mean squared difference of their predictions (no truth needed). With each model's public LB
 as MSE this gives the error covariance <b>C</b>, and the weights summing to 1 with the lowest expected error are
 <b>w</b> = <b>C</b><sup>−1</sup><b>1</b> / (<b>1</b><sup>T</sup><b>C</b><sup>−1</sup><b>1</b>). Twelve of 63 scored models
-were chosen by greedy forward selection with swaps; weights: neural +0.707; LSTM-XL +0.373, +0.349, +0.171, −0.309, −0.335;
-LightGBM +0.337, +0.106, −0.199, −0.199; EcoFormer +0.129; analog −0.130 (per-model list in <code>final/README.md</code>).</p>
-
-<h2>6. Limitations</h2>
-<p>(i) <b>Leaderboard overfitting.</b> Weights are fitted to public scores, which cover only part of the test sites, and
-include large negative weights (Σ|w| ≈ 3.3) that extrapolate between related models. The prediction was optimistic by
-0.002 for this 12-model blend, and a split of the public sites into two halves moved blend estimates by ~0.0006, so we
-expect the private score to be somewhat worse than 0.046. (ii) <b>Scope.</b> Observations 1–2 exploit how this test set was
-built; the models themselves are emulators trained on historical climate, and without the unit transforms the best
-single model is the measure of genuine skill. (iii) <code>y0inv2</code> and the agb slope are empirical.</p>
-
-<h2>7. Reproduction</h2>
-<p>The code package contains all code, the trained weights of every model and their saved test predictions.
-<code>final/make_final.py</code> rebuilds the submission exactly from the saved predictions; <code>final/README.md</code>
-gives, per model, the weights file and the command that regenerates the predictions from the weights without retraining.</p>
+were chosen by greedy forward selection with swaps (Table 2). Negative weights extrapolate between related models.</p>
+<table class="ens">
+<caption><b>Table 2.</b> The 12 ensemble members. Inputs and conversions as in Sections 2 and 5 ("as is": already in test units). Weights sum to 1; ensemble LB 0.046.</caption>
+<tr><th>Family</th><th>Member</th><th>Test input</th><th>Conversion</th><th>Weight</th></tr>
+<tr class="fam"><td>Cross-age neural</td><td>4 seeds averaged</td><td>y0inv2</td><td>match</td><td class="pos">+0.707</td></tr>
+<tr class="fam"><td rowspan="5">LSTM-XL</td><td>seed 42, epoch 6</td><td>y0inv + xinv</td><td>map</td><td class="pos">+0.373</td></tr>
+<tr><td>seed 42, epoch 4</td><td>y0inv + xinv</td><td>map</td><td class="pos">+0.349</td></tr>
+<tr><td>seed 7, epoch 3</td><td>none</td><td>as is</td><td class="pos">+0.171</td></tr>
+<tr><td>seed 7, epoch 3</td><td>xinv</td><td>map</td><td class="neg">−0.335</td></tr>
+<tr><td>climate group v2 fixed, mean of 5 checkpoints</td><td>none</td><td>as is</td><td class="neg">−0.309</td></tr>
+<tr class="fam"><td rowspan="4">LightGBM</td><td>direct + chronosequence + event risk, 3 seeds</td><td>y0inv</td><td>match</td><td class="pos">+0.337</td></tr>
+<tr><td>annual rollout</td><td>y0inv</td><td>match</td><td class="pos">+0.106</td></tr>
+<tr><td>random-forest mode</td><td>none</td><td>match</td><td class="neg">−0.199</td></tr>
+<tr><td>direct, no engineered features</td><td>y0inv2</td><td>match</td><td class="neg">−0.199</td></tr>
+<tr class="fam"><td>EcoFormer</td><td>single run</td><td>none</td><td>as is</td><td class="pos">+0.129</td></tr>
+<tr class="fam"><td>Own-site analog</td><td>no training</td><td>–</td><td>fixed slopes</td><td class="neg">−0.130</td></tr>
+</table>
 
 <p class="refs"><b>References.</b> [1] Moorcroft, Hurtt, Pacala, "A method for scaling vegetation dynamics: the ecosystem
 demography model (ED)", <i>Ecological Monographs</i>, 2001. [2] CarbonGlobe dataset (Kaggle: zhihaow/carbonglobe), IEEE BigData
 Cup 2026 AI Emulation Challenge. [3] Ke et al., "LightGBM: a highly efficient gradient boosting decision tree", NeurIPS 2017.
-[4] Challenge baseline repository <code>LSTM-LSTNet-DeepED</code> (LSTM / LSTNet / DeepED emulators). [5] EcoFormer
-encoder–decoder emulator, same repository. [6] Vaswani et al., "Attention is all you need", NeurIPS 2017.</p>
+[4] Challenge baseline repository <code>LSTM-LSTNet-DeepED</code> (LSTM / LSTNet / DeepED emulators). [5] EcoFormer emulator, same repository. [6] Vaswani et al., "Attention is all you need", NeurIPS 2017.</p>
 </body></html>
