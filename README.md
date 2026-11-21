@@ -1,88 +1,52 @@
-# 🌍 CarbonGlobe Dataset
+# CarbonGlobe AI Emulation Challenge: team iuem (14th / 288)
 
-> **Accepted to NeurIPS 2025 (Datasets & Benchmarks Track)** 
-> - **Paper** is available on OpenReview: https://openreview.net/pdf?id=M07aAJKH8B
-> - **Project page** is available on NeurIPS: https://neurips.cc/virtual/2025/loc/san-diego/poster/121701.
-> - **Datasets** are available on [Hugging Face](https://huggingface.co/datasets/zhwang1/CarbonGlobe) and [Kaggle](https://www.kaggle.com/datasets/zhihaow/carbonglobe).
+Our solution to the **IEEE BigData Cup 2026 AI Emulation Challenge** on Kaggle. The task is to emulate the ED forest
+simulator: predict forest height and biomass after 40 years of future climate.
 
+| | |
+|---|---|
+| Private leaderboard | **14th of 288** (0.046) |
+| Final submission | `final/submission_final.csv`: public 0.046, private 0.047 |
+| Provided baseline | 0.231 |
+| Team | An Nguyen Tran Khuong, Phu Nguyen Thi Minh (University of Information Technology, VNU-HCM) |
 
+**Start here**
 
-## Overview
-**CarbonGlobe** is a comprehensive, ML-ready dataset for modeling and forecasting the forest carbon cycle. It integrates heterogeneous Earth system variables into a consistent spatiotemporal grid and provides standardized **scenario-based evaluations** and **benchmark implementations** to accelerate research across environmental monitoring, and ecological modeling.
+- [WRITEUP.md](WRITEUP.md): the full story. Data findings, models, leaderboard-based blending, the public/private
+  shake-up, and what failed.
+- [final/iuem_report.pdf](final/iuem_report.pdf): the 2-page technical report submitted to the organizers.
+- [final/README.md](final/README.md): exact reproduction of the final submission, model by model.
 
+**Reproduce the final file** (CPU, a few minutes, from the saved model outputs in `result/`):
 
-## Key Features
-- **Global coverage at 0.5°**  
-  First global-scale ML-ready dataset for monitoring and forecasting forest carbon dynamics.
-- **Multi-decadal span (40 years)**  
-  Enables long-term trend and variability analysis.
-- **100+ variables**  
-  Harmonized inputs from meteorology, CO₂, soils, vegetation, and ancillary layers.
-- **Scenario-based splits**  
-  Training/testing protocols resembling real applications (e.g., environmental conditions, forest age).
-- **Benchmarks & metrics**  
-  Strong baselines (LSTM, Transformer family, DeepED, etc.) and **problem-driven metrics** for carbon forecasting.
+```bash
+pip install -r requirements.txt lightgbm==4.6.0 scipy
+python final/make_final.py
+```
 
+## Repository map
 
-## Source Datasets
-All inputs are from open sources. Please follow original licenses and citation guidelines.
+| Path | Content |
+|---|---|
+| `final/` | Final blend (`make_final.py`), report, reproduction guide, submitted CSV |
+| `carbonglobe_direct_nn.py` | Cross-age neural model (best single model) |
+| `carbonglobe_gbm.py` | LightGBM direct / random-forest / rollout models, chronosequence and event-risk features |
+| `carbonglobe-global.ipynb`, `global_probe.py` | LSTM-XL grid emulator: training and test-time inference |
+| `carbonglobe-ecoformer.ipynb` | EcoFormer emulator |
+| `analog_build.py`, `analog.py` | Own-site analog member |
+| `test_transform.py`, `dead_rows.py`, `slope.py` | Recovering the test-space affine maps, dead stands, mean matching |
+| `ensemble.py`, `probe_bias.py`, `cv_parity.py` | Blending and score prediction from leaderboard scores |
+| `chrono.py`, `fireprobe.py`, `eda*.py`, `*probe.py` | Data analysis behind the findings in the write-up |
+| `kaggle_notebooks/`, `make_notebooks.py` | Ready-to-run Kaggle notebooks (GPU / large-RAM steps) |
+| `result/` | Saved test predictions of the models (inputs to the blend) |
+| `INSIGHTS.md`, `PLAN.md` | Lab notebook: every submission and hypothesis (Vietnamese) |
+| `LSTM-LSTNet-DeepED/`, `Crossformer/`, `DLinear/`, `Informer-Transformer/`, `TimeXer/` | Baseline models of the upstream CarbonGlobe repository |
 
-- **Meteorological (MERRA-2)**  
-  NASA GMAO MERRA-2 (Gelaro et al., 2017).  
-  Source: https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2/  
-  Citation guidance: https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2/citing_MERRA-2/
+Data are not included. The competition files and the
+[CarbonGlobe dataset](https://www.kaggle.com/datasets/zhihaow/carbonglobe) go under `data/`, as described in
+`final/README.md`. Trained weights are not in git because of size.
 
-- **CO₂ (NOAA CarbonTracker)**  
-  Peters et al., 2007.  
-  Source: https://gml.noaa.gov/ccgg/carbontracker/
+## Credits
 
-- **Soils (ROSETTA)**  
-  Montzka et al., 2017. CC BY 3.0.  
-  DOI: https://doi.pangaea.de/10.1594/PANGAEA.870605
-
-- **Environmental Conditions (Köppen–Geiger)**  
-  Beck et al., 2018. CC BY 4.0.  
-  Data: https://figshare.com/articles/dataset/6396959/2
-
-
-
-## Benchmarks 
-We provide reproducible baselines covering classical sequence models, knowledge-guided emulators, and recent transformer variants:
-
-- **LSTM** — Standard recurrent model for time-series forecasting [[Graves, 2012]](https://www.cs.toronto.edu/~graves/phd.pdf)  
-- **LSTNet** — CNN+RNN for short/long dependencies [[Lai et al., 2018]](https://arxiv.org/abs/1703.07015)  
-- **DeepED** — Knowledge-guided ED emulator (error-accumulation mitigation) [[Wang et al., 2023]](https://doi.org/10.1145/3589132.3625577)  
-- **Transformer** — Vanilla self-attention [[Vaswani et al., 2017]](https://arxiv.org/abs/1706.03762)  
-- **Informer** — ProbSparse attention for efficiency [[Zhou et al., 2021]](https://arxiv.org/abs/2012.07436)  
-- **DLinear** — Seasonal/trend decomposition with linear heads [[Zeng et al., 2023]](https://arxiv.org/abs/2205.13504)  
-- **Crossformer** — Cross-time/feature attention [[Zhang et al., 2023]](https://openreview.net/forum?id=vSVLM2j9eie)  
-- **TimeXer** — Decoupled inter-target & input-target modeling [[Wang et al., 2024]](https://arxiv.org/abs/2402.19072)
-
-**Problem-driven metrics** (e.g., RMSE, MAE, delta error, cumulative error) are included to capture both step-wise and long-horizon behavior.
-
-
-## 📚 Citation
-
-If you use CarbonGlobe in your research, please cite:
-
-> **Zhihao Wang**, **Lei Ma**, **George Hurtt**, **Xiaowei Jia**, **Yanhua Li**, **Ruohan Li**, **Zhili Li**, **Shuo Xu**, **Yiqun Xie**.  
-> *CarbonGlobe: A Global-Scale, Multi-Decade Dataset and Benchmark for Carbon Forecasting in Forest Ecosystems.*  
-> In *Proceedings of the 39th Conference on Neural Information Processing Systems (NeurIPS)*, 2025.
-
-<!-- ```bibtex
-@inproceedings{wang2025carbonglobe,
-  title     = {CarbonGlobe: A Global-Scale, Multi-Decade Dataset and Benchmark for Carbon Forecasting in Forest Ecosystems},
-  author    = {Wang, Zhihao and Ma, Lei and Hurtt, George and Jia, Xiaowei and Li, Yanhua and Li, Ruohan and Li, Zhili and Xu, Shuo and Xie, Yiqun},
-  booktitle = {Proceedings of the 39th Conference on Neural Information Processing Systems (NeurIPS 2025), Datasets and Benchmarks Track},
-  year      = {2025}
-}
-``` -->
-
-
-## 📬 Contact
-
-For questions or feedback, feel free to reach out:
-
-- **Zhihao Wang** — [zhwang1@umd.edu](mailto:zhwang1@umd.edu)
-- **Yiqun Xie** — [xie@umd.edu](mailto:xie@umd.edu)
-
+This repository is a fork of the CarbonGlobe benchmark repository (Wang et al., NeurIPS 2025 Datasets & Benchmarks).
+Its original README is [CARBONGLOBE.md](CARBONGLOBE.md), and its license applies ([LICENSE.txt](LICENSE.txt)).
