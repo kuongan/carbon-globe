@@ -27,3 +27,22 @@ data/
 
 weights/
 dist/
+
+# trained weights (boosters, checkpoints): published separately, see WRITEUP.md "Reproduce"
+*.pt
+*.rar
+result/**/gbm_direct_*.txt
+result/**/gbm_event_*.txt
+result/**/gbm_rollout_*.txt
+result/**/nn_event_clf.txt
+# intermediate copies of the final GBM runs (the kept versions live in result/final_runs/gbm)
+result/gbm_exact/
+result/gbm_mix/
+result/gbm_refmix/
+result/final_runs/gbm_prev_4Mrows/
+result/final_runs/gbm_local/
+result/final_runs/**/carbonglobe_gbm.py
+result/nn_smoke/
+# third-party public notebooks kept for reference only, local housekeeping
+others/
+cleanup_disk.sh
