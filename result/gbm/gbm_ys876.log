@@ -1,0 +1,30 @@
+lightgbm 4.6.0 | threads 10 | features kept 111
+[   0.0 min] glob_X 1024/54152
+[   0.1 min] glob_X 11264/54152
+[   0.3 min] glob_X 21504/54152
+[   0.4 min] glob_X 31744/54152
+[   0.6 min] glob_X 41984/54152
+[   0.7 min] glob_X 52224/54152
+[   1.1 min] grid loaded: usable sites 54152/54152 | state ceiling [ 70.    72.32 213.84  23.22  14.71   7.31  14.59]
+[   1.1 min] train sites 49982 | holdout sites 4170 (21/263 blocks) | holdout persistence (y40 = y0) metric 0.3675
+[   1.1 min] ssp126: test (6171, 40, 12, 136) | dead (y0 at the mapped zero) 0.0884 | non-finite test inputs 0
+[   1.2 min] ssp585: test (6171, 40, 12, 136) | dead (y0 at the mapped zero) 0.0883 | non-finite test inputs 0
+[   5.2 min] event classifier: 1,682,867 site-years, event rate 0.0131 | magnitude model False
+[  12.3 min] chrono + risk features done (grid)
+[500]	hold's l2: 3.62614
+[1000]	hold's l2: 3.47756
+[1500]	hold's l2: 3.43469
+[2000]	hold's l2: 3.41392
+[  15.9 min] direct height: best iter 2079 | gain by group {'other': 0.664, 'state': 0.137, 'f1': 0.032, 'f0': 0.026, 'age': 0.024, 'f6': 0.018, 'f5': 0.014, 'f2': 0.013, 'f3': 0.012, 'v1': 0.012, 'v2': 0.012, 'f4': 0.011, 'static': 0.009, 'v3': 0.008, 'v4': 0.006, 'f7': 0.001}
+[500]	hold's l2: 0.259765
+[1000]	hold's l2: 0.245586
+[1500]	hold's l2: 0.239866
+[2000]	hold's l2: 0.237112
+[2500]	hold's l2: 0.235147
+[  19.9 min] direct agb: best iter 2821 | gain by group {'other': 0.519, 'state': 0.147, 'f1': 0.069, 'f4': 0.051, 'f2': 0.037, 'age': 0.035, 'f3': 0.031, 'f0': 0.029, 'v2': 0.023, 'v3': 0.018, 'f5': 0.01, 'v1': 0.008, 'v4': 0.008, 'f6': 0.006, 'static': 0.006, 'f7': 0.002}
+[  20.0 min] direct holdout metric 0.0245 (persistence 0.3675)
+[  22.0 min] direct_y0inv: scaled means (height, agb) {'ssp126': (1.0743365287780762, 0.995892345905304), 'ssp585': (1.084355115890503, 0.9775336980819702)} | msd ssp126 vs ssp585 0.00888
+[  24.2 min] direct_y0inv2: scaled means (height, agb) {'ssp126': (1.299910545349121, 1.2072957754135132), 'ssp585': (1.3076138496398926, 1.1895394325256348)} | msd ssp126 vs ssp585 0.00915
+[  24.2 min] saved gbm_preds_ys876.npz (['direct_y0inv', 'direct_y0inv2']) + gbm_summary_ys876.json
+[  24.2 min] msd direct_y0inv vs direct_y0inv2: 0.0806
+[  24.2 min] saved gbm_preds_ys876.npz (['direct_y0inv', 'direct_y0inv2']) + gbm_summary_ys876.json
