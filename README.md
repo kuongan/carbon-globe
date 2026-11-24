@@ -2,7 +2,6 @@
 
 Our solution to the **IEEE BigData Cup 2026 AI Emulation Challenge** on Kaggle. The task is to emulate the ED forest
 simulator: predict forest height and biomass after 40 years of future climate.
-
 | | |
 |---|---|
 | Private leaderboard | **14th of 288** (0.046) |
